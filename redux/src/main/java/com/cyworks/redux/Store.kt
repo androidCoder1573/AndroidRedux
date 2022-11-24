@@ -1,20 +1,8 @@
-package com.cyworks.redux;
+package com.cyworks.redux
 
-import android.os.Looper;
-import android.support.annotation.CallSuper;
-import android.support.annotation.MainThread;
-import android.support.annotation.NonNull;
-
-import com.tencent.redux.action.Action;
-import com.tencent.redux.dispatcher.Dispatch;
-import com.tencent.redux.dispose.IDispose;
-import com.tencent.redux.reducer.Reducer;
-import com.tencent.redux.state.StateGetter;
-import com.tencent.redux.util.ILogger;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import android.support.annotation.CallSuper
+import java.util.ArrayList
+import java.util.concurrent.CopyOnWriteArrayList
 
 /**
  * Desc: 定义一个live-redux Store，本质上是一个状态容器（有限状态，无限状态 [...items]）
@@ -27,7 +15,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * Redux三原则：
  * 1、单一数据源 --- 一个页面对应一个Store；
- * 2、State 是只读的 --- 在live-redux中没有遵循，但也保证了只能在Reducer中修改UI数据{@link ReactiveProp}；
+ * 2、State 是只读的 --- 在live-redux中没有遵循，但也保证了只能在Reducer中修改UI数据[ReactiveProp]；
  * 3、使用纯函数来执行修改 --- UI状态只能在Reducer中处理；
  *
  * 除了上述的一些改变，live-redux跟社区的redux还存在一些区别：
@@ -69,48 +57,57 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * @author randytu on 2020/7/18
  */
-public class Store<S extends State> {
+open class Store<S : State?> {
+    /**
+     * 获取state，为了防止外部缓存state，控制访问权限，外部只能通过监听的方式观察属性值
+     *
+     * @return S [BasePageState]
+     */
     /**
      * 将状态包装成可观察的对象
      */
-    protected S mState;
+    var state: S? = null
 
     /**
      * 经过合并的Reducer, 因为是经过合并的，所以这里不给此reducer增加泛型类型
      */
-    protected Reducer mReducer;
+    @JvmField
+    var mReducer: Reducer? = null
 
     /**
      * 分发Reducer的dispatch, 需要在page中使用，扩展dispatch能力
      */
-    protected Dispatch mDispatch;
+    @JvmField
+    var mDispatch: Dispatch? = null
 
     /**
      * 注册的观察者列表，用于分发store的变化
      */
-    protected CopyOnWriteArrayList<StoreObserver> mListeners;
+    protected var mListeners: CopyOnWriteArrayList<StoreObserver>? = null
 
     /**
      * store是否销毁了
      */
-    protected boolean isDestroy;
+    @JvmField
+    protected var isDestroy = false
 
     /**
      * Log 组件
      */
-    protected final ILogger mLogger = ReduxManager.getInstance().getLogger();
+    @JvmField
+    protected val mLogger: ILogger = ReduxManager.instance.logger
 
-    Store() {}
+    internal constructor() {}
 
     /**
      * 单参数构造器，初始化store的reducer以及dispatch
      * @param reducer Reducer
      */
-    Store(@NonNull Reducer reducer) {
-        mReducer = reducer;
+    internal constructor(@NonNull reducer: Reducer?) {
+        mReducer = reducer
 
         // 初始化store dispatch
-        initDispatch();
+        initDispatch()
     }
 
     /**
@@ -118,28 +115,25 @@ public class Store<S extends State> {
      * @param reducer Reducer，Page Store中的Reducer是一个聚合Reducer，无法确定具体类型
      * @param state 专指页面的State
      */
-    Store(@NonNull Reducer reducer, @NonNull S state) {
-        this(reducer);
-        mState = state;
+    internal constructor(@NonNull reducer: Reducer?, @NonNull state: S) : this(reducer) {
+        this.state = state
     }
 
-    private void initDispatch() {
-        final StateGetter<S> stateGetter = () -> {
-            S state;
-
-            state = getState();
-            state.setStateProxy(new StateProxy());
-            return state;
-        };
+    private fun initDispatch() {
+        val stateGetter: StateGetter<S> = StateGetter<S> {
+            val state: S?
+            state = state
+            state!!.setStateProxy(StateProxy())
+            state
+        }
 
         // 如果存在中间件，Store中的Dispatch将在最后执行
-        mDispatch = (action, payload) -> {
+        mDispatch = label@ Dispatch { action, payload ->
             if (isDestroy) {
-                return;
+                return@label
             }
-
-            onDispatch(action, payload, stateGetter);
-        };
+            onDispatch(action, payload, stateGetter)
+        }
     }
 
     /**
@@ -150,30 +144,25 @@ public class Store<S extends State> {
      * @param stateGetter 当前组件的state getter
      */
     @CallSuper
-    @SuppressWarnings("unchecked")
-    protected void onDispatch(Action action, Object payload, StateGetter<S> stateGetter) {
-        State state = mReducer.doAction(stateGetter, action, payload);
-        onStateChanged(state);
+    protected open fun onDispatch(action: Action?, payload: Any?, stateGetter: StateGetter<S>?) {
+        val state: State = mReducer.doAction(stateGetter, action, payload)
+        onStateChanged(state)
     }
 
-    protected final void onStateChanged(State state) {
+    protected fun onStateChanged(state: State?) {
         if (state == null) {
-            return;
+            return
         }
-
-        List<ReactiveProp<Object>> changedPropList = state.getPublicPropChanged();
-        if (changedPropList == null) {
-            return;
-        }
-
-        update(changedPropList);
+        val changedPropList = state.publicPropChanged
+            ?: return
+        update(changedPropList)
     }
 
     /**
      * 用于触发组件状态更新的接口
      * @param changedPropList 当前变化的属性列表
      */
-    protected void update(List<ReactiveProp<Object>> changedPropList) {
+    protected open fun update(changedPropList: List<ReactiveProp<Any?>?>?) {
         // sub class impl
     }
 
@@ -182,20 +171,21 @@ public class Store<S extends State> {
      *
      * @param changeList 当前store中变化的数据
      */
-    void notifySubs(List<ReactiveProp<Object>> changeList) {
+    fun notifySubs(changeList: List<ReactiveProp<Any?>>?) {
         if (isDestroy || changeList == null || changeList.isEmpty()
-                || mListeners == null || mListeners.isEmpty()) {
-            return;
+            || mListeners == null || mListeners!!.isEmpty()
+        ) {
+            return
         }
 
         // 因为一次可能会更新多个属性，这里牺牲一些性能，让每个组件可以一次性收到全部的状态变化
-        for (StoreObserver observer : mListeners) {
-            String token = observer.getToken();
-            List<ReactiveProp<Object>> tempList = checkChangeList(changeList, token);
+        for (observer in mListeners!!) {
+            val token = observer.token
+            val tempList = checkChangeList(changeList, token)
             if (tempList.isEmpty()) {
-                continue;
+                continue
             }
-            observer.onPropChanged(tempList);
+            observer.onPropChanged(tempList)
         }
     }
 
@@ -206,26 +196,27 @@ public class Store<S extends State> {
      * @param token 组件state对应的类名
      * @return 组件变化的属性列表
      */
-    private List<ReactiveProp<Object>> checkChangeList(List<ReactiveProp<Object>> changeList,
-                                                       String token) {
-        List<ReactiveProp<Object>> tempList = new ArrayList<>();
-        for (ReactiveProp<Object> prop : changeList) {
+    private fun checkChangeList(
+        changeList: List<ReactiveProp<Any?>>,
+        token: String
+    ): List<ReactiveProp<Any?>?> {
+        val tempList: MutableList<ReactiveProp<Any?>?> = ArrayList()
+        for (prop in changeList) {
             // 如果组件的属性就在当前变化的列表里，直接加入
-            if (prop.getToken().equals(token)) {
-                tempList.add(prop);
-                continue;
+            if (prop.token == token) {
+                tempList.add(prop)
+                continue
             }
 
             // 如果组件属性没在变化列表里，看当前属性的孩子是否具有此属性
-            ReactiveProp<Object> child = prop.getChild(token);
+            val child = prop.getChild(token)
             if (child != null) {
                 // 首先要同步value
-                child.innerSetter(prop.value());
-                tempList.add(child);
+                child.innerSetter(prop.value())
+                tempList.add(child)
             }
         }
-
-        return tempList;
+        return tempList
     }
 
     /**
@@ -236,59 +227,44 @@ public class Store<S extends State> {
      * @return IDispose 返回一个解除器，方便组件detach的时候进行删除
      */
     @MainThread
-    IDispose observe(StoreObserver storeWatcher) {
+    fun observe(storeWatcher: StoreObserver?): IDispose? {
         if (storeWatcher == null) {
-            return null;
+            return null
         }
-
         if (mListeners == null) {
-            mListeners = new CopyOnWriteArrayList<>();
+            mListeners = CopyOnWriteArrayList()
         }
-        mListeners.add(storeWatcher);
-
-        return () -> mListeners.remove(storeWatcher);
+        mListeners!!.add(storeWatcher)
+        return IDispose { mListeners!!.remove(storeWatcher) }
     }
 
     /**
      * 分发Action，这里只会交给Reducer处理
      * @param action Action
      */
-    public void dispatch(Action action, Object payload) {
+    fun dispatch(action: Action, payload: Any) {
         if (Looper.getMainLooper() == Looper.myLooper()) {
-            dispatchInner(action, payload);
-            return;
+            dispatchInner(action, payload)
+            return
         }
-
-        ReduxManager.getInstance().submitInMainThread(() -> {
-            dispatchInner(action, payload);
-        });
+        ReduxManager.instance.submitInMainThread { dispatchInner(action, payload) }
     }
 
-    private void dispatchInner(Action action, Object payload) {
+    private fun dispatchInner(action: Action, payload: Any) {
         if (isDestroy) {
-            return;
+            return
         }
-        mDispatch.dispatch(action, payload);
-    }
-
-    /**
-     * 获取state，为了防止外部缓存state，控制访问权限，外部只能通过监听的方式观察属性值
-     *
-     * @return S {@link BasePageState}
-     */
-    final S getState() {
-        return mState;
+        mDispatch.dispatch(action, payload)
     }
 
     /**
      * 页面退出时的清理操作
      */
     @CallSuper
-    protected void clear() {
-        isDestroy = true;
+    protected open fun clear() {
+        isDestroy = true
         if (mListeners != null) {
-            mListeners.clear();
+            mListeners!!.clear()
         }
     }
-
 }

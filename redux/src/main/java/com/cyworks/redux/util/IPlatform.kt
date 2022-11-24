@@ -12,8 +12,7 @@ import com.cyworks.redux.permission.PermissionCallback
 
 /**
  * Desc: 处理平台相关的操作，比如activity跳转, 请求权限，关闭容器
- *
- * @author randytu on 2021/6/27
+ * @author randytu
  */
 interface IPlatform {
     /**
@@ -67,7 +66,7 @@ interface IPlatform {
      * @param callback 回调
      */
     fun startActivityForResult(
-        intent: Intent?,
+        intent: Intent,
         requestCode: Int,
         callback: ReceiveResultFragment.ActivityResultCallback?
     )
@@ -80,8 +79,8 @@ interface IPlatform {
      */
     fun requestPermission(
         requestCode: Int,
-        callback: PermissionCallback?,
-        permissions: MutableList<String>
+        permissions: MutableList<String>,
+        callback: PermissionCallback?
     )
 
     /**

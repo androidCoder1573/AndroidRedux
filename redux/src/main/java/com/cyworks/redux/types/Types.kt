@@ -89,7 +89,9 @@ typealias Dispose = () -> Unit
 /**
  * Action 分发器接口
  */
-typealias Dispatch = (action: Action<Any>) -> Unit
+interface Dispatch {
+    fun dispatch(action: Action<Any>);
+}
 
 /**
  * Bus接口, 主要用于处理Page内部的 Effect以及全局Effect
@@ -118,7 +120,7 @@ interface IBus : Dispatch {
      * @param dispatch 每个Bus会持有多个Dispatch，用于处理当前Page下的Effect
      * @return 返回一个反注册器
      */
-    fun registerReceiver(dispatch: Dispatch): Dispose
+    fun registerReceiver(dispatch: Dispatch): Dispose?
 }
 
 /**

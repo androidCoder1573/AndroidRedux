@@ -40,7 +40,7 @@ abstract class State {
     /**
      * Log 组件，组件内共享
      */
-    protected val mLogger: ILogger = ReduxManager.getInstance().logger
+    protected val mLogger: ILogger = ReduxManager.instance.logger
 
    /**
     * 如果当前属性存在屏幕旋转，用此key来标注

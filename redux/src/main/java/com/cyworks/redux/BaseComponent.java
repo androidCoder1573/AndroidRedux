@@ -88,11 +88,11 @@ public abstract class BaseComponent<S extends BaseComponentState> extends LogicC
      * 使用LiveData观察数据，触发UI更新
      */
     final void observe() {
-        if (mEnvironment == null || mObserver == null) {
+        if (environment == null || mObserver == null) {
             return;
         }
 
-        mLiveData.observe(mEnvironment.getLifeCycleProxy().getLifecycleOwner(), mObserver);
+        mLiveData.observe(environment.getLifeCycleProxy().getLifecycleOwner(), mObserver);
     }
 
     @Override
@@ -104,10 +104,10 @@ public abstract class BaseComponent<S extends BaseComponentState> extends LogicC
         mUIMixin.isBind = true;
 
         mConnector = connector;
-        mEnvironment = environment;
+        environment = environment;
 
         // 获取启动参数
-        LifeCycleProxy lifeCycleProxy = mEnvironment.getLifeCycleProxy();
+        LifeCycleProxy lifeCycleProxy = environment.getLifeCycleProxy();
         mBundle = lifeCycleProxy.getBundle();
 
         // 添加生命周期观察
@@ -125,9 +125,9 @@ public abstract class BaseComponent<S extends BaseComponentState> extends LogicC
     @SuppressLint("ResourceType")
     @Override
     protected final IPlatform createPlatform() {
-        LifeCycleProxy lifeCycleProxy = mEnvironment.getLifeCycleProxy();
+        LifeCycleProxy lifeCycleProxy = environment.getLifeCycleProxy();
 
-        Platform platform = new Platform(lifeCycleProxy, mEnvironment.getRootView());
+        Platform platform = new Platform(lifeCycleProxy, environment.getRootView());
         if (mConnector != null) {
             platform.setStubId(
                     mConnector.getViewContainerIdForV(),
@@ -161,12 +161,12 @@ public abstract class BaseComponent<S extends BaseComponentState> extends LogicC
         super.clear();
         mLiveData.removeObserver(mObserver);
 
-        if (mContext != null) {
-            mContext.destroy();
+        if (context != null) {
+            context.destroy();
         }
 
         mUIMixin.clear();
-        mEnvironment = null;
+        environment = null;
     }
 
     @Override
@@ -206,7 +206,7 @@ public abstract class BaseComponent<S extends BaseComponentState> extends LogicC
         observe();
 
         // 4、发送onCreate Effect
-        mContext.onLifecycle(LifeCycleAction.ACTION_ON_CREATE);
+        context.onLifecycle(LifeCycleAction.ACTION_ON_CREATE);
 
         // 打印初始化的耗时
         mLogger.d(ILogger.PERF_TAG, "component: <"
@@ -241,28 +241,28 @@ public abstract class BaseComponent<S extends BaseComponentState> extends LogicC
 
         @OnLifecycleEvent(Lifecycle.Event.ON_START)
         public void onStart() {
-            mComponent.mContext.onLifecycle(LifeCycleAction.ACTION_ON_START);
+            mComponent.context.onLifecycle(LifeCycleAction.ACTION_ON_START);
         }
 
         @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
         public void onResume() {
-            mComponent.mContext.onLifecycle(LifeCycleAction.ACTION_ON_RESUME);
+            mComponent.context.onLifecycle(LifeCycleAction.ACTION_ON_RESUME);
         }
 
         @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
         public void onPause() {
-            mComponent.mContext.onLifecycle(LifeCycleAction.ACTION_ON_PAUSE);
+            mComponent.context.onLifecycle(LifeCycleAction.ACTION_ON_PAUSE);
         }
 
         @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
         public void onStop() {
-            mComponent.mContext.onLifecycle(LifeCycleAction.ACTION_ON_STOP);
+            mComponent.context.onLifecycle(LifeCycleAction.ACTION_ON_STOP);
         }
 
         @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
         public void onDestroy() {
             // 这里的调用顺序不能乱
-            mComponent.mContext.onLifecycle(LifeCycleAction.ACTION_ON_DESTROY);
+            mComponent.context.onLifecycle(LifeCycleAction.ACTION_ON_DESTROY);
             mComponent.clear();
         }
     }
