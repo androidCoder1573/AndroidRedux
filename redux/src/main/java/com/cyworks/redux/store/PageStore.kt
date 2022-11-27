@@ -2,7 +2,6 @@ package com.cyworks.redux.store
 
 import android.os.SystemClock
 import android.view.Choreographer
-import androidx.annotation.MainThread
 import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.State
 import com.cyworks.redux.prop.ReactiveProp
@@ -32,7 +31,7 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
     /**
      * 是否正在修改State，用于规定刷新时机
      */
-    protected var isModifyState = false
+    private var isModifyState = false
 
     /**
      * 注册的观察者列表，用于分发store的变化
@@ -56,6 +55,7 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
     /**
      * 用于标记监控线程是否运行
      */
+    @Volatile
     private var isThreadRun = true
 
     /**
@@ -115,6 +115,16 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
         }
     }
 
+    private fun fireUpdateUI() {
+        for (uiUpdater in uiUpdaterListeners) {
+            if (!isUIUpdateRun) {
+                break
+            }
+            uiUpdater.onNewFrameCome()
+        }
+        isNeedUpdate = false
+    }
+
     /**
      * 创建一个页面级别的store
      */
@@ -149,24 +159,43 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
     }
 
     /**
+     * 子组件注册进来，用于中间件获取state的时候使用
+     * @param getter 当前组件的State 的getter
+     * @return 一个反注册函数
+     */
+    internal fun addStateGetter(getter: StateGetter<State>?): Dispose? {
+        if (getter == null) {
+            return null
+        }
+        if (stateGetters == null) {
+            stateGetters = CopyOnWriteArrayList<StateGetter<State>>()
+        }
+        stateGetters!!.add(getter)
+        return { stateGetters!!.remove(getter) }
+    }
+
+    /**
      * 如果是UI组件，需要接收Vsync信号进行刷新对齐，框架内部注册，开发者不需要关心
      * @param uiUpdater UIUpdater
      * @return 一个解注册器
      */
-    @MainThread
-    fun addUIUpdater(uiUpdater: UIUpdater?): Dispose? {
-        if (uiUpdater == null) {
-            return null
-        }
-
+    internal fun addUIUpdater(uiUpdater: UIUpdater): Dispose {
         uiUpdaterListeners.add(uiUpdater)
         return { uiUpdaterListeners.remove(uiUpdater) }
+    }
+
+    internal fun markNeedUpdate() {
+        if (isNeedUpdate) {
+            // 解决vsync到来时时，isNeedUpdate被设置成true导致部分界面无法及时更新
+            ReduxManager.instance.submitInMainThread { isNeedUpdate = true }
+        }
+        isNeedUpdate = true
     }
 
     /**
      * 当Page容器切到后台之后，停止更新UI操作
      */
-    fun onPageHidden() {
+    internal fun onPageHidden() {
         isPageVisible = false
         Choreographer.getInstance().removeFrameCallback(frameCallback)
     }
@@ -174,23 +203,13 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
     /**
      * 当Page容器回到前台之后，启动UI更新操作，通过接收vsync信号，注册统一刷新逻辑
      */
-    fun onPageVisible() {
+    internal fun onPageVisible() {
         if (isPageVisible) {
             return
         }
         Choreographer.getInstance().removeFrameCallback(frameCallback)
         isPageVisible = true
         Choreographer.getInstance().postFrameCallback(frameCallback)
-    }
-
-    private fun fireUpdateUI() {
-        for (uiUpdater in uiUpdaterListeners) {
-            if (!isUIUpdateRun) {
-                break
-            }
-            uiUpdater.onNewFrameCome()
-        }
-        isNeedUpdate = false
     }
 
     override fun update(changedPropList: List<ReactiveProp<Any>>) {
@@ -201,13 +220,10 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
         // 更新state
         for (prop in changedPropList) {
             val value = prop.value()
-
             // 寻找根属性
             val tempProp = prop.rootProp
-
             // 更新根属性的值
             tempProp.innerSetter(value)
-
             // 将根属性添加到变化列表中
             finalList.add(tempProp)
         }
@@ -219,34 +235,9 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
 
         // 通知组件进行状态更新
         notifySubs(finalList)
-        logger.d(
-            ILogger.PERF_TAG, "page store update consumer: "
+        logger.d(ILogger.PERF_TAG, "page store update consumer: "
                     + (System.currentTimeMillis() - time)
         )
-    }
-
-    /**
-     * 子组件注册进来，用于中间件获取state的时候使用
-     * @param getter 当前组件的State 的getter
-     * @return 一个反注册函数
-     */
-    fun setStateGetter(getter: StateGetter<State>?): Dispose? {
-        if (getter == null) {
-            return null
-        }
-        if (stateGetters == null) {
-            stateGetters = CopyOnWriteArrayList<StateGetter<State>>()
-        }
-        stateGetters!!.add(getter)
-        return { stateGetters!!.remove(getter) }
-    }
-
-    fun markNeedUpdate() {
-        if (isNeedUpdate) {
-            // 解决vsync到来时时，isNeedUpdate被设置成true导致部分界面无法及时更新
-            ReduxManager.instance.submitInMainThread { isNeedUpdate = true }
-        }
-        isNeedUpdate = true
     }
 
     public override fun clear() {

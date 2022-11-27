@@ -18,16 +18,13 @@ import com.cyworks.redux.util.ThreadUtil
  * 给开发这一个选择，可以使用action来驱动全局store，
  * 也可以不使用，直接通过面向对象的方式操作
  */
-abstract class BaseGlobalStore<S : State> : Store<S> {
+abstract class GlobalStore<S : State>(state: S) : Store<S>(state) {
     /**
      * 全局store扩展的内部effect
      */
     private var effect: Effect<S>? = null
 
-    /**
-     * 构造器，用于初始化State/Effect
-     */
-    constructor() : super() {
+    init {
         val effectCollect: EffectCollect<S> = EffectCollect()
         addEffects(effectCollect)
         effect = effectCollect.effect
@@ -37,7 +34,7 @@ abstract class BaseGlobalStore<S : State> : Store<S> {
 
     /**
      * 创建State
-     * @return S [BasePageState]
+     * @return S [State]
      */
     abstract fun onCreateState(): S
 
@@ -82,8 +79,9 @@ abstract class BaseGlobalStore<S : State> : Store<S> {
      */
     fun updateState(reducer: Reducer<S>) {
         ThreadUtil.checkMainThread("update state must be called in main thread!")
-        state!!.setStateProxy(StateProxy())
-        val newState: S = (reducer.update(state!!)) as S
+        state.setStateProxy(StateProxy())
+        val newState = (reducer.update(state))
         onStateChanged(newState)
+        state.setStateProxy(null)
     }
 }

@@ -38,7 +38,7 @@ fun interface Reducer<S : State> {
      * @param state S, 上一次的state
      */
     @MainThread
-    fun update(state: S)
+    fun update(state: S): S
 }
 
 /**

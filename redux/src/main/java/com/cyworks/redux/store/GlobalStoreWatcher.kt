@@ -15,7 +15,7 @@ class GlobalStoreWatcher<CS : State> internal constructor(
     /**
      * 内部维护组件对全局store的依赖，减少开发者的工作量
      */
-    private val globalStoreBinderMap = HashMap<BaseGlobalStore<State>, IBindGlobalState<CS, State>>()
+    private val globalStoreBinderMap = HashMap<GlobalStore<State>, IBindGlobalState<CS, State>>()
 
     /**
      * 保存dispose，用于清理操作
@@ -38,7 +38,7 @@ class GlobalStoreWatcher<CS : State> internal constructor(
      * @param store 当前要关联的全局store
      * @param binder 传入具体的关联方法
      */
-    fun watch(store: BaseGlobalStore<State>, binder: IBindGlobalState<CS, State>) {
+    fun watch(store: GlobalStore<State>, binder: IBindGlobalState<CS, State>) {
         globalStoreBinderMap[store] = binder
     }
 
@@ -65,7 +65,7 @@ class GlobalStoreWatcher<CS : State> internal constructor(
      * @param store 全局store
      * @param token 依赖了此全局Store的组件的token
      */
-    private fun batchStoreObserver(store: BaseGlobalStore<*>?, token: String?) {
+    private fun batchStoreObserver(store: GlobalStore<*>?, token: String?) {
         if (store == null || token == null) {
             return
         }
@@ -95,7 +95,7 @@ class GlobalStoreWatcher<CS : State> internal constructor(
          * @param store 依赖的全局store
          * @param globalState 全局store的state
          */
-        fun bind(childState: CS, store: BaseGlobalStore<State>, globalState: GS)
+        fun bind(childState: CS, store: GlobalStore<State>, globalState: GS)
     }
 
     /**
