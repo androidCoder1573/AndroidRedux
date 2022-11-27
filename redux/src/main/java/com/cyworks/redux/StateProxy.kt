@@ -12,10 +12,8 @@ import java.util.ArrayList
  *
  * 本类的实例会在执行Reducer期间注入到具体的State对象中 [State],
  * 这样做的主要目的是防止用户在非Reducer中更新UI属性，导致框架无法捕获属性变更。
- *
- * @author randytu on 2021/1/10
  */
-internal class StateProxy {
+class StateProxy {
     /**
      * 每次执行reducer并不一定只更新一个属性， 用一个表来记录哪些数据发生了变化，
      * 当store更新界面的时候会统一提取这个表中的数据，进行统一更新

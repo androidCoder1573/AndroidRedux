@@ -8,7 +8,6 @@ import com.cyworks.redux.types.IPropChanged
 /**
  * Desc: 用于观察组件中某一个属性的类;
  * 有一种情况需要这些观察者：比如需要监听某个状态改变然后做一些逻辑
- * @author randytu
  */
 class PropWatcher<S : State> {
     /**

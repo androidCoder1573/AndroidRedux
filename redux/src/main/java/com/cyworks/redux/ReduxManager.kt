@@ -11,8 +11,6 @@ import java.util.concurrent.Future
  * 我们限制了广播接收者只能是page，防止了组件间直接通过广播进行交互。
  *
  * 2、提供日志实例，方便调试查看log。
- *
- * @author randytu on 2020/6/5
  */
 class ReduxManager private constructor() {
     /**

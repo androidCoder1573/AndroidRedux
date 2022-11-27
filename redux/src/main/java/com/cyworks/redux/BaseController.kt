@@ -8,7 +8,6 @@ import com.cyworks.redux.util.IPlatform
 
 /**
  * Desc: 默认的逻辑控制类，开发者继承此类用于实现
- * @author randytu
  */
 class BaseController<S : State> {
     /**

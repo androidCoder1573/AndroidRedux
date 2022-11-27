@@ -8,8 +8,6 @@ import java.util.HashMap
  * 将子组件以及对应的Connector组合成一个Dependant，用于在父组件中表示依赖的子组件
  *
  * PS: 父组件的State，CS：当前组件的State
- *
- * @author randytu on 2020/7/21
  */
 class Dependant<CS : BaseComponentState?, PS : State?>(
     /**

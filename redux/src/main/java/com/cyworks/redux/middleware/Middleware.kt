@@ -5,8 +5,6 @@ import com.cyworks.redux.types.Dispatch
 
 /**
  * Desc: MiddleWare, 用于对Reducer运行过程红进行一些拦截
- *
- * @author randytu on 2020/8/23
  */
 interface Middleware {
     /**

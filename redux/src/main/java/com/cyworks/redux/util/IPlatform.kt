@@ -12,7 +12,6 @@ import com.cyworks.redux.permission.PermissionCallback
 
 /**
  * Desc: 处理平台相关的操作，比如activity跳转, 请求权限，关闭容器
- * @author randytu
  */
 interface IPlatform {
     /**

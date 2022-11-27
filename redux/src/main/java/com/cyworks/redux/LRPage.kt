@@ -19,14 +19,6 @@ import android.view.View
  *
  * 如何进行切换？
  * [LRPage.requestOrientationChange] 此方法需要在收到onConfigurationChanged时调用
- * <pre>
- * public void onConfigurationChanged(@NonNull Configuration newConfig) {
- * super.onConfigurationChanged(newConfig);
- * mPage.requestOrientationChange(newConfig);
- * }
-</pre> *
- *
- * @author randytu on 2020/8/5
  */
 abstract class LRPage<S : BasePageState?> : LogicPage<S> {
     /**

@@ -11,8 +11,6 @@ import java.util.concurrent.Semaphore
  * Desc: 页面的store，为page服务，相当于在store增加属性修改的权限控制。
  *
  * 增加统一刷新时机，优化刷新性能。
- *
- * @author randytu on 2021/2/5
  */
 internal class PageStore<S : BasePageState?>(
     @NonNull reducer: Reducer<State?>?,

@@ -2,7 +2,6 @@ package com.cyworks.redux.util
 
 /**
  * Desc: Log接口，需要开发者注入自己实现的log组件
- * @author randytu
  */
 interface ILogger {
     /**

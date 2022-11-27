@@ -4,7 +4,6 @@ import com.cyworks.redux.State
 
 /**
  * Desc: 当Atom对应的Key发生变化时，触发对应UI的更新方法
- * @author randytu
  */
 fun interface OnAtomChanged<S : State> {
     /**

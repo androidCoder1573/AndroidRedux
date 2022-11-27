@@ -14,8 +14,6 @@ import java.util.HashMap
  * 3、设置UI组件的View的显示/隐藏以及绑定/删除操作;
  *
  * todo: 可以考虑将此类让开发者实现，更加定制化的操作UI
- *
- * @author randytu on 2021/5/25
  */
 internal class ComponentUIMixin<S : BaseComponentState?>(
     /**

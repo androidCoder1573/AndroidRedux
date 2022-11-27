@@ -5,7 +5,6 @@ import java.lang.RuntimeException
 
 /**
  * Desc: thread 辅助类
- * @author randytu
  */
 object ThreadUtil {
     /**

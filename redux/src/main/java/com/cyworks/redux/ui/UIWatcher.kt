@@ -7,7 +7,6 @@ import java.util.HashMap
 
 /**
  * Desc: 用于UI Updater中收集Atom，将UI更新颗粒化。
- * @author randytu
  */
 class UIWatcher<S : State> {
     /**

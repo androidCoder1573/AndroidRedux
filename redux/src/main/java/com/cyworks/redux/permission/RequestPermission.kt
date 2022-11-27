@@ -9,8 +9,6 @@ import androidx.core.content.ContextCompat
 /**
  * 对外曝光的类，用于请求权限，
  * 比如在Effect中需要请求某个权限，而又没有activity上下文的时候，这种方式是可取的。
- *
- * @author randytu
  */
 class RequestPermission private constructor() : PermissionListener {
     /**

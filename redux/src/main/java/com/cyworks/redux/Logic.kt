@@ -11,8 +11,6 @@ import com.tencent.redux.effect.Effect
  * 在Effect更新。当然，这些对象最终会保持在state中，不过这些对象不能使用ReactiveProp来包裹。
  *
  * 针对复杂逻辑对象，内部可能有状态，建议使用ReduxObject来包裹。
- *
- * @author randytu
  */
 abstract class Logic<S : State?>(bundle: Bundle) : ILogic<S> {
     /**

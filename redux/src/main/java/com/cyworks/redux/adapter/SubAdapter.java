@@ -8,8 +8,6 @@ import com.tencent.redux.action.Action;
 
 /**
  * Desc: 如果RecyclerView存在多层嵌套，那么这里其实还是需要子Adapter，子Adapter必须存在一个父亲
- *
- * @author randytu on 2020/10/18
  */
 public abstract class SubAdapter implements IAdapter {
     /**

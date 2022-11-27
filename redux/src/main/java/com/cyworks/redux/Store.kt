@@ -54,8 +54,6 @@ import java.util.concurrent.CopyOnWriteArrayList
  * store为什么不提供reset方法？
  * 将State重置，这种事情其实没必要放到框架里来做，每个组件内部有私有数据，放在框架里统一处理不是很好，
  * 建议的方式是，页面做一个公有状态比如reset，所有组件订阅这个状态，做清理的操作。
- *
- * @author randytu on 2020/7/18
  */
 open class Store<S : State?> {
     /**

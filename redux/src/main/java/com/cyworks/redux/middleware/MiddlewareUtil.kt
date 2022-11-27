@@ -4,7 +4,6 @@ import com.cyworks.redux.types.Dispatch
 
 /**
  * Desc: Middleware相关的辅助方法
- * @author randytu
  */
 object MiddlewareUtil {
     /**

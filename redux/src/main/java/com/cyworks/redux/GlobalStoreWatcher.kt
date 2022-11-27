@@ -6,8 +6,6 @@ import java.util.HashMap
 
 /**
  * Desc: 全局Store观察器，会在初始化时收集全局store中的数据并绑定观察者。
- *
- * @author randytu on 2020/12/13
  */
 class GlobalStoreWatcher<CS : BaseComponentState?> internal constructor(
     callback: IPropsChanged,

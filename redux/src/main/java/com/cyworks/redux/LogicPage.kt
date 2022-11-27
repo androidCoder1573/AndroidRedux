@@ -17,8 +17,6 @@ import java.util.concurrent.Future
  *
  * 针对组件间交互：
  * PageBus完全隔离掉子组件发送app级别的effect。
- *
- * @author randytu on 2021/6/27
  */
 abstract class LogicPage<S : BasePageState?>(@NonNull proxy: LifeCycleProxy) :
     Logic<S>(proxy.getBundle()) {

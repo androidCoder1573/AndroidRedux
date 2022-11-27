@@ -11,9 +11,8 @@ import java.util.ArrayList
  *
  * reudx bus的设计思路：每个bus都有共同的父亲，父亲会保存多个孩子。
  * 每个页面只有一个DispatchBus。
- * reudx bus理论上是一个二级结构，因为整个APP的结构是全局Store + Page，理论上没有三级Page
- *
- * @author randytu on 2020/6/5
+ * reudx bus理论上是一个二级结构，因为整个APP的结构是全局Store + Page，
+ * 理论上没有三级Page
  */
 class DispatchBus internal constructor() : IBus {
     /**

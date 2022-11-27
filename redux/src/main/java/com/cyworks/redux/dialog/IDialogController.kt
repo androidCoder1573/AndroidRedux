@@ -3,8 +3,8 @@ package com.cyworks.redux.dialog
 import android.view.View
 
 /**
- * Desc: 框架提供给外部的对话框接口，内部有唯一实现，主要目的是提供组件的UI以及对话框销毁事件
- * @author randytu
+ * Desc: 框架提供给外部的对话框接口，内部有唯一实现，
+ * 主要目的是提供组件的UI以及对话框销毁事件
  */
 interface IDialogController {
     /**

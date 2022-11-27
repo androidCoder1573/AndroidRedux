@@ -5,9 +5,8 @@ import com.tencent.redux.beans.UIChangedBean
 import java.util.ArrayList
 
 /**
- * Desc: 一个UI组件的基类，主要针对组件的显示/隐藏，屏幕方向切换做了一些特殊处理
- *
- * @author randytu on 2021/4/30
+ * Desc: 一个UI组件的基类，主要针对组件的显示/隐藏，
+ * 屏幕方向切换做了一些特殊处理
  */
 abstract class LRComponent<S : BaseComponentState?>(lazyBindUI: Boolean) :
     BaseComponent<S>(lazyBindUI) {

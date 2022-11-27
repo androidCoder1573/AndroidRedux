@@ -8,7 +8,6 @@ import java.util.*
 
 /**
  * 权限请求代理Activity, 目前是通过启动一个无界面的activity来操作的，后续准备使用androidx进行优化
- * @author randytu
  */
 class ProxyPermissionActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {

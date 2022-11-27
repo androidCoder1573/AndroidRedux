@@ -8,8 +8,6 @@ import com.cyworks.redux.types.DepProps
  * 也即：一个UI只能绑定到对应的一个Atom上。
  *
  * 更新规则: 一块UI可能依赖一个或多个属性，当依赖的属性有任何一个变化，都会触发某块UI更新。
- *
- * @author randytu
  */
 class Atom<S : State> {
     /**

@@ -4,8 +4,6 @@ import com.tencent.redux.state.StateChangeForUI
 
 /**
  * Desc: 通过建造者模式创建一个ReduxContext.
- *
- * @author randytu on 2020/12/15
  */
 class ReduxContextBuilder<S : State?> {
     /**

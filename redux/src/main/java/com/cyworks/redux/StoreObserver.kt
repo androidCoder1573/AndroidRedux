@@ -5,8 +5,6 @@ import com.tencent.redux.prop.IPropsChanged
 /**
  * Desc: 用于监听Store的变化, 通过ReduxContext注入到Store中[ReduxContext],
  * 框架内部负责创建StoreObserver，外部不可见。
- *
- * @author randytu on 2021/4/29
  */
 class StoreObserver(@NonNull cb: IPropsChanged, token: String) {
     /**

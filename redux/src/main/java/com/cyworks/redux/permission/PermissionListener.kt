@@ -2,7 +2,6 @@ package com.cyworks.redux.permission
 
 /**
  * 权限请求结果listener，用于直接对接Activity
- * @author randytu
  */
 interface PermissionListener {
     /**

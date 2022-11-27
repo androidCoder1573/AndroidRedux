@@ -7,7 +7,6 @@ import java.util.concurrent.Executor
 
 /**
  * Desc: 主线程Executor
- * @author randytu
  */
 class MainThreadExecutor : Executor {
     /**

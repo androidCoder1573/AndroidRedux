@@ -11,9 +11,8 @@ import com.cyworks.redux.types.Interceptor
  * 此时只能用组件自己的ReduxContext来转发，因此需要这样包装一层。
  *
  * interceptor: 对于某个Action来说，要拦截的拦截器实现;
- * provider: 当前组件对应的Context的getter,因为需要ReduxContext的时候，可能还没有创建ReduxContext;
- *
- * @author randytu
+ * provider: 当前组件对应的Context的getter
+ * 因为需要ReduxContext的时候，可能还没有创建ReduxContext;
  */
 data class InterceptorBean<S: State>(
     var interceptor: Interceptor<S>? = null,

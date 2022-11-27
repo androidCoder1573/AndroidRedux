@@ -5,7 +5,6 @@ import com.cyworks.redux.ReactiveProp
 
 /**
  * Desc: 将变化的组件状态封装成一个对象，方便使用LiveData进行观察
- * @author randytu
  */
 class ChangedState<S : State> {
     /**

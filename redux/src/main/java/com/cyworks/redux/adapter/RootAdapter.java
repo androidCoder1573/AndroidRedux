@@ -30,8 +30,6 @@ import com.tencent.redux.state.StateChangeForUI;
  *
  * 框架不再提供具体的Adapter实现，将具体的Adapter实现跟框架分离开来，
  * 开发者可以注入自己的列表Adapter实现，对开发者来说，实现起来更灵活，框架的外部依赖也会减少。
- *
- * @author randytu on 2020/10/18
  */
 public abstract class RootAdapter<S extends BaseComponentState> extends LogicComponent<S>
         implements IAdapter {

@@ -20,8 +20,6 @@ import java.util.List;
  * 因此将Adapter变相设计成为一个LRLogic，让Adapter本身变成响应式的Redux Object，
  * 这样就能很好的融入整个框架，但是对Adapter做了限制：
  * 一个组件只能设置一个列表型UI，目的是让组件的粒度更加细致。
- *
- * @author randytu on 2020/8/2
  */
 public class DependentCollect<PS extends BaseState> {
     /**

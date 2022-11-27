@@ -12,8 +12,6 @@ import java.util.HashMap;
  * INSTALL_EXTRA_FEATURE_ACTION{@link com.tencent.redux.action.InnerActions}
  *
  * 组件通过此结构封装。
- *
- * @author randytu on 2021/2/23
  */
 public final class ExtraDependants<S extends BasePageState> {
     /**

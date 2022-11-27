@@ -9,7 +9,6 @@ import androidx.lifecycle.ViewModelStore
 
 /**
  * Desc: 代理Activity/Fragment的 Lifecycle
- * @author randytu
  */
 interface LifeCycleProxy {
     /**

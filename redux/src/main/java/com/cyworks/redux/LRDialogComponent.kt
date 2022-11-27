@@ -8,9 +8,8 @@ import java.util.ArrayList
 /**
  * Desc: 对话框组件基类，扩展了打开对话框的功能，控制了初始化的一些特殊操作。
  *
- * note: 如果对话框本身功能比较复杂，还是建议使用Page来实现，防止单一组件功能过多。
- *
- * @author randytu on 2021/5/1
+ * note: 如果对话框本身功能比较复杂，还是建议使用Page来实现,
+ * 防止单一组件功能过多。
  */
 abstract class LRDialogComponent<S : BaseComponentState?> : BaseComponent<S>(true) {
     /**

@@ -6,7 +6,6 @@ import com.cyworks.redux.State
 
 /**
  * Desc: 用于加载组件的布局/收集更新组件UI的接口
- * @author randytu
  */
 interface ViewModule<S : State> {
     /**

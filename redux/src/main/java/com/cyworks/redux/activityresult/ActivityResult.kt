@@ -7,8 +7,6 @@ import android.content.Intent
  * Desc:当在Effect中通过startActivityForResult打开新页面时，需要获取结果，
  * 这样就会导致在原Activity中的onResultActivity中处理大量不相关的逻辑，
  * 这些逻辑可以通过本类内聚到具体的Effect中，实现Activity业务代码解耦。
- *
- * @author randytu
  */
 object ActivityResult {
     private const val TAG = "Fragment_ActivityResult"

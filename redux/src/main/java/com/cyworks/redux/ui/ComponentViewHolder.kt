@@ -6,7 +6,6 @@ import androidx.annotation.IdRes
 
 /**
  * Desc: 用于存放当前组件的View的容器
- * @author randytu
  */
 class ComponentViewHolder(val rootView: View) {
     /**

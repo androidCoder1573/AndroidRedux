@@ -7,7 +7,6 @@ import com.cyworks.redux.types.Dispatch
 
 /**
  * Desc: 保存当前组件所需要的一些环境信息
- * @author randytu
  */
 class Environment private constructor() {
     /**

@@ -7,8 +7,8 @@ import com.cyworks.redux.lifecycle.LifeCycleAction
 import com.cyworks.redux.types.Effect
 
 /**
- * Desc: Effect收集器，用于外部配置组件的Effect, 内部会将一个组件对应的Effect合并成一个
- * @author randytu
+ * Desc: Effect收集器，用于外部配置组件的Effect,
+ * 内部会将一个组件对应的Effect合并成一个
  */
 class EffectCollect<S : State> {
     /**

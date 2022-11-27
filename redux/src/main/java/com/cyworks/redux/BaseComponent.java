@@ -31,8 +31,6 @@ import com.tencent.redux.util.Platform;
  * Component支持UI懒加载, 组件UI懒加载：
  * 组件初始化过程中，绑定UI是整个环节中最耗时的操作，如果能延后UI绑定操作，能一定程度上缓解初始化压力。
  * 框架提供了{@link BaseComponentState#isShowUI} 来懒加载UI界面，开发者可以自己控制UI展示的时机。
- *
- * @author randytu on 2021/5/3
  */
 public abstract class BaseComponent<S extends BaseComponentState> extends LogicComponent<S> {
     /**

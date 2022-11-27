@@ -7,10 +7,8 @@ import com.tencent.redux.action.Action
  *
  * 主要是因为store不具备ReduxContext，导致无法发送处理Effect的Action。
  *
- * 给开发这一个选择，可以使用action来驱动全局store，也可以不使用，直接通过面向对象的方式操作，
- * 可见方法：
- *
- * @author randytu on 2020/11/10
+ * 给开发这一个选择，可以使用action来驱动全局store，
+ * 也可以不使用，直接通过面向对象的方式操作
  */
 abstract class BaseGlobalStore<S : State?> : Store<S> {
     /**

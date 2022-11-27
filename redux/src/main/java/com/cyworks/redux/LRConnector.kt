@@ -12,8 +12,6 @@ import java.util.HashMap
  *
  * S：当前组件的State类型；
  * PS：父组件的State类型；
- *
- * @author randytu on 2020/8/2
  */
 abstract class LRConnector<S : BaseComponentState?, PS : State?> {
     /**

@@ -2,7 +2,6 @@ package com.cyworks.redux.permission
 
 /**
  * 自定义的权限请求结果的callback
- * @author randytu
  */
 interface PermissionCallback {
     /**

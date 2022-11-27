@@ -8,8 +8,6 @@ import java.util.concurrent.Future
  * Desc: Live-Redux框架是一个UI/逻辑完全分离的框架，LogicComponent内只针对状态管理，没有任何逻辑操作。
  *
  * 目的：实现逻辑层测试，剥离出UI之后更容易构建整个逻辑层测试。
- *
- * @author randytu on 2021/6/27
  */
 abstract class LogicComponent<S : BaseComponentState?>(bundle: Bundle?) : Logic<S>(bundle) {
     /**

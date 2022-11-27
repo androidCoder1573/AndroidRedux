@@ -16,8 +16,6 @@ import java.util.HashMap
  * 5、维护了平台相关的一些操作，比如权限控制，启动activity等。
  *
  * 通过Context封装的方式，让组件对store的操作更加内聚。
- *
- * @author randytu
  */
 class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<S>) {
     /**

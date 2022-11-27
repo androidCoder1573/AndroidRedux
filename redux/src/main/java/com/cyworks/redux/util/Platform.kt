@@ -18,7 +18,6 @@ import com.cyworks.redux.permission.RequestPermission
 
 /**
  * Desc: 框架内部实现的IPlatform，借助ReduxContext实现
- * @author randytu
  */
 class Platform(proxy: LifeCycleProxy, root: View) : IPlatform {
     /**

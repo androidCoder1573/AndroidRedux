@@ -5,7 +5,6 @@ import com.cyworks.redux.action.ActionType
 
 /**
  * Desc: Life Cycle Action
- * @author randytu
  */
 object LifeCycleAction {
     // 这里要把生命周期定义成私Action有的原因是：每个组件都能拿到当前页面的生命周期，不需要进行广播
