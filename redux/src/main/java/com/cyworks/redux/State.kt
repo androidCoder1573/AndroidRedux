@@ -2,6 +2,7 @@ package com.cyworks.redux
 
 import android.content.res.Configuration
 import com.cyworks.redux.State.Reactive
+import com.cyworks.redux.prop.ReactiveProp
 import com.cyworks.redux.util.ILogger
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.properties.ReadWriteProperty
@@ -20,12 +21,17 @@ typealias PropertySet<T> = (value: T) -> Unit
  */
 abstract class State {
     /**
-     * 用于存放组件所用的数据的Map, 方便框架进行修改数据，框架内部创建并使用，开发者无感知。
-     * key: 某个属性对应的key
+     * 用于存放组件响应式数据的Map, 框架内部创建并使用，开发者无感知。
+     * key: 某个属性对应的key；
      * value: PropValue, 某个属性对应的值；
      */
     private val dataMap = ConcurrentHashMap<String, ReactiveProp<Any>>()
 
+    /**
+     * 用于存放组件响应式数据的Map, 方便框架进行修改数据，开发者无感知。
+     * key: 某个属性对应的key；
+     * value: 修改属性的函数；
+     */
     private val propertyMap = HashMap<String, PropertySet<Any>>()
 
     /**
@@ -63,7 +69,7 @@ abstract class State {
     /**
      * 当前state的类型，用于后续属性依赖的来源
      */
-    var stateType: StateType? = null
+    private var stateType: StateType? = null
 
     /**
      * Log 组件，组件内共享
@@ -127,8 +133,12 @@ abstract class State {
     /**
      * 设置当前State的类型，会在组件的onCreateState之后设置，框架内调用
      */
-    internal fun setType(type: StateType) {
-        this.stateType = type
+    internal fun setStateType(type: StateType) {
+        stateType = type
+    }
+
+    internal fun getStateType(): StateType? {
+        return stateType
     }
 
     /**
@@ -197,7 +207,7 @@ abstract class State {
     /**
      * 由于目前是主动依赖属性，所以退出时，需要将依赖删除
      */
-    fun clear() {
+    open fun clear() {
         detach()
         dataMap.clear()
         propertyMap.clear()
@@ -235,7 +245,7 @@ abstract class State {
             if (dataMap[key] == null) {
                 propertyMap[key] = set as PropertySet<Any>
                 val prop = ReactiveProp(value, this@State);
-                prop.key = key
+                prop.setKey(key)
                 dataMap[key] = prop
             }
         }
@@ -279,10 +289,7 @@ abstract class State {
         private const val DEPENDANT_STATE_FLAG = 1
 
         @JvmStatic
-        fun <S : State?> copyState(state: S?): S? {
-            if (state == null) {
-                return null
-            }
+        fun <S : State> copyState(state: S): S {
             state.setStateProxy(null)
             return state
         }

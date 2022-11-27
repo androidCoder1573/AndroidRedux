@@ -1,5 +1,7 @@
 package com.cyworks.redux
 
+import com.cyworks.redux.store.PageStore
+import com.cyworks.redux.store.StoreObserver
 import com.cyworks.redux.types.Dispose
 import java.util.ArrayList
 import java.util.HashMap

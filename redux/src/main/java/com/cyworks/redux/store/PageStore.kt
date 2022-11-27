@@ -1,9 +1,15 @@
-package com.cyworks.redux
+package com.cyworks.redux.store
 
 import android.os.SystemClock
-import android.support.annotation.MainThread
-import java.util.ArrayList
-import java.util.HashMap
+import android.view.Choreographer
+import androidx.annotation.MainThread
+import com.cyworks.redux.ReduxManager
+import com.cyworks.redux.State
+import com.cyworks.redux.prop.ReactiveProp
+import com.cyworks.redux.types.Dispose
+import com.cyworks.redux.types.StateGetter
+import com.cyworks.redux.types.UIUpdater
+import com.cyworks.redux.util.ILogger
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Semaphore
 
@@ -12,19 +18,16 @@ import java.util.concurrent.Semaphore
  *
  * 增加统一刷新时机，优化刷新性能。
  */
-internal class PageStore<S : BasePageState?>(
-    @NonNull reducer: Reducer<State?>?,
-    @NonNull state: S
-) : Store<S>(reducer, state) {
+class PageStore<S : State>(state: S) : Store<S>(state) {
     /**
      * 保存UI更新listener
      */
-    private val mUIUpdaterListeners = CopyOnWriteArrayList<UIUpdater>()
+    private val uiUpdaterListeners = CopyOnWriteArrayList<UIUpdater>()
 
     /**
      * 上次刷新的时间，防止刷新过快
      */
-    private var mLastUpdateUITime: Long = 0
+    private var lastUpdateUITime: Long = 0
 
     /**
      * 是否正在修改State，用于规定刷新时机
@@ -34,14 +37,15 @@ internal class PageStore<S : BasePageState?>(
     /**
      * 注册的观察者列表，用于分发store的变化
      */
-    private var mStateGetters: CopyOnWriteArrayList<ComponentStateGetter<State>>? = null
+    private var stateGetters: CopyOnWriteArrayList<StateGetter<State>>? = null
 
     /**
      * Page 容器是否展示
      */
     private var isPageVisible = false
-    private val mLock = Any()
-    private val mSemaphore = Semaphore(1)
+
+    private val lock = Object()
+    private val semaphore = Semaphore(1)
 
     /**
      * 用于标记是否在运行UI更新
@@ -60,12 +64,31 @@ internal class PageStore<S : BasePageState?>(
     private var isNeedUpdate = false
 
     /**
+     * 获取当前Store下的所有state, 目标是给middleware使用，思路是通过observer把每个组件的state传递过来。
+     * 这里放到middle ware中，通过一个getter获取，全局store不提供类似功能
+     */
+    val allState: HashMap<String, State>
+        get() {
+            val stateMap = HashMap<String, State>()
+            if (stateGetters == null || stateGetters!!.size < 1) {
+                stateMap[state.javaClass.name] = State.copyState<State>(state)
+                return stateMap
+            }
+            for (getter in stateGetters!!) {
+                val state: State = getter.copy()
+                val stateKey = state.javaClass.name
+                stateMap[stateKey] = state
+            }
+            return stateMap
+        }
+
+    /**
      * 新一帧的callback
      */
-    private val mFrameCallback: FrameCallback = object : FrameCallback {
+    private val frameCallback: Choreographer.FrameCallback = object : Choreographer.FrameCallback {
         override fun doFrame(frameTimeNanos: Long) {
             // 没有UI监听器，或者UI未展示，或者处于销毁状态，则不进行Ui更新
-            if (isDestroy || !isPageVisible || mUIUpdaterListeners.isEmpty()) {
+            if (isDestroy || !isPageVisible || uiUpdaterListeners.isEmpty()) {
                 return
             }
 
@@ -78,35 +101,42 @@ internal class PageStore<S : BasePageState?>(
             // 单线程调用获取时间，性能可控
             val time = SystemClock.uptimeMillis()
             // 如果前后两次间隔时间过短或者当前不需要更新UI
-            if (time - mLastUpdateUITime < NEXT_DRAW || !isNeedUpdate) {
+            if (time - lastUpdateUITime < NEXT_DRAW || !isNeedUpdate) {
                 Choreographer.getInstance().postFrameCallback(this)
                 return
             }
 
             // 记录本次UI更新的开始时间
-            mLastUpdateUITime = time
+            lastUpdateUITime = time
             isUIUpdateRun = true
-            mSemaphore.release()
+            semaphore.release()
             fireUpdateUI()
             Choreographer.getInstance().postFrameCallback(this)
         }
+    }
+
+    /**
+     * 创建一个页面级别的store
+     */
+    init {
+        initVsyncGuard()
     }
 
     private fun initVsyncGuard() {
         val guardThread: Thread = object : Thread("VsyncGuard") {
             override fun run() {
                 try {
-                    mSemaphore.acquire()
+                    semaphore.acquire()
                 } catch (e: InterruptedException) {
                     e.printStackTrace()
                 }
                 while (isThreadRun) {
-                    synchronized(mLock) {
+                    synchronized(lock) {
                         try {
                             if (isThreadRun) {
-                                mLock.wait(NEXT_DRAW.toLong()) // 这里设置的vsync时间段
+                                lock.wait(NEXT_DRAW.toLong()) // 这里设置的vsync时间段
                                 isUIUpdateRun = false
-                                mSemaphore.acquire()
+                                semaphore.acquire()
                             }
                         } catch (e: InterruptedException) {
                             e.printStackTrace()
@@ -124,12 +154,13 @@ internal class PageStore<S : BasePageState?>(
      * @return 一个解注册器
      */
     @MainThread
-    fun addUIUpdater(uiUpdater: UIUpdater?): IDispose? {
+    fun addUIUpdater(uiUpdater: UIUpdater?): Dispose? {
         if (uiUpdater == null) {
             return null
         }
-        mUIUpdaterListeners.add(uiUpdater)
-        return IDispose { mUIUpdaterListeners.remove(uiUpdater) }
+
+        uiUpdaterListeners.add(uiUpdater)
+        return { uiUpdaterListeners.remove(uiUpdater) }
     }
 
     /**
@@ -137,7 +168,7 @@ internal class PageStore<S : BasePageState?>(
      */
     fun onPageHidden() {
         isPageVisible = false
-        Choreographer.getInstance().removeFrameCallback(mFrameCallback)
+        Choreographer.getInstance().removeFrameCallback(frameCallback)
     }
 
     /**
@@ -147,13 +178,13 @@ internal class PageStore<S : BasePageState?>(
         if (isPageVisible) {
             return
         }
-        Choreographer.getInstance().removeFrameCallback(mFrameCallback)
+        Choreographer.getInstance().removeFrameCallback(frameCallback)
         isPageVisible = true
-        Choreographer.getInstance().postFrameCallback(mFrameCallback)
+        Choreographer.getInstance().postFrameCallback(frameCallback)
     }
 
     private fun fireUpdateUI() {
-        for (uiUpdater in mUIUpdaterListeners) {
+        for (uiUpdater in uiUpdaterListeners) {
             if (!isUIUpdateRun) {
                 break
             }
@@ -162,26 +193,20 @@ internal class PageStore<S : BasePageState?>(
         isNeedUpdate = false
     }
 
-    override fun onDispatch(action: Action?, payload: Any?, stateGetter: StateGetter<S>) {
-        isModifyState = true
-        super.onDispatch(action, payload, stateGetter)
-        isModifyState = false
-    }
-
-    override fun update(changedPropList: List<ReactiveProp<Any?>?>?) {
+    override fun update(changedPropList: List<ReactiveProp<Any>>) {
         val time = System.currentTimeMillis()
         // 定义最终变化列表
-        val finalList: MutableList<ReactiveProp<Any?>?> = ArrayList()
+        val finalList: MutableList<ReactiveProp<Any>> = ArrayList()
 
         // 更新state
-        for (prop in changedPropList!!) {
-            val value = prop!!.value()
+        for (prop in changedPropList) {
+            val value = prop.value()
 
             // 寻找根属性
             val tempProp = prop.rootProp
 
             // 更新根属性的值
-            tempProp!!.innerSetter(value)
+            tempProp.innerSetter(value)
 
             // 将根属性添加到变化列表中
             finalList.add(tempProp)
@@ -194,7 +219,7 @@ internal class PageStore<S : BasePageState?>(
 
         // 通知组件进行状态更新
         notifySubs(finalList)
-        mLogger.d(
+        logger.d(
             ILogger.PERF_TAG, "page store update consumer: "
                     + (System.currentTimeMillis() - time)
         )
@@ -205,42 +230,21 @@ internal class PageStore<S : BasePageState?>(
      * @param getter 当前组件的State 的getter
      * @return 一个反注册函数
      */
-    fun setStateGetter(getter: ComponentStateGetter<State>?): IDispose? {
+    fun setStateGetter(getter: StateGetter<State>?): Dispose? {
         if (getter == null) {
             return null
         }
-        if (mStateGetters == null) {
-            mStateGetters = CopyOnWriteArrayList<ComponentStateGetter<State>>()
+        if (stateGetters == null) {
+            stateGetters = CopyOnWriteArrayList<StateGetter<State>>()
         }
-        mStateGetters!!.add(getter)
-        return IDispose { mStateGetters!!.remove(getter) }
+        stateGetters!!.add(getter)
+        return { stateGetters!!.remove(getter) }
     }
-
-    /**
-     * 获取当前Store下的所有state, 目标是给middleware使用，思路是通过observer把每个组件的state传递过来。
-     * 这里放到middle ware中，通过一个getter获取，全局store不提供类似功能
-     *
-     * @return 所有组件对应的属性的集合，HashMap
-     */
-    val allState: HashMap<String, State?>
-        get() {
-            val stateMap = HashMap<String, State?>()
-            if (mStateGetters == null || mStateGetters!!.size < 1) {
-                stateMap[state.getClass().getName()] = State.copyState<State>(state)
-                return stateMap
-            }
-            for (getter in mStateGetters) {
-                val state: State = getter.getState() ?: continue
-                val stateKey = state.javaClass.name
-                stateMap[stateKey] = state
-            }
-            return stateMap
-        }
 
     fun markNeedUpdate() {
         if (isNeedUpdate) {
             // 解决vsync到来时时，isNeedUpdate被设置成true导致部分界面无法及时更新
-            ReduxManager.getInstance().submitInMainThread { isNeedUpdate = true }
+            ReduxManager.instance.submitInMainThread { isNeedUpdate = true }
         }
         isNeedUpdate = true
     }
@@ -248,20 +252,10 @@ internal class PageStore<S : BasePageState?>(
     public override fun clear() {
         super.clear()
         isThreadRun = false
-        mSemaphore.release()
-        if (mStateGetters != null) {
-            mStateGetters!!.clear()
+        semaphore.release()
+        if (stateGetters != null) {
+            stateGetters!!.clear()
         }
-    }
-
-    /**
-     * 对State变化更新UI，做了刷新对齐，通过vsync信号统一进行刷新
-     */
-    interface UIUpdater {
-        /**
-         * 框架内部实现这个方法，用于接收vsync信号
-         */
-        fun onNewFrameCome()
     }
 
     companion object {
@@ -269,14 +263,5 @@ internal class PageStore<S : BasePageState?>(
          * 下一次更新UI的时间间隔，单位ms
          */
         private const val NEXT_DRAW = 16
-    }
-
-    /**
-     * 创建一个页面级别的store
-     * @param reducer 页面reducer的聚合
-     * @param state 页面初始的状态
-     */
-    init {
-        initVsyncGuard()
     }
 }

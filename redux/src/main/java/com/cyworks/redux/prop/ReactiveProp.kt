@@ -1,5 +1,9 @@
-package com.cyworks.redux
+package com.cyworks.redux.prop
 
+import com.cyworks.redux.ReduxManager
+import com.cyworks.redux.State
+import com.cyworks.redux.StateProxy
+import com.cyworks.redux.StateType
 import com.cyworks.redux.types.Dispose
 
 enum class PropFromType {
@@ -22,11 +26,11 @@ enum class PropFromType {
  * 如果类似live data的方式更新，将导致UI频繁刷新，因为一个数据对应一块UI，假设一次Reducer更新了10个数据，
  * 将会调用UI更新callback 10次，性能上会有一定的损耗。
  */
-internal class ReactiveProp<T>(propValue: T, state: State) {
+class ReactiveProp<T>(propValue: T, state: State) {
     /**
      * 属性对应的Key，用于State中进行属性key-value关联
      */
-    var key: String? = null
+    private var key: String? = null
 
     /**
      * 当前属性的真实value
@@ -84,6 +88,9 @@ internal class ReactiveProp<T>(propValue: T, state: State) {
     internal val isPrivateProp: Boolean
         get() = isPrivate && parent == null && (depMap == null || depMap!!.isEmpty())
 
+    internal val isDepGlobalState: Boolean
+        get() = parent?.fromType == PropFromType.FROM_GLOBAL_STORE
+
     /**
      * 其实每个属性上的parent目前都是直接赋值到root，目前写了一些兼容逻辑
      *
@@ -108,7 +115,7 @@ internal class ReactiveProp<T>(propValue: T, state: State) {
      *
      * @param value 待设置的属性的value
      */
-    internal fun innerSetter(value: T) {
+    internal fun innerSetter(value: T?) {
         this.value = value
     }
 
@@ -148,7 +155,7 @@ internal class ReactiveProp<T>(propValue: T, state: State) {
 
         // 检查父属性是否是全局store
         val propParent = prop.parent
-        if (propParent !== null && propParent.fromType === PropFromType.FROM_GLOBAL_STORE) {
+        if (propParent !== null && propParent.fromType == PropFromType.FROM_GLOBAL_STORE) {
             this.depGlobalProp(rootParent)
             return
         }
@@ -168,7 +175,7 @@ internal class ReactiveProp<T>(propValue: T, state: State) {
 
     internal fun myStateIsGlobalState(): Boolean {
         if (this.state != null) {
-            return this.state!!.stateType === StateType.GlobalType
+            return this.state!!.getStateType() == StateType.GlobalType
         }
 
         return false
@@ -178,6 +185,22 @@ internal class ReactiveProp<T>(propValue: T, state: State) {
         return if (depMap == null) {
             null
         } else depMap!![token]
+    }
+
+    internal fun setKey(name: String) {
+        key  = name;
+    }
+
+    internal fun getKey(): String? {
+        return key
+    }
+
+    internal fun value(): T? {
+        return value
+    }
+
+    internal fun getStateToken(): String {
+        return token
     }
 
     /**
@@ -216,9 +239,9 @@ internal class ReactiveProp<T>(propValue: T, state: State) {
     }
 
     internal fun attach() {
-        if (this.parent?.prop != null) {
-            this.dispose = this.parent!!.prop?.addChild(this)
-            this.parent!!.prop?.value?.let { this.innerSetter(it) }
+        if (parent?.prop != null) {
+            dispose = parent!!.prop?.addChild(this)
+            parent!!.prop?.value?.let { innerSetter(it) }
         }
     }
 
@@ -234,7 +257,7 @@ internal class ReactiveProp<T>(propValue: T, state: State) {
         dispose = prop.addChild(this)
 
         // 如果当前依赖的是全局store，则将当前state的token写入全局store中，方便后续快速查找
-        if (type === PropFromType.FROM_GLOBAL_STORE) {
+        if (type == PropFromType.FROM_GLOBAL_STORE) {
             prop.state?.addDepGlobalState(token)
         }
 
@@ -243,15 +266,14 @@ internal class ReactiveProp<T>(propValue: T, state: State) {
         value = prop.value
     }
 
-    private fun addChild(prop: ReactiveProp<T>?): Dispose? {
-        if (prop == null) {
-            return null
+    private fun addChild(child: ReactiveProp<T>): Dispose {
+        if (this.depMap == null) {
+            this.depMap = HashMap()
         }
-        if (depMap == null) {
-            depMap = HashMap()
-        }
-        depMap!![prop.token] = prop
-        return { depMap!!.remove(prop.token) }
+
+        val key = child.token
+        this.depMap!![key] = child
+        return { depMap!!.remove(key) }
     }
 
     /**

@@ -1,4 +1,4 @@
-package com.cyworks.redux
+package com.cyworks.redux.store
 
 import com.tencent.redux.prop.IPropsChanged
 

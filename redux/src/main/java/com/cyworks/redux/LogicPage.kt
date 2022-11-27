@@ -1,6 +1,7 @@
 package com.cyworks.redux
 
 import android.support.annotation.CallSuper
+import com.cyworks.redux.store.PageStore
 import java.util.ArrayList
 import java.util.HashMap
 import java.util.concurrent.Future
@@ -46,7 +47,7 @@ abstract class LogicPage<S : BasePageState?>(@NonNull proxy: LifeCycleProxy) :
     private fun createStore(state: S) {
         // 1、将所有组件的reducer跟page Reducer合并
         val reducer: Reducer<State> = combineReducer()
-        val store: PageStore<BasePageState> = PageStore(reducer, state)
+        val store: PageStore<State> = PageStore(reducer, state)
         environment!!.setStore(store)
 
         // 3、将Middleware链式化

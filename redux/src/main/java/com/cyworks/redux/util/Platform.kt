@@ -3,18 +3,12 @@ package com.cyworks.redux.util
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
-import android.content.Intent
 import android.view.View
 import android.view.ViewStub
 import androidx.annotation.IdRes
 import androidx.annotation.LayoutRes
 import androidx.lifecycle.LifecycleOwner
-import com.cyworks.redux.activityresult.ActivityResult
-import com.cyworks.redux.activityresult.ReceiveResultFragment
 import com.cyworks.redux.lifecycle.LifeCycleProxy
-import com.cyworks.redux.permission.PermissionCallback
-import com.cyworks.redux.permission.ProxyPermissionActivity
-import com.cyworks.redux.permission.RequestPermission
 
 /**
  * Desc: 框架内部实现的IPlatform，借助ReduxContext实现
@@ -49,33 +43,6 @@ class Platform(proxy: LifeCycleProxy, root: View) : IPlatform {
 
     override fun closePage() {
         mProxy.close()
-    }
-
-    override fun startActivity(intent: Intent) {
-        this.activity?.startActivity(intent)
-    }
-
-    override fun startActivityForResult(
-        intent: Intent?, requestCode: Int,
-        callback: ReceiveResultFragment.ActivityResultCallback?
-    ) {
-        val activity: Activity? = activity
-        if (activity != null) {
-            ActivityResult.startForResult(activity, intent, requestCode, callback)
-        }
-    }
-
-    override fun requestPermission(
-        requestCode: Int,
-        callback: PermissionCallback?,
-        permissions: MutableList<String>
-    ) {
-        val context = context ?: return
-        RequestPermission.of()
-            .permission(permissions)
-            .requestCode(requestCode)
-            .callback(callback)
-            .request(ProxyPermissionActivity::class.java, context)
     }
 
     @SuppressLint("ResourceType")

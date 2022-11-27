@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.res.Configuration
 import android.os.SystemClock
 import android.view.View
+import com.cyworks.redux.store.PageStore
 
 /**
  * Desc: 页面基类，页面只需要设置根布局即可，不需要更新UI之类的操作。

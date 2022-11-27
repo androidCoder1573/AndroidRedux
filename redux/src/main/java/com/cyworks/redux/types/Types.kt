@@ -1,10 +1,10 @@
 package com.cyworks.redux.types
 
 import androidx.annotation.MainThread
-import com.cyworks.redux.ReactiveProp
 import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.State
 import com.cyworks.redux.action.Action
+import com.cyworks.redux.prop.ReactiveProp
 
 /**
  * 组件自己的State的获取接口
@@ -15,17 +15,6 @@ fun interface StateGetter<S : State> {
      * @return 组件的State
      */
     fun copy(): S
-}
-
-/**
- * 通过此接口获取当前组件的State, 专门用于页面的store中
- */
-fun interface ComponentStateGetter<S : State> {
-    /**
-     * 获取当前Observer关联的State
-     * @return S [State]
-     */
-    fun getState(): S
 }
 
 /**
@@ -62,7 +51,17 @@ fun interface Effect<S: State> {
      * @param action Action
      * @param ctx 当前Feature的context
      */
-    fun doAction(action: Action<Any>, ctx: ReduxContext<S>)
+    fun doAction(action: Action<Any>, ctx: ReduxContext<S>?)
+}
+
+/**
+ * 对State变化更新UI，做了刷新对齐，通过vsync信号统一进行刷新
+ */
+interface UIUpdater {
+    /**
+     * 框架内部实现这个方法，用于接收vsync信号
+     */
+    fun onNewFrameCome()
 }
 
 /**

@@ -1,6 +1,7 @@
 package com.cyworks.redux
 
-import android.support.annotation.CallSuper
+import android.os.Bundle
+import com.cyworks.redux.store.GlobalStoreWatcher
 import java.util.HashMap
 import java.util.concurrent.Future
 
@@ -9,7 +10,7 @@ import java.util.concurrent.Future
  *
  * 目的：实现逻辑层测试，剥离出UI之后更容易构建整个逻辑层测试。
  */
-abstract class LogicComponent<S : BaseComponentState?>(bundle: Bundle?) : Logic<S>(bundle) {
+abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
     /**
      * 当前组件的与页面的连接器
      */

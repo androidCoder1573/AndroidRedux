@@ -1,8 +1,8 @@
 package com.cyworks.redux
 
 import android.view.View
-import androidx.annotation.NonNull
 import com.cyworks.redux.lifecycle.LifeCycleProxy
+import com.cyworks.redux.store.Store
 import com.cyworks.redux.types.Dispatch
 
 /**

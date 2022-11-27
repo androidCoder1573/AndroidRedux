@@ -53,36 +53,6 @@ interface IPlatform {
     fun inflateStub(@IdRes stubId: Int, @LayoutRes layoutId: Int): View?
 
     /**
-     * 启动某个Activity
-     * @param intent Activity对应的Intent
-     */
-    fun startActivity(intent: Intent)
-
-    /**
-     * 启动某个activity并接收结果
-     * @param intent Intent
-     * @param requestCode 请求码
-     * @param callback 回调
-     */
-    fun startActivityForResult(
-        intent: Intent,
-        requestCode: Int,
-        callback: ReceiveResultFragment.ActivityResultCallback?
-    )
-
-    /**
-     * 请求一些权限
-     * @param requestCode 请求码
-     * @param callback 回调
-     * @param permissions 权限列表
-     */
-    fun requestPermission(
-        requestCode: Int,
-        permissions: MutableList<String>,
-        callback: PermissionCallback?
-    )
-
-    /**
      * 关闭当前页面对应的容器，比如关闭Activity，关闭对话框等
      */
     fun closePage()

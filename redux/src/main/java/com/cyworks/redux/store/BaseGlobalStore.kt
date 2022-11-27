@@ -1,6 +1,14 @@
-package com.cyworks.redux
+package com.cyworks.redux.store
 
-import com.tencent.redux.action.Action
+import com.cyworks.redux.State
+import com.cyworks.redux.StateProxy
+import com.cyworks.redux.action.Action
+import com.cyworks.redux.logic.EffectCollect
+import com.cyworks.redux.prop.ReactiveProp
+import com.cyworks.redux.types.Effect
+import com.cyworks.redux.types.Reducer
+import com.cyworks.redux.util.ILogger
+import com.cyworks.redux.util.ThreadUtil
 
 /**
  * Desc: 带Effect的Store，为全局Store优化的产物，增加Effect处理能力，方便全局store处理异步请求。
@@ -10,26 +18,19 @@ import com.tencent.redux.action.Action
  * 给开发这一个选择，可以使用action来驱动全局store，
  * 也可以不使用，直接通过面向对象的方式操作
  */
-abstract class BaseGlobalStore<S : State?> : Store<S> {
+abstract class BaseGlobalStore<S : State> : Store<S> {
     /**
      * 全局store扩展的内部effect
      */
-    private var mEffect: Effect<S>? = null
-
-    constructor() {
-        state = onCreateState()
-        state!!.detectField()
-    }
+    private var effect: Effect<S>? = null
 
     /**
      * 构造器，用于初始化State/Effect
-     *
-     * @param reducer Reducer [Reducer]
      */
-    constructor(@NonNull reducer: Reducer<S>?) : super(reducer) {
+    constructor() : super() {
         val effectCollect: EffectCollect<S> = EffectCollect()
         addEffects(effectCollect)
-        mEffect = effectCollect.getEffect()
+        effect = effectCollect.effect
         state = onCreateState()
         state!!.detectField()
     }
@@ -52,10 +53,8 @@ abstract class BaseGlobalStore<S : State?> : Store<S> {
      * @param action Action
      * @param payload 参数
      */
-    fun dispatchEffect(action: Action?, payload: Any?) {
-        if (mEffect != null) {
-            mEffect.doAction(action, null, payload)
-        }
+    fun dispatchEffect(action: Action<Any>) {
+        effect?.doAction(action, null)
     }
 
     /**
@@ -63,15 +62,16 @@ abstract class BaseGlobalStore<S : State?> : Store<S> {
      *
      * @param changedPropList 当前变化的属性列表
      */
-    override fun update(changedPropList: List<ReactiveProp<Any?>?>?) {
+    override fun update(changedPropList: List<ReactiveProp<Any>>) {
         // 通知更新
-        if (changedPropList!!.isEmpty()) {
+        if (changedPropList.isEmpty()) {
             return
         }
+
         val time = System.currentTimeMillis()
         // 通知组件进行状态更新
         notifySubs(changedPropList)
-        mLogger.d(
+        logger.d(
             ILogger.PERF_TAG, "global store update consumer: "
                     + (System.currentTimeMillis() - time)
         )
@@ -79,12 +79,11 @@ abstract class BaseGlobalStore<S : State?> : Store<S> {
 
     /**
      * 更新状态
-     * @param reducer 具体的更新方法
      */
-    fun updateState(reducer: PureReducer<S>) {
+    fun updateState(reducer: Reducer<S>) {
         ThreadUtil.checkMainThread("update state must be called in main thread!")
         state!!.setStateProxy(StateProxy())
-        val newState: S = reducer.update(state) ?: return
+        val newState: S = (reducer.update(state!!)) as S
         onStateChanged(newState)
     }
 }

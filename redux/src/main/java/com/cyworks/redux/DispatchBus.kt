@@ -38,6 +38,13 @@ class DispatchBus internal constructor() : IBus {
     private var mPageDispatch: Dispatch? = null
 
     /**
+     * 初始化依赖列表，为了防止事件关系混乱，这个创建过程由框架来维护
+     */
+    init {
+        mChildList = ArrayList<Dispatch>()
+    }
+
+    /**
      * 目前的通信方式是：组件只能发action给Page，但是Page可以发送Action给所有的组件，所以这里区分一下
      *
      * @param dispatch Dispatch
@@ -120,12 +127,5 @@ class DispatchBus internal constructor() : IBus {
                 dispatcher.dispatch(action)
             }
         }
-    }
-
-    /**
-     * 初始化依赖列表，为了防止事件关系混乱，这个创建过程由框架来维护
-     */
-    init {
-        mChildList = ArrayList<Dispatch>()
     }
 }

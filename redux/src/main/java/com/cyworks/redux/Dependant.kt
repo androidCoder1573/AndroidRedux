@@ -1,5 +1,6 @@
 package com.cyworks.redux
 
+import com.cyworks.redux.store.GlobalStoreWatcher
 import com.tencent.redux.action.Action
 import java.util.HashMap
 
@@ -9,7 +10,7 @@ import java.util.HashMap
  *
  * PS: 父组件的State，CS：当前组件的State
  */
-class Dependant<CS : BaseComponentState?, PS : State?>(
+class Dependant<CS : State, PS : State>(
     /**
      * 组件实例
      */
