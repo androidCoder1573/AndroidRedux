@@ -1,6 +1,6 @@
 package com.cyworks.redux.logic
 
-import com.cyworks.redux.State
+import com.cyworks.redux.state.State
 
 /**
  * Desc: 承载业务逻辑的接口

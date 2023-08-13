@@ -1,7 +1,8 @@
-package com.cyworks.redux.ui
+package com.cyworks.redux.atom
 
-import com.cyworks.redux.State
+import com.cyworks.redux.state.State
 import com.cyworks.redux.types.DepProps
+import com.cyworks.redux.ui.ComponentViewHolder
 
 /**
  * Desc: 用于描述一个一组UI数据对应的唯一UI更新，

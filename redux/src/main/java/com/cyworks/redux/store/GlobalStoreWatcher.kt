@@ -1,6 +1,6 @@
 package com.cyworks.redux.store
 
-import com.cyworks.redux.State
+import com.cyworks.redux.state.State
 import com.cyworks.redux.types.Dispose
 import java.util.ArrayList
 import java.util.HashMap

@@ -2,9 +2,14 @@ package com.cyworks.redux.types
 
 import androidx.annotation.MainThread
 import com.cyworks.redux.ReduxContext
-import com.cyworks.redux.State
+import com.cyworks.redux.state.State
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.prop.ReactiveProp
+
+/**
+ * 此函数用于解注册
+ */
+typealias Dispose = () -> Unit
 
 /**
  * 组件自己的State的获取接口
@@ -20,7 +25,7 @@ fun interface StateGetter<S : State> {
 /**
  * 当当前State发生变化时，通知给UI的接口
  */
-fun interface StateChangeForUI<S : State> {
+fun interface IStateChange<S : State> {
     /**
      * 组件state变化的回调
      * @param state 上一次的PureState
@@ -55,9 +60,14 @@ fun interface Effect<S: State> {
 }
 
 /**
- * 对State变化更新UI，做了刷新对齐，通过vsync信号统一进行刷新
+ * 这里跟Effect概念分开，虽然是跟Effect相同的逻辑，但是希望在概念上是负责处理拦截后的Action的作用
  */
-interface UIUpdater {
+fun interface Interceptor<S : State> : Effect<S>
+
+/**
+ * State变化更新UI，做了刷新对齐，通过vsync信号统一进行刷新
+ */
+fun interface UIFrameUpdater {
     /**
      * 框架内部实现这个方法，用于接收vsync信号
      */
@@ -65,14 +75,9 @@ interface UIUpdater {
 }
 
 /**
- * 这里跟Effect概念分开，虽然是跟Effect相同的逻辑，但是希望在概念上是负责处理拦截后的Action的作用
- */
-interface Interceptor<S : State> : Effect<S>
-
-/**
  * 用于获取组件对应的ReduxContext
  */
-interface ContextProvider<S: State> {
+fun interface ContextProvider<S: State> {
     /**
      * 返回组件对应的ReduxContext
      * @return ReduxContext
@@ -81,14 +86,50 @@ interface ContextProvider<S: State> {
 }
 
 /**
- * 此函数用于解注册
+ * 用于主动订阅组件内数据对的观察者
  */
-typealias Dispose = () -> Unit
+fun interface IPropChanged<S : State, T> {
+    /**
+     * 通知状态变化, 请不要在这里做一些耗时操作，防止出现阻塞UI线程的问题
+     *
+     * @param prop 当前变化的属性集合[ReactiveProp]
+     */
+    fun onPropChanged(prop: ReactiveProp<T>, ctx: ReduxContext<S>)
+}
+
+/**
+ * 多个公开属性变化的回调
+ */
+fun interface IPropsChanged {
+    fun onPropsChanged(props: List<ReactiveProp<Any>>?)
+}
+
+/**
+ * 创建全局store的state接口
+ */
+interface CreateGlobalState<S: State> {
+    fun create(): S
+}
+
+/**
+ * Desc: watch 属性时，通过此方法获取属性list
+ */
+typealias DepProps = () -> Array<Any>
+
+/**
+ * 当前公共状态变化监听器
+ */
+typealias IPublicPropsChanged = (props: List<ReactiveProp<Any>>) -> Unit
+
+/**
+ * 组件私有属性发生变化时，通过此接口通知给当前变化的组件
+ */
+typealias IPrivatePropsChanged = (props: List<ReactiveProp<Any>>) -> Unit
 
 /**
  * Action 分发器接口
  */
-interface Dispatch {
+fun interface Dispatch {
     fun dispatch(action: Action<Any>);
 }
 
@@ -123,28 +164,6 @@ interface IBus : Dispatch {
 }
 
 /**
- * 用于主动订阅组件内数据对的观察者
- */
-fun interface IPropChanged<S : State, T> {
-    /**
-     * 通知状态变化, 请不要在这里做一些耗时操作，防止出现阻塞UI线程的问题
-     *
-     * @param prop 当前变化的属性集合[ReactiveProp]
-     */
-    fun onPropChanged(prop: ReactiveProp<T>, ctx: ReduxContext<S>)
-}
-
-/**
- * 当前公共状态变化监听器
- */
-typealias PublicPropsChangedCallback = (props: List<ReactiveProp<Any>>) -> Unit
-
-/**
- * 组件私有属性发生变化时，通过此接口通知给当前变化的组件
- */
-typealias PrivatePropsChangedCallback = (props: List<ReactiveProp<Any>>) -> Unit
-
-/**
  * Adapter 统一接口，方便进行类型转换
  */
 interface IAdapter {
@@ -162,8 +181,3 @@ interface IAdapter {
      */
     fun dispatchEffect(action: Action<Any>)
 }
-
-/**
- * Desc: watch 属性时，通过此方法获取属性list
- */
-typealias DepProps = () -> Array<Any>

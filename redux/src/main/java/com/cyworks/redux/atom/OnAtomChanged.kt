@@ -1,6 +1,7 @@
-package com.cyworks.redux.ui
+package com.cyworks.redux.atom
 
-import com.cyworks.redux.State
+import com.cyworks.redux.state.State
+import com.cyworks.redux.ui.ComponentViewHolder
 
 /**
  * Desc: 当Atom对应的Key发生变化时，触发对应UI的更新方法

@@ -1,7 +1,8 @@
-package com.cyworks.redux
+package com.cyworks.redux.component
 
 import android.support.annotation.CallSuper
 import android.view.View
+import com.cyworks.redux.ReduxContext
 import java.lang.Exception
 import java.util.ArrayList
 

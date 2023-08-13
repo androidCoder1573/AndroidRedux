@@ -1,15 +1,19 @@
 package com.cyworks.redux
 
-import com.tencent.redux.state.StateChangeForUI
+import com.cyworks.redux.component.Logic
+import com.cyworks.redux.state.State
+import com.cyworks.redux.types.IStateChange
+import com.cyworks.redux.util.IPlatform
 
 /**
  * Desc: 通过建造者模式创建一个ReduxContext.
  */
-class ReduxContextBuilder<S : State?> {
+class ReduxContextBuilder<S : State> {
     /**
      * 组件状态监听器
      */
-    private var mStateChangeListener: StateChangeForUI<S>? = null
+    var stateChangeListener: IStateChange<S>? = null
+        private set
 
     /**
      * 组件实例
@@ -26,14 +30,16 @@ class ReduxContextBuilder<S : State?> {
     /**
      * 平台操作相关
      */
-    private var mPlatform: IPlatform? = null
+    var platform: IPlatform? = null
+        private set
+
     fun setState(state: S): ReduxContextBuilder<S> {
         this.state = state
         return this
     }
 
-    fun setOnStateChangeListener(onStateChange: StateChangeForUI<S>?): ReduxContextBuilder<S> {
-        mStateChangeListener = onStateChange
+    fun setOnStateChangeListener(onStateChange: IStateChange<S>?): ReduxContextBuilder<S> {
+        stateChangeListener = onStateChange
         return this
     }
 
@@ -43,14 +49,9 @@ class ReduxContextBuilder<S : State?> {
     }
 
     fun setPlatform(platform: IPlatform?): ReduxContextBuilder<S> {
-        mPlatform = platform
+        this.platform = platform
         return this
     }
-
-    val stateChangeListener: StateChangeForUI<S>?
-        get() = mStateChangeListener
-    val platform: IPlatform?
-        get() = mPlatform
 
     /**
      * 创建一个ReduxContext实例

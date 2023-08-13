@@ -1,7 +1,7 @@
 package com.cyworks.redux.dependant
 
 import com.cyworks.redux.Dependant
-import com.cyworks.redux.State
+import com.cyworks.redux.state.State
 import java.util.HashMap
 
 /**

@@ -1,8 +1,7 @@
 package com.cyworks.redux.prop
 
-import com.cyworks.redux.ReactiveProp
 import com.cyworks.redux.ReduxContext
-import com.cyworks.redux.State
+import com.cyworks.redux.state.State
 import com.cyworks.redux.types.IPropChanged
 
 /**

@@ -1,6 +1,6 @@
 package com.cyworks.redux.middleware
 
-import com.cyworks.redux.State
+import com.cyworks.redux.state.State
 import com.cyworks.redux.types.Dispatch
 
 /**

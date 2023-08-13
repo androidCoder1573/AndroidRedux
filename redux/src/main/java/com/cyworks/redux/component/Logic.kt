@@ -1,10 +1,15 @@
-package com.cyworks.redux
+package com.cyworks.redux.component
 
 import android.os.Bundle
+import com.cyworks.redux.Dependant
+import com.cyworks.redux.ReduxContext
+import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.action.InnerActionTypes
 import com.cyworks.redux.logic.EffectCollect
 import com.cyworks.redux.logic.LogicModule
+import com.cyworks.redux.state.State
 import com.cyworks.redux.types.Effect
+import com.cyworks.redux.util.Environment
 import com.cyworks.redux.util.ILogger
 
 /**
@@ -88,11 +93,6 @@ abstract class Logic<S : State>(b: Bundle) {
     protected open fun checkEffect(effectCollect: EffectCollect<S>?) {
         // sub class impl
     }
-
-    /**
-     * 获取实例类型
-     */
-    abstract fun getType(): LogicType
 
     /**
      * LogicModule，用户主动设置

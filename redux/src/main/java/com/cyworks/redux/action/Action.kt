@@ -3,7 +3,7 @@ package com.cyworks.redux.action
 /**
  * 声明ActionType，用于标记某个Action
  */
-data class ActionType(var type: String)
+data class ActionType(var name: String)
 
 /**
  * Desc: 框架内部定义的一些Action，用于框架所需处理的一些事情。
@@ -31,6 +31,6 @@ object InnerActionTypes {
 open class Action<T: Any>(var type: ActionType, var payload: T?) {
 
     override fun toString(): String {
-        return "Action{name='${type.type}'}"
+        return "Action{name='${type.name}'}"
     }
 }

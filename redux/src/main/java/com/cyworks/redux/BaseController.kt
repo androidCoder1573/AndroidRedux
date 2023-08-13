@@ -2,6 +2,7 @@ package com.cyworks.redux
 
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.logic.EffectCollect
+import com.cyworks.redux.state.State
 import com.cyworks.redux.types.Effect
 import com.cyworks.redux.util.IPlatform
 

@@ -1,4 +1,4 @@
-package com.cyworks.redux
+package com.cyworks.redux.component
 
 import android.arch.lifecycle.Lifecycle
 import android.content.Context

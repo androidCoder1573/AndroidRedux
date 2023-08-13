@@ -1,7 +1,8 @@
-package com.cyworks.redux
+package com.cyworks.redux.component
 
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.prop.PropWatcher
+import com.cyworks.redux.state.State
 import com.cyworks.redux.store.GlobalStoreWatcher
 import com.cyworks.redux.types.Interceptor
 import com.cyworks.redux.types.StateGetter

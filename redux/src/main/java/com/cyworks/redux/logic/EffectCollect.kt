@@ -1,7 +1,7 @@
 package com.cyworks.redux.logic
 
 import com.cyworks.redux.ReduxContext
-import com.cyworks.redux.State
+import com.cyworks.redux.state.State
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.lifecycle.LifeCycleAction
 import com.cyworks.redux.types.Effect

@@ -1,7 +1,9 @@
-package com.cyworks.redux.ui
+package com.cyworks.redux.atom
 
-import com.cyworks.redux.State
+import com.cyworks.redux.state.State
 import com.cyworks.redux.types.DepProps
+import com.cyworks.redux.ui.ComponentViewHolder
+import com.cyworks.redux.ui.ViewModule
 import java.util.ArrayList
 import java.util.HashMap
 

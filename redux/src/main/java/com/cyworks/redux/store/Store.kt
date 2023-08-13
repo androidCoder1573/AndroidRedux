@@ -3,8 +3,8 @@ package com.cyworks.redux.store
 import androidx.annotation.CallSuper
 import androidx.annotation.MainThread
 import com.cyworks.redux.ReduxManager
-import com.cyworks.redux.State
 import com.cyworks.redux.prop.ReactiveProp
+import com.cyworks.redux.state.State
 import com.cyworks.redux.types.Dispatch
 import com.cyworks.redux.types.Dispose
 import com.cyworks.redux.util.ILogger
@@ -28,12 +28,11 @@ import java.util.concurrent.CopyOnWriteArrayList
  * 2、无法知道哪些状态发生了更新；
  *
  * Android-Redux如何解决这两个问题呢？
- * 1、针对state过大，Android-redux通过状态分治将状态分散在各个组件中，而且提供了组件级别的私有状态；
+ * 1、针对state过大，Android-redux通过状态分治将状态分散在各个组件中，而且提供了组件级别的私有状态(没有被以来的属性默认是私有的，不会影响其他组件)
  * 2、针对状态更新时无法确知哪些状态发生变化，live-redux提供了状态精准更新的能力；
  *
  * 为什么终端上的Redux需要精准更新界面？
- * 原始的Redux并没有实现状态精准更新通知，站在android的角度，如果无法精准更新UI，
- * 意味着每次都要对State进行diff，Java对复杂的对象：比如列表，map等，不仅对开发者来说负担比较重，
+ * 如果无法精准更新UI，意味着每次都要对State进行diff，Java对复杂的对象：比如列表，map等，不仅对开发者来说负担比较重，
  * 还会造成每次更新将有很多无用的cpu开销。
  *
  * 如何实现精准更新？
@@ -49,12 +48,11 @@ import java.util.concurrent.CopyOnWriteArrayList
  * 建议的方式：
  * 页面做一个公有状态比如reset，所有组件订阅这个状态，做清理的操作。
  */
-open class Store<S : State> {
+open class Store<S : State>  {
     /**
      * 获取state，为了防止外部缓存state，控制访问权限，外部只能通过监听的方式观察属性值
      */
-    val state: S
-        get() = State.copyState(field)
+    lateinit var state: S
 
     /**
      * 注册的观察者列表，用于分发store的变化
@@ -62,44 +60,47 @@ open class Store<S : State> {
     protected var listeners: CopyOnWriteArrayList<StoreObserver>? = null
 
     /**
-     * store是否销毁了
-     */
-    protected var isDestroy = false
-
-    protected val logger: ILogger = ReduxManager.instance.logger
-
-    /**
      * 分发Reducer的dispatch, 需要在page中使用，扩展dispatch能力
      */
     var dispatcher: Dispatch? = null
 
     /**
-     * @param state 专指页面的State
+     * store是否销毁了, 销毁后不能再处理数据
      */
-    internal constructor(state: S) {
-        this.state = state
+    protected var isDestroy = false
+
+    protected val logger: ILogger = ReduxManager.instance.logger
+
+    internal constructor()
+
+    internal constructor(s: S) {
+        state = s
+    }
+
+    fun getState() : S {
+        return State.copyState(state)
     }
 
     /**
      * 监听store中的属性,
      * 为了防止外部随意监听store变化，控制了仅限框架内部调用
      *
-     * @param storeWatcher 监听器
+     * @param observer [StoreObserver] 监听器
      * @return IDispose 返回一个解除器，方便组件detach的时候进行删除
      */
     @MainThread
-    internal fun observe(storeWatcher: StoreObserver?): Dispose? {
-        if (storeWatcher == null) {
+    internal fun observe(observer: StoreObserver?): Dispose? {
+        if (observer == null) {
             return null
         }
         if (listeners == null) {
             listeners = CopyOnWriteArrayList()
         }
-        listeners!!.add(storeWatcher)
-        return { listeners!!.remove(storeWatcher) }
+        listeners!!.add(observer)
+        return { listeners!!.remove(observer) }
     }
 
-    protected fun onStateChanged(state: State?) {
+    internal open fun onStateChanged(state: State?) {
         if (state == null) {
             return
         }
@@ -121,20 +122,18 @@ open class Store<S : State> {
      * @param changeList 当前store中变化的数据
      */
     protected fun notifySubs(changeList: List<ReactiveProp<Any>>) {
-        if (isDestroy || changeList.isEmpty()
-            || listeners == null || listeners!!.isEmpty()
-        ) {
+        if (isDestroy || changeList.isEmpty() || listeners == null
+            || listeners!!.isEmpty()) {
             return
         }
 
         // 因为一次可能会更新多个属性，这里牺牲一些性能，让每个组件可以一次性收到全部的状态变化
-        for (observer in listeners!!) {
-            val token = observer.token
+        listeners!!.forEach {
+            val token = it.token
             val tempList = checkChangeList(changeList, token)
-            if (tempList.isEmpty()) {
-                continue
+            if (tempList.isNotEmpty()) {
+                it.onPropChanged(tempList)
             }
-            observer.onPropChanged(tempList)
         }
     }
 
@@ -145,22 +144,20 @@ open class Store<S : State> {
      * @param token 组件state对应的类名
      * @return 组件变化的属性列表
      */
-    private fun checkChangeList(changeList: List<ReactiveProp<Any>>, token: String)
-    : List<ReactiveProp<Any>?> {
+    private fun checkChangeList(changeList: List<ReactiveProp<Any>>, token: String): List<ReactiveProp<Any>> {
         val tempList: MutableList<ReactiveProp<Any>> = ArrayList()
-        for (prop in changeList) {
+        changeList.forEach {
             // 如果组件的属性就在当前变化的列表里，直接加入
-            if (prop.token == token) {
-                tempList.add(prop)
-                continue
-            }
-
-            // 如果组件属性没在变化列表里，看当前属性的孩子是否具有此属性
-            val child = prop.getChild(token)
-            if (child != null) {
-                // 首先要同步value
-                child.innerSetter(prop.value())
-                tempList.add(child)
+            if (it.token == token) {
+                tempList.add(it)
+            } else {
+                // 如果组件属性没在变化列表里，看当前属性的孩子是否具有此属性
+                val child = it.getChild(token)
+                if (child != null) {
+                    // 首先要同步value
+                    child.innerSetter(it.value())
+                    tempList.add(child)
+                }
             }
         }
         return tempList

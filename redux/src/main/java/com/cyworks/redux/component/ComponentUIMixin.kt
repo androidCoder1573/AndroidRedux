@@ -1,7 +1,11 @@
-package com.cyworks.redux
+package com.cyworks.redux.component
 
 import android.content.res.Configuration
 import android.view.View
+import com.cyworks.redux.Dependant
+import com.cyworks.redux.util.Environment
+import com.cyworks.redux.ReduxManager
+import com.cyworks.redux.state.State
 import com.tencent.redux.beans.UIChangedBean
 import java.lang.Exception
 import java.lang.RuntimeException
@@ -15,7 +19,7 @@ import java.util.HashMap
  *
  * todo: 可以考虑将此类让开发者实现，更加定制化的操作UI
  */
-internal class ComponentUIMixin<S : BaseComponentState?>(
+class ComponentUIMixin<S : BaseComponentState?>(
     /**
      * 组件实例
      */
@@ -25,7 +29,10 @@ internal class ComponentUIMixin<S : BaseComponentState?>(
      * 组件是否bind到父组件上
      */
     @JvmField
-    var isBind = false
+    var isInstalled = false
+get() {
+        return mUIMixin.isBind
+    }
 
     /**
      * 当前组件的UI界面是否显示
@@ -454,7 +461,7 @@ internal class ComponentUIMixin<S : BaseComponentState?>(
     }
 
     init {
-        mViewModule = mComponent!!.getViewModule()
+        mViewModule = mComponent!!.viewModule
 
         // 如果是延迟加载，表明初始状态时不加载UI
         isShow = !lazyBindUI

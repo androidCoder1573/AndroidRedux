@@ -1,9 +1,9 @@
 package com.cyworks.redux.prop
 
 import com.cyworks.redux.ReduxManager
-import com.cyworks.redux.State
-import com.cyworks.redux.StateProxy
-import com.cyworks.redux.StateType
+import com.cyworks.redux.state.State
+import com.cyworks.redux.state.StateProxy
+import com.cyworks.redux.state.StateType
 import com.cyworks.redux.types.Dispose
 
 enum class PropFromType {

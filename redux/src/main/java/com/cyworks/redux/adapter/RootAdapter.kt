@@ -4,12 +4,12 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.RecyclerView
-import com.cyworks.redux.LogicComponent
-import com.cyworks.redux.State
+import com.cyworks.redux.component.LogicComponent
+import com.cyworks.redux.state.State
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.prop.ChangedState
 import com.cyworks.redux.types.IAdapter
-import com.cyworks.redux.types.StateChangeForUI
+import com.cyworks.redux.types.IStateChange
 
 /**
  * Desc: 组件的根Adapter，一个组件仅能有一个根Adapter。
@@ -67,8 +67,8 @@ abstract class RootAdapter<S : State>(adapter: RecyclerView.Adapter<RecyclerView
         liveData!!.observe(owner, observer)
     }
 
-    protected fun makeUIListener(): StateChangeForUI<S> {
-        return StateChangeForUI<S> { state, changedProps ->
+    protected fun makeUIListener(): IStateChange<S> {
+        return IStateChange<S> { state, changedProps ->
             if (!isUIShow) {
                 return
             }

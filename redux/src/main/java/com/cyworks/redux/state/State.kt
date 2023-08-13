@@ -1,7 +1,8 @@
-package com.cyworks.redux
+package com.cyworks.redux.state
 
 import android.content.res.Configuration
-import com.cyworks.redux.State.Reactive
+import com.cyworks.redux.ReduxManager
+import com.cyworks.redux.state.State.Reactive
 import com.cyworks.redux.prop.ReactiveProp
 import com.cyworks.redux.util.ILogger
 import java.util.concurrent.ConcurrentHashMap
@@ -25,7 +26,7 @@ abstract class State {
      * key: 某个属性对应的key；
      * value: PropValue, 某个属性对应的值；
      */
-    private val dataMap = ConcurrentHashMap<String, ReactiveProp<Any>>()
+    val dataMap = ConcurrentHashMap<String, ReactiveProp<Any>>()
 
     /**
      * 用于存放组件响应式数据的Map, 方便框架进行修改数据，开发者无感知。
@@ -49,12 +50,12 @@ abstract class State {
     /**
      * 是否已经进行了merge state操作，此操作每个对象仅能进行一次
      */
-    private var hasMergeState = false
+    private var stateHasMerged = false
 
     /**
      * 是否正在执行state merge操作
      */
-    private var isMerging = false
+    private var isMergingState = false
 
     /**
      * 在进行属性依赖期间，用于表示当前state要依赖的父state
@@ -74,7 +75,7 @@ abstract class State {
     /**
      * Log 组件，组件内共享
      */
-    private val logger: ILogger = ReduxManager.instance.logger
+    private val logger: ILogger? = ReduxManager.instance.logger
 
     /**
      * 页面内部默认的属性，表示当前的横竖屏状态
@@ -91,7 +92,7 @@ abstract class State {
      */
     internal val privatePropChanged: List<ReactiveProp<Any>>?
         get() = if (stateProxy != null) {
-            stateProxy!!.privatePropChanged
+            stateProxy!!.changedPrivateProps
         } else null
 
     /**
@@ -100,7 +101,7 @@ abstract class State {
      */
     internal val publicPropChanged: List<ReactiveProp<Any>>?
         get() = if (stateProxy != null) {
-            stateProxy!!.publicPropChanged
+            stateProxy!!.changedPublicProps
         } else null
 
     /**
@@ -117,17 +118,17 @@ abstract class State {
     /**
      * 当子组件依赖父组件的属性时，通过此方法设置父组件的state，方便自组件进行属性依赖
      */
-    internal fun setWillMergedState(willMergeState: State) {
-        depState = willMergeState
+    internal fun setParentState(parentState: State) {
+        depState = parentState
     }
 
-    internal fun startMerging() {
-        isMerging = true
+    internal fun startMergeState() {
+        isMergingState = true
     }
 
-    internal fun endMerging() {
-        isMerging = false
-        hasMergeState = true
+    internal fun endMergeState() {
+        isMergingState = false
+        stateHasMerged = true
     }
 
     /**
@@ -158,8 +159,7 @@ abstract class State {
     }
 
     /**
-     * 当某个属性对外有依赖时，依赖的父属性发生更新时，此时需要更新当前属性，
-     * 但是此时不能触发更新收集
+     * 当某个属性对外有依赖时，依赖的父属性发生更新时，此时需要更新当前属性，但是此时不能触发更新收集
      */
     internal fun innerSetProp(key: String, value: Any) {
         propertyMap[key]?.let { it(value) }
@@ -215,7 +215,7 @@ abstract class State {
     }
 
     private fun depProp(curProp: ReactiveProp<Any>) {
-        if (!isMerging || hasMergeState || depState == null) {
+        if (!isMergingState || stateHasMerged || depState == null) {
             return
         }
 
@@ -228,7 +228,7 @@ abstract class State {
                 curProp.depUpperComponentProp(parentReactiveProp)
             }
         } else {
-            logger.w("", "can not dep prop, because can not find the prop,"
+            logger?.w("", "can not dep prop, because can not find the prop,"
                     + " please check is use the whole prop to dep")
         }
     }
@@ -238,6 +238,9 @@ abstract class State {
         return dataMap[key]
     }
 
+    /**
+     * 内部类，用于实现响应式属性的委托
+     */
     inner class Reactive<V : Any?>(initialValue: V) : ReadWriteProperty<Any?, V> {
         private var value = initialValue
 
@@ -250,6 +253,10 @@ abstract class State {
             }
         }
 
+        /**
+         * 获取属性的值
+         *
+         */
         override fun getValue(thisRef: Any?, property: KProperty<*>): V {
             val key = property.name
             curDepPropKey = key
@@ -259,6 +266,9 @@ abstract class State {
             return value
         }
 
+        /**
+         * 设置属性的值，，首次设置的时候要设置依赖关系
+         */
         override fun setValue(thisRef: Any?, property: KProperty<*>, v: V) {
             val name = property.name
             checkDataMap(name, value as Any) {
@@ -266,7 +276,7 @@ abstract class State {
             }
 
             val prop = dataMap[name]
-            if (stateType === StateType.ComponentType && isMerging && !hasMergeState) {
+            if ((stateType == StateType.ComponentType) && isMergingState && !stateHasMerged) {
                 if (prop != null) {
                     depProp(prop)
                 }
@@ -279,7 +289,6 @@ abstract class State {
                 this.value = v
             }
         }
-
     }
 
     companion object {

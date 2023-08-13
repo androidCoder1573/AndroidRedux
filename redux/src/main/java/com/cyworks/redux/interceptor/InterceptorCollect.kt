@@ -1,11 +1,10 @@
 package com.cyworks.redux.interceptor
 
-import com.cyworks.redux.State
+import com.cyworks.redux.state.State
 import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.types.ContextProvider
 import com.cyworks.redux.types.Interceptor
-import java.util.concurrent.BlockingDeque
 
 /**
  * Desc: Interceptor收集器
@@ -24,7 +23,7 @@ class InterceptorCollect<CS: State>(private val contextProvider: ContextProvider
      * @return InnerInterceptor
      */
     val interceptor = object: Interceptor<State> {
-        override fun doAction(action: Action<Any>, ctx: ReduxContext<State>) {
+        override fun doAction(action: Action<Any>, ctx: ReduxContext<State>?) {
             doAction(action)
         }
     }

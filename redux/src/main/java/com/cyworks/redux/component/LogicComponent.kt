@@ -1,7 +1,10 @@
-package com.cyworks.redux
+package com.cyworks.redux.component
 
 import android.os.Bundle
+import com.cyworks.redux.*
+import com.cyworks.redux.state.State
 import com.cyworks.redux.store.GlobalStoreWatcher
+import com.cyworks.redux.util.Environment
 import java.util.HashMap
 import java.util.concurrent.Future
 

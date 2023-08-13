@@ -1,7 +1,6 @@
-package com.cyworks.redux
+package com.cyworks.redux.state
 
-import com.cyworks.redux.ReactiveProp.isPrivateProp
-import com.cyworks.redux.ReactiveProp
+import com.cyworks.redux.prop.ReactiveProp
 import java.util.ArrayList
 
 /**
@@ -10,7 +9,7 @@ import java.util.ArrayList
  * 2、记录本次修改的公共属性
  * 3、检查组件是否可以修改某个值
  *
- * 本类的实例会在执行Reducer期间注入到具体的State对象中 [State],
+ * 本类的实例会在执行Reducer期间注入到具体的[State]对象中
  * 这样做的主要目的是防止用户在非Reducer中更新UI属性，导致框架无法捕获属性变更。
  */
 class StateProxy {
@@ -20,12 +19,16 @@ class StateProxy {
      */
     private val mChangeQueue: MutableList<ReactiveProp<Any>>
 
+    init {
+        mChangeQueue = ArrayList()
+    }
+
     /**
      * 记录变化的属性，用于store通知时进行判断。
      *
      * @param prop 属性值 [ReactiveProp]
      */
-    fun recordChangedProp(prop: ReactiveProp<*>) {
+    fun recordChangedProp(prop: ReactiveProp<Any>) {
         mChangeQueue.add(prop)
     }
 
@@ -33,7 +36,7 @@ class StateProxy {
      * 获取组件私有数据变化的情况。
      * @return ChangedProp列表
      */
-    val privatePropChanged: List<ReactiveProp<Any>>?
+    val changedPrivateProps: List<ReactiveProp<Any>>?
         get() {
             if (mChangeQueue.isEmpty()) {
                 return null
@@ -54,7 +57,7 @@ class StateProxy {
      * 获取reducer执行完成后数据变化的情况。
      * @return ChangedProp列表
      */
-    val publicPropChanged: List<ReactiveProp<Any>>?
+    val changedPublicProps: List<ReactiveProp<Any>>?
         get() {
             if (mChangeQueue.isEmpty()) {
                 return null
@@ -85,8 +88,4 @@ class StateProxy {
             }
             return false
         }
-
-    init {
-        mChangeQueue = ArrayList()
-    }
 }

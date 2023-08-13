@@ -1,7 +1,7 @@
 package com.cyworks.redux.interceptor
 
 import com.cyworks.redux.ReduxContext
-import com.cyworks.redux.State
+import com.cyworks.redux.state.State
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.action.ActionType
 import com.cyworks.redux.types.Dispose
@@ -17,7 +17,7 @@ class InterceptorManager {
     val adapters = ArrayList<Adapter<State>>()
 
     val interceptor: Interceptor<State> = object : Interceptor<State> {
-        override fun doAction(action: Action<Any>, ctx: ReduxContext<State>) {
+        override fun doAction(action: Action<Any>, ctx: ReduxContext<State>?) {
             doActionEx(action)
         }
     }

@@ -1,12 +1,13 @@
 package com.cyworks.redux.store
 
-import com.tencent.redux.prop.IPropsChanged
+import com.cyworks.redux.prop.ReactiveProp
+import com.cyworks.redux.types.IPropsChanged
 
 /**
- * Desc: 用于监听Store的变化, 通过ReduxContext注入到Store中[ReduxContext],
+ * Desc: 用于监听Store的变化, 通过ReduxContext注入到Store中,
  * 框架内部负责创建StoreObserver，外部不可见。
  */
-class StoreObserver(@NonNull cb: IPropsChanged, token: String) {
+class StoreObserver(cb: IPropsChanged, token: String) {
     /**
      * 通知属性变化的callback
      */
@@ -18,18 +19,6 @@ class StoreObserver(@NonNull cb: IPropsChanged, token: String) {
     val token: String
 
     /**
-     * 当store内部数据发生变化时，通知关心的组件状态变化了
-     *
-     * @param props 变化的属性
-     */
-    fun onPropChanged(props: List<ReactiveProp<Any?>?>?) {
-        if (props == null || props.isEmpty()) {
-            return
-        }
-        mCB.onPropChanged(props)
-    }
-
-    /**
      * 创建一个StoreObserver
      *
      * @param cb 属性变化监听器
@@ -38,5 +27,17 @@ class StoreObserver(@NonNull cb: IPropsChanged, token: String) {
     init {
         mCB = cb
         this.token = token
+    }
+
+    /**
+     * 当store内部数据发生变化时，通知关心的组件状态变化了
+     *
+     * @param props 变化的属性
+     */
+    fun onPropChanged(props: List<ReactiveProp<Any>>?) {
+        if (props.isNullOrEmpty()) {
+            return
+        }
+        mCB.onPropsChanged(props)
     }
 }

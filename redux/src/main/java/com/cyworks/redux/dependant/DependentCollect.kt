@@ -1,7 +1,7 @@
 package com.cyworks.redux.dependant
 
 import com.cyworks.redux.Dependant
-import com.cyworks.redux.State
+import com.cyworks.redux.state.State
 
 /**
  * Desc: 如果某个组件需要依赖一些子组件，则需要使用本类来收集这些子组件。

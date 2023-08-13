@@ -2,7 +2,8 @@ package com.cyworks.redux.ui
 
 import android.view.View
 import com.cyworks.redux.ReduxContext
-import com.cyworks.redux.State
+import com.cyworks.redux.atom.UIWatcher
+import com.cyworks.redux.state.State
 
 /**
  * Desc: 用于加载组件的布局/收集更新组件UI的接口

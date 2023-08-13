@@ -1,4 +1,4 @@
-package com.cyworks.redux
+package com.cyworks.redux.component
 
 import android.view.View
 import com.tencent.redux.beans.UIChangedBean
