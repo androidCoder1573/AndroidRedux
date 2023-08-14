@@ -5,14 +5,18 @@ import android.view.View
 import com.cyworks.redux.Dependant
 import com.cyworks.redux.util.Environment
 import com.cyworks.redux.ReduxManager
+import com.cyworks.redux.atom.UIWatcher
 import com.cyworks.redux.state.State
+import com.cyworks.redux.ui.ComponentViewHolder
+import com.cyworks.redux.ui.ViewModule
+import com.cyworks.redux.util.ILogger
 import com.tencent.redux.beans.UIChangedBean
 import java.lang.Exception
 import java.lang.RuntimeException
 import java.util.HashMap
 
 /**
- * Desc: 对组件的UI操作抽取出来放到UI处理类中:
+ * 对组件的UI操作抽取出来放到UI处理类中:
  * 1、初始化UI;
  * 2、设置Atom，用于UI的局部更新;
  * 3、设置UI组件的View的显示/隐藏以及绑定/删除操作;
@@ -38,7 +42,7 @@ get() {
      * 当前组件的UI界面是否显示
      */
     @JvmField
-    var isShow: Boolean
+    var isShow: Boolean = false
 
     /**
      * Component自己的View，可以被detach，横屏UI
@@ -79,13 +83,13 @@ get() {
     /**
      * Log 组件
      */
-    private val mLogger: ILogger = ReduxManager.getInstance().getLogger()
+    private val mLogger: ILogger = ReduxManager.instance.logger
     private var isRunFirstUpdate = false
 
     /**
      * 为当前组件创建UI片段观察者
      */
-    fun makeUIWatcher(@NonNull state: S) {
+    fun makeUIWatcher(state: S) {
         if (mViewModule == null) {
             return
         }

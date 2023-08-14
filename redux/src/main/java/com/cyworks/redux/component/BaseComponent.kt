@@ -2,6 +2,9 @@ package com.cyworks.redux.component
 
 import android.arch.lifecycle.Lifecycle
 import android.os.SystemClock
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Observer
+import com.cyworks.redux.prop.ChangedState
 import com.cyworks.redux.state.State
 import com.cyworks.redux.util.Environment
 
@@ -16,9 +19,9 @@ import com.cyworks.redux.util.Environment
  *
  * Component支持UI懒加载, 组件UI懒加载：
  * 组件初始化过程中，绑定UI是整个环节中最耗时的操作，如果能延后UI绑定操作，能一定程度上缓解初始化压力。
- * 框架提供了[BaseComponentState.isShowUI] 来懒加载UI界面，开发者可以自己控制UI展示的时机。
+ * 框架提供了[isShowUI] 来懒加载UI界面，开发者可以自己控制UI展示的时机。
  */
-abstract class BaseComponent<S : BaseComponentState?>(lazyBindUI: Boolean) : LogicComponent<S>(null) {
+abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>(null) {
     /**
      * 使用LiveData包裹变更的状态数据，防止因为生命周期导致界面异常
      */
