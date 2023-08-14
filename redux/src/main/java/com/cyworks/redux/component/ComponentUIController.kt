@@ -23,19 +23,14 @@ import java.util.HashMap
  *
  * todo: 可以考虑将此类让开发者实现，更加定制化的操作UI
  */
-class ComponentUIMixin<S : BaseComponentState?>(
-    /**
-     * 组件实例
-     */
-    private val mComponent: BaseComponent<S>?, lazyBindUI: Boolean
-) {
+class ComponentUIController<S : State>(private val mComponent: BaseComponent<S>?, lazyBindUI: Boolean) {
     /**
      * 组件是否bind到父组件上
      */
     @JvmField
     var isInstalled = false
 get() {
-        return mUIMixin.isBind
+        return isBind
     }
 
     /**
@@ -47,66 +42,67 @@ get() {
     /**
      * Component自己的View，可以被detach，横屏UI
      */
-    private var mLandscapeView: View? = null
+    private var landscapeView: View? = null
 
     /**
      * Component自己的View，可以被detach, 竖屏UI
      */
-    private var mPortraitView: View? = null
+    private var portraitView: View? = null
 
     /**
      * Component当前显示的View
      */
-    var mCurrentView: View? = null
+    var currentView: View? = null
 
     /**
      * 保存当前组件View的辅助类，方便在更新接口中获取view
      */
-    var mViewHolder: ComponentViewHolder? = null
+    var viewHolder: ComponentViewHolder? = null
 
     /**
      * 当前组件对应的UI的更新接口
      */
-    private val mViewModule: ViewModule<S>?
+    private val viewModule: ViewModule<S>?
 
     /**
      * UI 监听状态变化，触发UI更新
      */
-    private var mUIWatcher: UIWatcher<S>? = null
+    private var uiWatcher: UIWatcher<S>? = null
+
+    /**
+     * Log 组件
+     */
+    private val logger: ILogger = ReduxManager.instance.logger
+
 
     /**
      * 上次的屏幕方向
      */
     @JvmField
-    var mLastOrientation = Configuration.ORIENTATION_PORTRAIT
-
-    /**
-     * Log 组件
-     */
-    private val mLogger: ILogger = ReduxManager.instance.logger
+    var lastOrientation = Configuration.ORIENTATION_PORTRAIT
     private var isRunFirstUpdate = false
 
     /**
      * 为当前组件创建UI片段观察者
      */
     fun makeUIWatcher(state: S) {
-        if (mViewModule == null) {
+        if (viewModule == null) {
             return
         }
 
         // 创建UI更新器
-        mUIWatcher = UIWatcher()
-        mUIWatcher.setAtom(state, mViewModule)
+        uiWatcher = UIWatcher()
+        uiWatcher.setAtom(state, viewModule)
     }
 
     /**
      * 重置View Holder
      */
     fun resetViewHolder() {
-        if (mViewHolder != null) {
-            mViewHolder.dispose()
+        if (viewHolder != null) {
+            viewHolder.dispose()
         }
-        mViewHolder = ComponentViewHolder(mCurrentView)
+        viewHolder = ComponentViewHolder(currentView)
     }
 
     /**
@@ -116,16 +112,16 @@ get() {
      */
     fun show(needVisible: Boolean) {
         // 如果已经绑定了，则直接走构建UI的逻辑
-        if (mLastOrientation == Configuration.ORIENTATION_PORTRAIT && mPortraitView == null
-            || mLastOrientation == Configuration.ORIENTATION_LANDSCAPE && mLandscapeView == null
+        if (lastOrientation == Configuration.ORIENTATION_PORTRAIT && portraitView == null
+            || lastOrientation == Configuration.ORIENTATION_LANDSCAPE && landscapeView == null
         ) {
             initUI()
         }
 
         // 根组件进行展示
         if (needVisible) {
-            if (mCurrentView != null) {
-                mCurrentView!!.visibility = View.VISIBLE
+            if (currentView != null) {
+                currentView!!.visibility = View.VISIBLE
             }
         }
 
@@ -172,8 +168,8 @@ get() {
      */
     fun hide(needGone: Boolean) {
         if (needGone) {
-            if (mCurrentView != null) {
-                mCurrentView!!.visibility = View.GONE
+            if (currentView != null) {
+                currentView!!.visibility = View.GONE
             }
         }
         hideChildren()
@@ -258,12 +254,12 @@ get() {
 
     private fun setViewNUll() {
         // 清理一些View
-        mCurrentView = null
-        mLandscapeView = null
-        mPortraitView = null
-        if (mViewHolder != null) {
-            mViewHolder.dispose()
-            mViewHolder = null
+        currentView = null
+        landscapeView = null
+        portraitView = null
+        if (viewHolder != null) {
+            viewHolder.dispose()
+            viewHolder = null
         }
     }
 
@@ -308,7 +304,7 @@ get() {
      */
     fun initUI() {
         // 绑定View
-        if (mViewModule == null || mComponent == null) {
+        if (viewModule == null || mComponent == null) {
             return
         }
 
@@ -316,14 +312,14 @@ get() {
         mComponent.initAdapter()
 
         // 根据屏幕方向，进行View的初始化操作
-        changeView(mLastOrientation)
+        changeView(lastOrientation)
 
         // 创建View Holder
-        if (mViewHolder != null) {
-            mViewHolder.dispose()
-            mViewHolder = null
+        if (viewHolder != null) {
+            viewHolder.dispose()
+            viewHolder = null
         }
-        mViewHolder = ComponentViewHolder(mCurrentView)
+        viewHolder = ComponentViewHolder(currentView)
 
         // 设置显示状态
         setShow(true)
@@ -333,7 +329,7 @@ get() {
      * 首次渲染时，对UI更新一次数据
      */
     fun firstUpdate() {
-        if (mCurrentView == null || isRunFirstUpdate) {
+        if (currentView == null || isRunFirstUpdate) {
             return
         }
         val context = mComponent!!.context
@@ -364,10 +360,10 @@ get() {
      */
     fun sendUIChangedAction(type: Int) {
         val uiChangedBean = UIChangedBean()
-        uiChangedBean.orientation = mLastOrientation
+        uiChangedBean.orientation = lastOrientation
         uiChangedBean.isShow = isShow
-        uiChangedBean.mPartialView = mPortraitView
-        uiChangedBean.mLandscapeView = mLandscapeView
+        uiChangedBean.mPartialView = portraitView
+        uiChangedBean.mLandscapeView = landscapeView
         uiChangedBean.mType = type
         val context = mComponent!!.context
         context?.dispatchEffect(LifeCycleAction.ACTION_ON_UI_CHANGED, uiChangedBean)
@@ -389,39 +385,39 @@ get() {
     }
 
     private fun setPortraitView() {
-        if (mPortraitView == null) {
-            mPortraitView = callViewBuilder()
+        if (portraitView == null) {
+            portraitView = callViewBuilder()
         }
 
         // 如果用户没有设置竖屏UI，则屏幕旋转的时候直接使用横屏UI
-        if (mPortraitView == null) {
-            mPortraitView = mLandscapeView
+        if (portraitView == null) {
+            portraitView = landscapeView
         }
-        if (mPortraitView == null) {
+        if (portraitView == null) {
             throw RuntimeException(
                 "create view failed in portrait, component is: "
                         + mComponent!!.javaClass.name
             )
         }
-        mCurrentView = mPortraitView
+        currentView = portraitView
     }
 
     private fun setLandscapeView() {
-        if (mLandscapeView == null) {
-            mLandscapeView = callViewBuilder()
+        if (landscapeView == null) {
+            landscapeView = callViewBuilder()
         }
 
         // 如果用户没有设置横屏UI，则屏幕旋转的时候直接使用竖屏UI
-        if (mLandscapeView == null) {
-            mLandscapeView = mPortraitView
+        if (landscapeView == null) {
+            landscapeView = portraitView
         }
-        if (mLandscapeView == null) {
+        if (landscapeView == null) {
             throw RuntimeException(
                 "create view failed in landscape, component is: "
                         + mComponent!!.javaClass.name
             )
         }
-        mCurrentView = mLandscapeView
+        currentView = landscapeView
     }
 
     /**
@@ -430,13 +426,13 @@ get() {
      */
     private fun callViewBuilder(): View? {
         val context = mComponent!!.context
-        return if (mViewModule == null || context == null) {
+        return if (viewModule == null || context == null) {
             null
         } else try {
-            mViewModule.getView(context)
+            viewModule.getView(context)
         } catch (e: Exception) {
             // 这里可能会产生多种异常，比如空指针，重复添加等
-            mLogger.printStackTrace(ILogger.ERROR_TAG, "call view builder fail: ", e)
+            logger.printStackTrace(ILogger.ERROR_TAG, "call view builder fail: ", e)
             null
         }
     }
@@ -446,7 +442,7 @@ get() {
      * @return 当mViewUpdater不为null时，此时说明当前组件存在UI，可以更新UI
      */
     fun canNotUpdateUI(): Boolean {
-        return mViewModule == null
+        return viewModule == null
     }
 
     /**
@@ -457,7 +453,7 @@ get() {
      * @param holder 当前UI组件的View Holder
      */
     fun callUIUpdate(state: S, keys: List<String?>?, holder: ComponentViewHolder?) {
-        mUIWatcher.updateUI(state, keys, holder)
+        uiWatcher.updateUI(state, keys, holder)
     }
 
     fun clear() {
@@ -465,7 +461,7 @@ get() {
     }
 
     init {
-        mViewModule = mComponent!!.viewModule
+        viewModule = mComponent!!.viewModule
 
         // 如果是延迟加载，表明初始状态时不加载UI
         isShow = !lazyBindUI

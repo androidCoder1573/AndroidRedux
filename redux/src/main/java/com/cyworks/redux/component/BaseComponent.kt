@@ -1,9 +1,12 @@
 package com.cyworks.redux.component
 
-import android.arch.lifecycle.Lifecycle
 import android.os.SystemClock
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
+import androidx.lifecycle.OnLifecycleEvent
+import com.cyworks.redux.lifecycle.LifeCycleAction
 import com.cyworks.redux.prop.ChangedState
 import com.cyworks.redux.state.State
 import com.cyworks.redux.util.Environment
@@ -25,17 +28,17 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
     /**
      * 使用LiveData包裹变更的状态数据，防止因为生命周期导致界面异常
      */
-    var mLiveData: MutableLiveData<ChangedState<S>>? = null
+    var liveData: MutableLiveData<ChangedState<S>>? = null
 
     /**
      * LiveData的Observer
      */
-    var mObserver: Observer<ChangedState<S>>? = null
+    var observer: Observer<ChangedState<S>>? = null
 
     /**
      * 将对UI的操作放在这里
      */
-    val mUIMixin: ComponentUIMixin<S>?
+    val uiMixin: ComponentUIController<S>?
 
     /**
      * 构造器，初始一些组件的内部数据
@@ -43,44 +46,42 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
      * @param lazyBindUI 是否延迟加载UI
      */
     init {
-        mUIMixin = ComponentUIMixin(this, lazyBindUI)
+        uiMixin = ComponentUIController(this, lazyBindUI)
     }
 
     fun show() {
-        mUIMixin?.show(false)
+        uiMixin?.show(false)
     }
 
     fun hide() {
-        mUIMixin?.hide(false)
+        uiMixin?.hide(false)
     }
 
     fun attach() {
-        mUIMixin?.attach()
+        uiMixin?.attach()
     }
 
     fun detach() {
-        mUIMixin?.detach()
+        uiMixin?.detach()
     }
 
     /**
      * 使用LiveData观察数据，触发UI更新
      */
     fun observe() {
-        if (environment == null || mObserver == null) {
+        if (environment == null || observer == null) {
             return
         }
-        mLiveData.observe(environment!!.lifeCycleProxy!!.lifecycleOwner, mObserver)
+        liveData.observe(environment!!.lifeCycleProxy!!.lifecycleOwner, observer)
     }
 
-    override fun install(
-        @NonNull environment: Environment?,
-        @NonNull connector: LRConnector<S, State?>?
-    ) {
+    override fun install(environment: Environment?, connector: LRConnector<S, State>?) {
         var environment = environment
-        if (mUIMixin.isBind) {
+        if (uiMixin.isBind) {
             return
         }
-        mUIMixin.isBind = true
+
+        uiMixin.isBind = true
         mConnector = connector
         environment = environment
 
@@ -89,7 +90,7 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
         mBundle = lifeCycleProxy.getBundle()
 
         // 添加生命周期观察
-        mLiveData = MutableLiveData()
+        liveData = MutableLiveData()
         val lifecycle: Lifecycle = lifeCycleProxy.getLifecycle()
         if (lifecycle != null) {
             lifecycle.addObserver(ComponentLifeCycleObserver(this))
@@ -114,7 +115,7 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
             val stateCompare: ChangedState<S> = ChangedState()
             stateCompare.mState = state
             stateCompare.mChangedProps = changedProps
-            mLiveData.setValue(stateCompare)
+            liveData.setValue(stateCompare)
         }
     }
 
@@ -127,26 +128,26 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
     @CallSuper
     override fun clear() {
         super.clear()
-        mLiveData.removeObserver(mObserver)
+        liveData.removeObserver(observer)
         if (context != null) {
             context!!.destroy()
         }
-        mUIMixin!!.clear()
+        uiMixin!!.clear()
         environment = null
     }
 
     override fun onStateDetected(componentState: S) {
         // 检查默认属性设置
-        componentState.isShowUI.innerSetter(mUIMixin!!.isShow)
+        componentState.isShowUI.innerSetter(uiMixin!!.isShow)
 
         // 获取初始的屏幕方向
-        mUIMixin.mLastOrientation = componentState.mCurrentOrientation.value()
+        uiMixin.lastOrientation = componentState.mCurrentOrientation.value()
 
         // 设置状态 -- UI 监听
-        mUIMixin.makeUIWatcher(componentState)
+        uiMixin.makeUIWatcher(componentState)
 
         // 运行首次UI更新
-        mUIMixin.firstUpdate()
+        uiMixin.firstUpdate()
     }
 
     /**
@@ -159,9 +160,9 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
         createContext()
 
         // 2、如果不懒加载，直接加载界面
-        if (mUIMixin!!.isShow) {
-            mUIMixin.initUI()
-            mUIMixin.firstUpdate()
+        if (uiMixin!!.isShow) {
+            uiMixin.initUI()
+            uiMixin.firstUpdate()
 
             // 遍历依赖
             initSubComponent()
@@ -184,13 +185,11 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
     /**
      * Activity生命周期监听，通过这种方式实现组件的生命周期自治
      */
-    private class ComponentLifeCycleObserver(
-        @NonNull component: BaseComponent<out BaseComponentState?>
-    ) : LifecycleObserver {
+    private class ComponentLifeCycleObserver(component: BaseComponent<out State>) : LifecycleObserver {
         /**
          * 内部持有组件实例
          */
-        private val mComponent: BaseComponent<out BaseComponentState?>
+        private val mComponent: BaseComponent<out State>
 
         /**
          * 构造器，初始化生命周期观察者

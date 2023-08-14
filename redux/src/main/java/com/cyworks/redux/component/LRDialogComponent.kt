@@ -24,7 +24,7 @@ abstract class LRDialogComponent<S : BaseComponentState?> : BaseComponent<S>(tru
      */
     private var mDialogInterface: IDialogController? = object : IDialogController() {
         val view: View
-            get() = mUIMixin.mCurrentView
+            get() = uiMixin.currentView
 
         fun onDialogDismiss() {
             detach()
@@ -40,7 +40,7 @@ abstract class LRDialogComponent<S : BaseComponentState?> : BaseComponent<S>(tru
      * @param stateCompare ChangedState
      */
     private fun onDataChangedCB(stateCompare: ChangedState<S>) {
-        if (mUIMixin.canNotUpdateUI() || environment == null) {
+        if (uiMixin.canNotUpdateUI() || environment == null) {
             return
         }
         val props: List<ReactiveProp<Any>> = stateCompare.mChangedProps
@@ -56,9 +56,9 @@ abstract class LRDialogComponent<S : BaseComponentState?> : BaseComponent<S>(tru
         }
 
         // 如果组件UI不可见
-        if (!mUIMixin.isShow) {
+        if (!uiMixin.isShow) {
             // 更新一次旋转方向
-            mUIMixin.mLastOrientation = context!!.state.mCurrentOrientation.value()
+            uiMixin.lastOrientation = context!!.state.mCurrentOrientation.value()
             return
         }
 
@@ -68,7 +68,7 @@ abstract class LRDialogComponent<S : BaseComponentState?> : BaseComponent<S>(tru
         }
 
         // 最后更新UI
-        mUIMixin.callUIUpdate(stateCompare.mState, propKeys, mUIMixin.mViewHolder)
+        uiMixin.callUIUpdate(stateCompare.mState, propKeys, uiMixin.viewHolder)
     }
 
     /**
@@ -89,12 +89,12 @@ abstract class LRDialogComponent<S : BaseComponentState?> : BaseComponent<S>(tru
         val nowOrientation: Int = context!!.state.mCurrentOrientation.value()
 
         // 防重入
-        if (mUIMixin.mLastOrientation == nowOrientation) {
+        if (uiMixin.lastOrientation == nowOrientation) {
             return false
         }
 
         // 方向不一致，执行切换
-        mUIMixin.mLastOrientation = nowOrientation
+        uiMixin.lastOrientation = nowOrientation
         closeDialog()
         return true
     }
@@ -146,7 +146,7 @@ abstract class LRDialogComponent<S : BaseComponentState?> : BaseComponent<S>(tru
     }
 
     init {
-        mObserver = Observer<ChangedState<S>> { stateCompare: ChangedState<S> ->
+        observer = Observer<ChangedState<S>> { stateCompare: ChangedState<S> ->
             onDataChangedCB(stateCompare)
         }
     }
