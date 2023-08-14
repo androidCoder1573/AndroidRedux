@@ -2,6 +2,7 @@ package com.cyworks.redux.component
 
 import android.support.annotation.CallSuper
 import com.cyworks.redux.*
+import com.cyworks.redux.dependant.Dependant
 import com.cyworks.redux.state.State
 import com.cyworks.redux.store.PageStore
 import com.cyworks.redux.util.Environment
@@ -78,7 +79,7 @@ abstract class LogicPage<S : BasePageState?>(@NonNull proxy: LifeCycleProxy) :
             return
         }
         for (dependant in map.values) {
-            val connector: LRConnector<out BaseComponentState?, S> = dependant.connector
+            val connector: Connector<out BaseComponentState?, S> = dependant.connector
             val interceptors: HashMap<Any, Any> = makeInterceptorForAction(connector, dependant)
                 ?: continue
             innerInterceptorCollect.add(interceptors)
@@ -87,7 +88,7 @@ abstract class LogicPage<S : BasePageState?>(@NonNull proxy: LifeCycleProxy) :
     }
 
     private fun makeInterceptorForAction(
-        connector: LRConnector<out BaseComponentState?, S>,
+        connector: Connector<out BaseComponentState?, S>,
         dependant: Dependant<out BaseComponentState?, S>
     ): HashMap<Action, InterceptorBean>? {
         // 获取拦截器收集器
@@ -128,7 +129,7 @@ abstract class LogicPage<S : BasePageState?>(@NonNull proxy: LifeCycleProxy) :
 
     override fun mergeReducer(
         @NonNull list: MutableList<SubReducer?>,
-        connector: LRConnector<*, *>?
+        connector: Connector<*, *>?
     ) {
         if (mDependencies != null) {
             mDependencies.mergerDependantReducer(list)

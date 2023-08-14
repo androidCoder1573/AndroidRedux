@@ -1,6 +1,5 @@
 package com.cyworks.redux.dependant
 
-import com.cyworks.redux.Dependant
 import com.cyworks.redux.state.State
 
 /**

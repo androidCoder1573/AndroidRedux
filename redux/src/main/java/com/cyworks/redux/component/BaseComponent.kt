@@ -1,15 +1,23 @@
 package com.cyworks.redux.component
 
+import android.annotation.SuppressLint
 import android.os.SystemClock
+import androidx.annotation.CallSuper
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import androidx.lifecycle.OnLifecycleEvent
+import com.cyworks.redux.action.Action
 import com.cyworks.redux.lifecycle.LifeCycleAction
+import com.cyworks.redux.lifecycle.LifeCycleProxy
 import com.cyworks.redux.prop.ChangedState
 import com.cyworks.redux.state.State
+import com.cyworks.redux.ui.ViewModule
 import com.cyworks.redux.util.Environment
+import com.cyworks.redux.util.ILogger
+import com.cyworks.redux.util.IPlatform
+import com.cyworks.redux.util.Platform
 
 /**
  * Desc:组件基类，框架内部实现，外部不能直接使用, 用来承载一个Redux组件.
@@ -38,7 +46,14 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
     /**
      * 将对UI的操作放在这里
      */
-    val uiMixin: ComponentUIController<S>?
+    val uiController: ComponentUIController<S>?
+
+    /**
+     * 获取View模块，外部设置
+     *
+     * @return ViewModule
+     */
+    abstract val viewModule: ViewModule<S>?
 
     /**
      * 构造器，初始一些组件的内部数据
@@ -46,23 +61,23 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
      * @param lazyBindUI 是否延迟加载UI
      */
     init {
-        uiMixin = ComponentUIController(this, lazyBindUI)
+        uiController = ComponentUIController(this, lazyBindUI)
     }
 
     fun show() {
-        uiMixin?.show(false)
+        uiController?.show(false)
     }
 
     fun hide() {
-        uiMixin?.hide(false)
+        uiController?.hide(false)
     }
 
     fun attach() {
-        uiMixin?.attach()
+        uiController?.attach()
     }
 
     fun detach() {
-        uiMixin?.detach()
+        uiController?.detach()
     }
 
     /**
@@ -72,40 +87,36 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
         if (environment == null || observer == null) {
             return
         }
-        liveData.observe(environment!!.lifeCycleProxy!!.lifecycleOwner, observer)
+        environment!!.lifeCycleProxy!!.lifecycleOwner?.let { liveData?.observe(it, observer!!) }
     }
 
-    override fun install(environment: Environment?, connector: LRConnector<S, State>?) {
+    override fun install(environment: Environment?, connector: Connector<S, State>?) {
         var environment = environment
-        if (uiMixin.isBind) {
+        if (uiController.isBind) {
             return
         }
 
-        uiMixin.isBind = true
-        mConnector = connector
+        uiController.isBind = true
+        this.connector = connector
         environment = environment
 
         // 获取启动参数
         val lifeCycleProxy: LifeCycleProxy? = environment!!.lifeCycleProxy
-        mBundle = lifeCycleProxy.getBundle()
+        props = lifeCycleProxy?.props
 
         // 添加生命周期观察
         liveData = MutableLiveData()
-        val lifecycle: Lifecycle = lifeCycleProxy.getLifecycle()
-        if (lifecycle != null) {
-            lifecycle.addObserver(ComponentLifeCycleObserver(this))
-        }
+        lifeCycleProxy?.lifecycle?.addObserver(ComponentLifeCycleObserver(this))
     }
 
     @SuppressLint("ResourceType")
     override fun createPlatform(): IPlatform? {
         val lifeCycleProxy: LifeCycleProxy? = environment!!.lifeCycleProxy
-        val platform = Platform(lifeCycleProxy, environment!!.rootView)
-        if (mConnector != null) {
-            platform.setStubId(
-                mConnector!!.viewContainerIdForV,
-                mConnector!!.viewContainerIdForH
-            )
+        val platform = lifeCycleProxy?.let { environment!!.rootView?.let { it1 ->
+            Platform(it, it1)
+        } }
+        if (connector != null) {
+            platform?.setStubId(connector!!.viewContainerIdForV, connector!!.viewContainerIdForH)
         }
         return platform
     }
@@ -119,12 +130,6 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
         }
     }
 
-    /**
-     * 获取View模块，外部设置
-     *
-     * @return ViewModule
-     */
-    abstract val viewModule: ViewModule<S>?
     @CallSuper
     override fun clear() {
         super.clear()
@@ -132,22 +137,22 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
         if (context != null) {
             context!!.destroy()
         }
-        uiMixin!!.clear()
+        uiController!!.clear()
         environment = null
     }
 
     override fun onStateDetected(componentState: S) {
         // 检查默认属性设置
-        componentState.isShowUI.innerSetter(uiMixin!!.isShow)
+        componentState.isShowUI.innerSetter(uiController!!.isShow)
 
         // 获取初始的屏幕方向
-        uiMixin.lastOrientation = componentState.mCurrentOrientation.value()
+        uiController?.lastOrientation = componentState.mCurrentOrientation.value()
 
         // 设置状态 -- UI 监听
-        uiMixin.makeUIWatcher(componentState)
+        uiController?.makeUIWatcher(componentState)
 
         // 运行首次UI更新
-        uiMixin.firstUpdate()
+        uiController?.firstUpdate()
     }
 
     /**
@@ -160,9 +165,9 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
         createContext()
 
         // 2、如果不懒加载，直接加载界面
-        if (uiMixin!!.isShow) {
-            uiMixin.initUI()
-            uiMixin.firstUpdate()
+        if (uiController!!.isShow) {
+            uiController.initUI()
+            uiController.firstUpdate()
 
             // 遍历依赖
             initSubComponent()
@@ -172,13 +177,12 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
         observe()
 
         // 4、发送onCreate Effect
-        context!!.onLifecycle(LifeCycleAction.ACTION_ON_CREATE)
+        context!!.onLifecycle(Action(LifeCycleAction.ACTION_ON_CREATE, null))
 
         // 打印初始化的耗时
-        mLogger.d(
-            ILogger.PERF_TAG, "component: <"
-                    + javaClass.simpleName
-                    + "> init consumer: " + (SystemClock.uptimeMillis() - time)
+        logger.d(
+            ILogger.PERF_TAG, "component: <" + javaClass.simpleName + ">"
+                    + "init consumer: " + (SystemClock.uptimeMillis() - time)
         )
     }
 
@@ -207,28 +211,28 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
 
         @OnLifecycleEvent(Lifecycle.Event.ON_START)
         fun onStart() {
-            mComponent.context!!.onLifecycle(LifeCycleAction.ACTION_ON_START)
+            mComponent.context!!.onLifecycle(Action(LifeCycleAction.ACTION_ON_START, null))
         }
 
         @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
         fun onResume() {
-            mComponent.context!!.onLifecycle(LifeCycleAction.ACTION_ON_RESUME)
+            mComponent.context!!.onLifecycle(Action(LifeCycleAction.ACTION_ON_RESUME, null))
         }
 
         @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
         fun onPause() {
-            mComponent.context!!.onLifecycle(LifeCycleAction.ACTION_ON_PAUSE)
+            mComponent.context!!.onLifecycle(Action(LifeCycleAction.ACTION_ON_PAUSE, null))
         }
 
         @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
         fun onStop() {
-            mComponent.context!!.onLifecycle(LifeCycleAction.ACTION_ON_STOP)
+            mComponent.context!!.onLifecycle(Action(LifeCycleAction.ACTION_ON_STOP, null))
         }
 
         @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
         fun onDestroy() {
             // 这里的调用顺序不能乱
-            mComponent.context!!.onLifecycle(LifeCycleAction.ACTION_ON_DESTROY)
+            mComponent.context!!.onLifecycle(Action(LifeCycleAction.ACTION_ON_DESTROY, null))
             mComponent.clear()
         }
     }

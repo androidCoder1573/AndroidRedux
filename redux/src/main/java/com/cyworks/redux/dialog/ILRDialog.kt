@@ -3,7 +3,7 @@ package com.cyworks.redux.dialog
 import android.app.Activity
 
 /**
- * Desc: 对话框接口，如果要使用Live Redux的对话框组件，对话框必须要实现这个接口
+ * 对话框接口，如果要使用Live Redux的对话框组件，对话框必须要实现这个接口
  */
 interface ILRDialog {
     /**

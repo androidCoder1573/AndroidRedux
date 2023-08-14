@@ -66,7 +66,8 @@ class ReduxManager private constructor() {
     /**
      * 初始化页面/组件的时候，是否启用异步模式
      */
-    private var asyncMode = false
+    var asyncMode = false
+        private set
 
     /**
      * 执行State检测的线程池

@@ -12,7 +12,7 @@ import java.util.ArrayList
  * note: 如果对话框本身功能比较复杂，还是建议使用Page来实现,
  * 防止单一组件功能过多。
  */
-abstract class LRDialogComponent<S : BaseComponentState?> : BaseComponent<S>(true) {
+abstract class LiveDialogComponent<S : BaseComponentState?> : BaseComponent<S>(true) {
     /**
      * 当前展示的对话框实例,
      * 通过这种方式，框架不需要关心对话框的具体形式(Dialog 或者 FragmentDialog，androidX等)
@@ -24,12 +24,12 @@ abstract class LRDialogComponent<S : BaseComponentState?> : BaseComponent<S>(tru
      */
     private var mDialogInterface: IDialogController? = object : IDialogController() {
         val view: View
-            get() = uiMixin.currentView
+            get() = uiController.currentView
 
         fun onDialogDismiss() {
             detach()
             // UI detach之后再清理，保证安全
-            this@LRDialogComponent.onDialogDismiss(context)
+            this@LiveDialogComponent.onDialogDismiss(context)
             mDialog = null
         }
     }
@@ -40,7 +40,7 @@ abstract class LRDialogComponent<S : BaseComponentState?> : BaseComponent<S>(tru
      * @param stateCompare ChangedState
      */
     private fun onDataChangedCB(stateCompare: ChangedState<S>) {
-        if (uiMixin.canNotUpdateUI() || environment == null) {
+        if (uiController.canNotUpdateUI() || environment == null) {
             return
         }
         val props: List<ReactiveProp<Any>> = stateCompare.mChangedProps
@@ -56,9 +56,9 @@ abstract class LRDialogComponent<S : BaseComponentState?> : BaseComponent<S>(tru
         }
 
         // 如果组件UI不可见
-        if (!uiMixin.isShow) {
+        if (!uiController.isShow) {
             // 更新一次旋转方向
-            uiMixin.lastOrientation = context!!.state.mCurrentOrientation.value()
+            uiController.lastOrientation = context!!.state.mCurrentOrientation.value()
             return
         }
 
@@ -68,7 +68,7 @@ abstract class LRDialogComponent<S : BaseComponentState?> : BaseComponent<S>(tru
         }
 
         // 最后更新UI
-        uiMixin.callUIUpdate(stateCompare.mState, propKeys, uiMixin.viewHolder)
+        uiController.callUIUpdate(stateCompare.mState, propKeys, uiController.viewHolder)
     }
 
     /**
@@ -89,12 +89,12 @@ abstract class LRDialogComponent<S : BaseComponentState?> : BaseComponent<S>(tru
         val nowOrientation: Int = context!!.state.mCurrentOrientation.value()
 
         // 防重入
-        if (uiMixin.lastOrientation == nowOrientation) {
+        if (uiController.lastOrientation == nowOrientation) {
             return false
         }
 
         // 方向不一致，执行切换
-        uiMixin.lastOrientation = nowOrientation
+        uiController.lastOrientation = nowOrientation
         closeDialog()
         return true
     }

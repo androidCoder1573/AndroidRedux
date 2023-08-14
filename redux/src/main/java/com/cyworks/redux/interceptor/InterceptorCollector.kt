@@ -1,15 +1,15 @@
 package com.cyworks.redux.interceptor
 
-import com.cyworks.redux.state.State
 import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.action.Action
-import com.cyworks.redux.types.ContextProvider
+import com.cyworks.redux.state.State
+import com.cyworks.redux.types.ComponentContextWrapper
 import com.cyworks.redux.types.Interceptor
 
 /**
- * Desc: Interceptor收集器
+ * Interceptor收集器
  */
-class InterceptorCollect<CS: State>(private val contextProvider: ContextProvider<CS>) {
+class InterceptorCollector<CS: State>(private val contextWrapper: ComponentContextWrapper<CS>) {
     /**
      * Interceptor 集合
      */
@@ -28,17 +28,21 @@ class InterceptorCollect<CS: State>(private val contextProvider: ContextProvider
         }
     }
 
+    fun isOK(): Boolean {
+        return interceptorMap.size > 0
+    }
+
     fun addInterceptor(action: Action<Any>, interceptor: Interceptor<CS>) {
-        val bean = InterceptorBean(interceptor, contextProvider)
+        val bean = InterceptorBean(interceptor, contextWrapper)
         interceptorMap[action] = bean
     }
 
     private fun doAction(action: Action<Any>) {
         val bean = this.interceptorMap[action]
         val interceptor = bean?.interceptor
-        val provider = bean?.provider
-        if (interceptor != null && provider != null) {
-            provider.provider()?.let { interceptor.doAction(action, it) }
+        val ctxProvider = bean?.ctxProvider
+        if (interceptor != null && ctxProvider != null) {
+            interceptor.doAction(action, ctxProvider.getCtx() as ReduxContext<CS>)
         }
     }
 }

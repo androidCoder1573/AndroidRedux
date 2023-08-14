@@ -8,7 +8,7 @@ import android.view.View
 import com.cyworks.redux.store.PageStore
 
 /**
- * Desc: 页面基类，页面只需要设置根布局即可，不需要更新UI之类的操作。
+ * 页面基类，页面只需要设置根布局即可，不需要更新UI之类的操作。
  *
  * 支持横竖屏切换：
  * 为了加快横竖屏切换的速度，框架内部实现了一套这样的横竖屏切换机制：
@@ -19,9 +19,9 @@ import com.cyworks.redux.store.PageStore
  * todo：目前没有提供基于ViewModel的Store，后续会考虑。
  *
  * 如何进行切换？
- * [LRPage.requestOrientationChange] 此方法需要在收到onConfigurationChanged时调用
+ * [LivePage.requestOrientationChange] 此方法需要在收到onConfigurationChanged时调用
  */
-abstract class LRPage<S : BasePageState?> : LogicPage<S> {
+abstract class LivePage<S : BasePageState?> : LogicPage<S> {
     /**
      * 保存当前屏幕配置，旋转屏幕专用
      */
@@ -133,12 +133,12 @@ abstract class LRPage<S : BasePageState?> : LogicPage<S> {
     /**
      * 生命周期观察者
      */
-    private class PageLifecycleObserver internal constructor(@NonNull page: LRPage<out BasePageState?>) :
+    private class PageLifecycleObserver internal constructor(@NonNull page: LivePage<out BasePageState?>) :
         LifecycleObserver {
         /**
          * 关联页面实例
          */
-        private val mPage: LRPage<out BasePageState?>
+        private val mPage: LivePage<out BasePageState?>
         @OnLifecycleEvent(Event.ON_CREATE)
         fun onCreate() {
             mPage.onCreate()

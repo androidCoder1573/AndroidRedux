@@ -14,13 +14,9 @@ import com.cyworks.redux.types.IStateChange
 /**
  * Desc: 组件的根Adapter，一个组件仅能有一个根Adapter。
  *
- *
- *
  * 如果Adapter是一个逻辑组件，作为每个组件的依附，每个组件仅有一个Adapter类型的逻辑组件。
  * 逻辑组件可通过context获得，从逻辑组件中可以取得实际的Adapter。
  * adapter内部会安装ViewHolder，如果每个ViewHolder被封装成一个真正的Feature，那么实现起来太重。
- *
- *
  *
  * 思路：只有RootAdapter具有操作State的能力。
  * 如果当前Adapter具有子Adapter，需要将父Adapter设置进去，触发Reducer的操作最终都会去更新根Adapter。
@@ -105,7 +101,7 @@ abstract class RootAdapter<S : State>(adapter: RecyclerView.Adapter<RecyclerView
         isBind = true
         mEnvironment = environment
         mBundle = mEnvironment.getLifeCycleProxy().getBundle()
-        mConnector = connector
+        this.connector = connector
         initLiveData()
         createContext()
         isUIShow = true

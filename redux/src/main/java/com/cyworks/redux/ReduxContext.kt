@@ -2,10 +2,11 @@ package com.cyworks.redux
 
 import android.os.Looper
 import com.cyworks.redux.action.Action
-import com.cyworks.redux.component.LRDialogComponent
+import com.cyworks.redux.component.LiveDialogComponent
 import com.cyworks.redux.component.Logic
 import com.cyworks.redux.component.LogicComponent
 import com.cyworks.redux.component.LogicPage
+import com.cyworks.redux.dependant.Dependant
 import com.cyworks.redux.lifecycle.LifeCycleAction
 import com.cyworks.redux.prop.ReactiveProp
 import com.cyworks.redux.state.State
@@ -130,7 +131,9 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         // 监听Store抛出来的变化
         val propsChanged = object : IPropsChanged {
             override fun onPropsChanged(props: List<ReactiveProp<Any>>?) {
-                onStateChange(props)
+                if (props != null) {
+                    onStateChange(props)
+                }
             }
         }
 
@@ -148,7 +151,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      * 如果开发这不想使用Action驱动，可以通过传统的方式书写逻辑代码，需继承BaseController
      */
     var controller: BaseController<S>? = null
-        set(controller) {
+        internal set(controller) {
             field = controller
             if (field == null) {
                 field = BaseController()
@@ -358,11 +361,14 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      * @param action 携带的Action
      * @param payload 携带的参数
      */
-    fun dispatchEffect(action: Action<Any>?, payload: Any?) {
+    fun dispatchEffect(action: Action<Any>?) {
         if (isDestroy || !isStateReady) {
             return
         }
-        effectDispatch.dispatch(action, payload)
+
+        if (action != null) {
+            effectDispatch?.dispatch(action)
+        }
     }
 
     /**
@@ -520,8 +526,8 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      * 展示一个对话框组件
      */
     fun showComponentDialog(dialog: ILRDialog?) {
-        if (logic is LRDialogComponent<*>) {
-            (logic as LRDialogComponent<out BaseComponentState?>).showDialog(dialog)
+        if (logic is LiveDialogComponent<*>) {
+            (logic as LiveDialogComponent<out BaseComponentState?>).showDialog(dialog)
         }
     }
 

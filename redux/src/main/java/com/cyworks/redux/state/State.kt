@@ -158,6 +158,10 @@ abstract class State {
         }
     }
 
+    internal fun detectField() {
+
+    }
+
     /**
      * 当某个属性对外有依赖时，依赖的父属性发生更新时，此时需要更新当前属性，但是此时不能触发更新收集
      */
@@ -269,10 +273,10 @@ abstract class State {
         /**
          * 设置属性的值，，首次设置的时候要设置依赖关系
          */
-        override fun setValue(thisRef: Any?, property: KProperty<*>, v: V) {
+        override fun setValue(thisRef: Any?, property: KProperty<*>, value: V) {
             val name = property.name
-            checkDataMap(name, value as Any) {
-                value = it
+            checkDataMap(name, this.value as Any) {
+                this.value = it
             }
 
             val prop = dataMap[name]
@@ -281,12 +285,12 @@ abstract class State {
                     depProp(prop)
                 }
 
-                this.value = v
+                this.value = value
                 return
             }
 
-            if (prop?.canSet(v as Any, stateProxy) == true) {
-                this.value = v
+            if (prop?.canSet(value as Any, stateProxy) == true) {
+                this.value = value
             }
         }
     }

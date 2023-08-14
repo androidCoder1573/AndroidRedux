@@ -1,15 +1,24 @@
 package com.cyworks.redux.types
 
 import androidx.annotation.MainThread
+import com.cyworks.redux.dependant.Dependant
 import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.state.State
 import com.cyworks.redux.action.Action
+import com.cyworks.redux.interceptor.InterceptorBean
 import com.cyworks.redux.prop.ReactiveProp
 
 /**
  * 此函数用于解注册
  */
 typealias Dispose = () -> Unit
+
+/**
+ * 创建一个Dependant
+ */
+fun interface DependantCreator<PS : State> {
+    fun create(type: String, data: Any): Dependant<State, PS>
+}
 
 /**
  * 组件自己的State的获取接口
@@ -77,12 +86,15 @@ fun interface UIFrameUpdater {
 /**
  * 用于获取组件对应的ReduxContext
  */
-fun interface ContextProvider<S: State> {
+interface ComponentContextWrapper<S: State> {
+
     /**
      * 返回组件对应的ReduxContext
      * @return ReduxContext
      */
-    fun provider(): ReduxContext<S>?
+    fun getCtx(): ReduxContext<State>
+
+    fun addPendingInterceptor(bean: InterceptorBean<S>)
 }
 
 /**
@@ -105,6 +117,13 @@ fun interface IPropsChanged {
 }
 
 /**
+ * Desc: 当当前State发生变化时，通知给UI的接口
+ */
+fun interface IStateChangeForUI<S : State> {
+    fun onStateChange(state: S, changedProps: List<ReactiveProp<Any>>)
+}
+
+/**
  * 创建全局store的state接口
  */
 interface CreateGlobalState<S: State> {
@@ -112,9 +131,9 @@ interface CreateGlobalState<S: State> {
 }
 
 /**
- * Desc: watch 属性时，通过此方法获取属性list
+ * watch 属性时，通过此方法获取当前关注的属性list
  */
-typealias DepProps = () -> Array<Any>
+typealias DepProps = () -> List<Any>
 
 /**
  * 当前公共状态变化监听器
@@ -130,7 +149,7 @@ typealias IPrivatePropsChanged = (props: List<ReactiveProp<Any>>) -> Unit
  * Action 分发器接口
  */
 fun interface Dispatch {
-    fun dispatch(action: Action<Any>);
+    fun dispatch(action: Action<Any>)
 }
 
 /**

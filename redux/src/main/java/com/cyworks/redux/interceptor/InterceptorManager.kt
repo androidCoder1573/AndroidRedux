@@ -1,9 +1,9 @@
 package com.cyworks.redux.interceptor
 
-import com.cyworks.redux.ReduxContext
-import com.cyworks.redux.state.State
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.action.ActionType
+import com.cyworks.redux.adapter.ReduxAdapter
+import com.cyworks.redux.state.State
 import com.cyworks.redux.types.Dispose
 import com.cyworks.redux.types.Interceptor
 
@@ -14,15 +14,13 @@ class InterceptorManager {
      */
     private var funcMap = HashMap<ActionType, ArrayList<InterceptorBean<State>>>()
 
-    val adapters = ArrayList<Adapter<State>>()
+    val adapters = ArrayList<ReduxAdapter<State>>()
 
-    val interceptor: Interceptor<State> = object : Interceptor<State> {
-        override fun doAction(action: Action<Any>, ctx: ReduxContext<State>?) {
-            doActionEx(action)
-        }
+    private val interceptor: Interceptor<State> = Interceptor { action, ctx ->
+        doActionInner(action)
     }
 
-    open fun addInterceptorEx(collector: InterceptorCollect<State>): ArrayList<Dispose>? {
+    fun addInterceptorEx(collector: InterceptorCollect<State>): ArrayList<Dispose>? {
         val map = collector.interceptorMap
         if (collector.isEmpty) {
             return null
@@ -50,17 +48,18 @@ class InterceptorManager {
         return disposeList
     }
 
-    open fun addAdapter(adapter: Adapter<State>): Dispose? {
-        this.adapters.push(adapter);
+    fun addAdapter(adapter: ReduxAdapter<State>): Dispose {
+        this.adapters.add(adapter)
         return {
-            val index = this.adapters.indexOf(adapter);
-            if (index >= 0) {
-                this.adapters.splice(index, 1)
-            }
+            this.adapters.remove(adapter)
         }
     }
 
-    private fun doActionEx(action: Action<Any>) {
+    fun getInterceptor(): Interceptor<State> {
+        return this.interceptor
+    }
+
+    private fun doActionInner(action: Action<Any>) {
         if (this.funcMap.size < 1) {
             return
         }
@@ -74,7 +73,7 @@ class InterceptorManager {
         val array = this.funcMap[payload.realAction.type]
         if (array != null && array.size > 0) {
             array.forEach {
-                val ctx = it.provider?.provider()
+                val ctx = it.ctxProvider?.provider()
                 if (ctx != null) {
                     it.interceptor?.doAction(payload.realAction, ctx)
                 }
@@ -82,7 +81,7 @@ class InterceptorManager {
         }
 
         this.adapters.forEach {
-            it.doInterceptorAction(action);
+            it.doInterceptorAction(action)
         }
     }
 }

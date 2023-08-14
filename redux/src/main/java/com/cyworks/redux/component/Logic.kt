@@ -1,16 +1,32 @@
 package com.cyworks.redux.component
 
 import android.os.Bundle
-import com.cyworks.redux.Dependant
 import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.ReduxManager
-import com.cyworks.redux.action.InnerActionTypes
+import com.cyworks.redux.dependant.Dependant
+import com.cyworks.redux.interceptor.InterceptorBean
 import com.cyworks.redux.logic.EffectCollect
 import com.cyworks.redux.logic.LogicModule
 import com.cyworks.redux.state.State
+import com.cyworks.redux.types.Dispose
 import com.cyworks.redux.types.Effect
 import com.cyworks.redux.util.Environment
 import com.cyworks.redux.util.ILogger
+
+enum class LogicType {
+    PAGE,
+    COMPONENT,
+}
+
+enum class LogicLifecycleEvent {
+    UNKNOWN,
+    ON_CREATE,
+    ON_START,
+    ON_RESUME,
+    ON_PAUSE,
+    ON_STOP,
+    ON_DESTROY
+}
 
 /**
  * Desc: Page以及Component的基类，封装组件和页面的公共逻辑，一个组件可能会有多个子组件。
@@ -21,7 +37,7 @@ import com.cyworks.redux.util.ILogger
  *
  * 针对复杂逻辑对象，内部可能有状态，建议使用ReduxObject来包裹。
  */
-abstract class Logic<S : State>(b: Bundle) {
+abstract class Logic<S : State>(b: Bundle?) {
     /**
      * 组件的Effect
      */
@@ -42,12 +58,24 @@ abstract class Logic<S : State>(b: Bundle) {
     /**
      * 创建页面时，携带的Bundle参数
      */
-    protected var bundle: Bundle = b
+    protected var props: Bundle? = b
 
     /**
      * Log 组件，组件内共享
      */
     protected val logger: ILogger = ReduxManager.instance.logger
+
+    /**
+     * 每个组件对应的拦截器解注册
+     */
+    protected var interceptorDispose: ArrayList<Dispose>? = null
+
+    /**
+     * 当前组件的生命周期
+     */
+    protected var lifecycleEvent: LogicLifecycleEvent = LogicLifecycleEvent.UNKNOWN
+
+    protected var pendingInterceptorList: ArrayList<InterceptorBean<S>> = ArrayList()
 
     /**
      * 初始Effect以及一些依赖
@@ -59,7 +87,7 @@ abstract class Logic<S : State>(b: Bundle) {
     private fun initCollect() {
         // 初始化Reducer
         var logicModule: LogicModule<S>? = getLogicModule()
-        if (logicModule != null) {
+        if (logicModule == null) {
             logicModule = object : LogicModule<S> {
                 override fun addLocalEffects(collect: EffectCollect<S>) {}
             }
@@ -73,14 +101,34 @@ abstract class Logic<S : State>(b: Bundle) {
         effect = effectCollect.effect
     }
 
-    protected fun initEffect() {
-        // 初始化Reducer
-        val logicModule: LogicModule<S>? = getLogicModule()
-        this.logicModule = logicModule
-        if (this.logicModule != null) {
-            this.logicModule.addLocalEffects(this.effectCollect, this.context.state)
+    fun copyEnvironmentToSub(): Environment? {
+        val env = this.environment?.let { Environment.copy(it) }
+        context?.state?.let { env?.setParentState(it) }
+        env?.setParentDispatch(context?.dispatcher)
+        return env
+    }
+
+    fun addPendingInterceptor(bean: InterceptorBean<S>) {
+        pendingInterceptorList.add(bean)
+    }
+
+    /**
+     * 标记某些属性不会对UI产生影响
+     */
+    open fun markPropsNotUpdateUI(): List<String>? {
+        return null
+    }
+
+    fun getLogicLifeEvent(): LogicLifecycleEvent {
+        return lifecycleEvent
+    }
+
+    open fun clear() {
+        if (interceptorDispose != null && interceptorDispose!!.size > 0) {
+            interceptorDispose?.forEach {
+                it()
+            }
         }
-        this.effectCollect.remove(InnerActionTypes.INTERCEPT_ACTION)
     }
 
     /**

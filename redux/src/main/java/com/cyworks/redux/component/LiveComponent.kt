@@ -8,7 +8,7 @@ import java.util.ArrayList
  * Desc: 一个UI组件的基类，主要针对组件的显示/隐藏，
  * 屏幕方向切换做了一些特殊处理
  */
-abstract class LRComponent<S : BaseComponentState?>(lazyBindUI: Boolean) :
+abstract class LiveComponent<S : BaseComponentState?>(lazyBindUI: Boolean) :
     BaseComponent<S>(lazyBindUI) {
     /**
      * UI数据变化时的回调，检查本次变化的数据，对可见性以及屏幕旋转做一些特殊处理
@@ -16,7 +16,7 @@ abstract class LRComponent<S : BaseComponentState?>(lazyBindUI: Boolean) :
      * @param stateCompare ChangedState 本次变化的state集合
      */
     private fun onDataChangedCB(stateCompare: ChangedState<S>) {
-        if (uiMixin.canNotUpdateUI() || environment == null) {
+        if (uiController.canNotUpdateUI() || environment == null) {
             return
         }
         val props: List<ReactiveProp<Any>> = stateCompare.mChangedProps
@@ -42,7 +42,7 @@ abstract class LRComponent<S : BaseComponentState?>(lazyBindUI: Boolean) :
         }
 
         // 最后更新UI
-        uiMixin.callUIUpdate(stateCompare.mState, propKeys, uiMixin.viewHolder)
+        uiController.callUIUpdate(stateCompare.mState, propKeys, uiController.viewHolder)
     }
 
     /**
@@ -57,23 +57,23 @@ abstract class LRComponent<S : BaseComponentState?>(lazyBindUI: Boolean) :
             // 当前变化的属性不包含可见性变化的属性
             return false
         }
-        if (uiMixin.isShow == show) {
+        if (uiController.isShow == show) {
             // 可见性没发生变化
             return false
         }
 
         // 更新可见性
-        uiMixin.isShow = show
+        uiController.isShow = show
 
         // 如果可见性发生变化，更新旋转方向
-        uiMixin.lastOrientation = context!!.state.mCurrentOrientation.value()
+        uiController.lastOrientation = context!!.state.mCurrentOrientation.value()
 
         // 如果最新的状态是隐藏UI，则进行UI隐藏操作
-        if (!uiMixin.isShow) {
-            uiMixin.hide(true)
+        if (!uiController.isShow) {
+            uiController.hide(true)
             return true
         }
-        uiMixin.show(true)
+        uiController.show(true)
         return true
     }
 
@@ -95,12 +95,12 @@ abstract class LRComponent<S : BaseComponentState?>(lazyBindUI: Boolean) :
         val nowOrientation: Int = context!!.state.mCurrentOrientation.value()
 
         // 防重入
-        if (uiMixin.lastOrientation == nowOrientation) {
+        if (uiController.lastOrientation == nowOrientation) {
             return false
         }
 
         // 方向不一致，执行切换
-        uiMixin.lastOrientation = nowOrientation
+        uiController.lastOrientation = nowOrientation
         onConfigurationChanged(nowOrientation)
         return true
     }
@@ -113,13 +113,13 @@ abstract class LRComponent<S : BaseComponentState?>(lazyBindUI: Boolean) :
     private fun onConfigurationChanged(orientation: Int) {
         // 先移除观察者
         liveData.removeObserver(observer)
-        uiMixin.changeView(orientation)
+        uiController.changeView(orientation)
 
         // 通知组件当前组件UI发生变化了，给用户一个机会做一些善后处理
-        uiMixin.sendUIChangedAction(UIChangedBean.TYPE_ORIENTATION_CHANGE)
+        uiController.sendUIChangedAction(UIChangedBean.TYPE_ORIENTATION_CHANGE)
 
         // 重新创建holder
-        uiMixin.resetViewHolder()
+        uiController.resetViewHolder()
 
         // 观察数据，界面创建完成之后再进行观察，以防出现异常
         observe()
@@ -134,7 +134,7 @@ abstract class LRComponent<S : BaseComponentState?>(lazyBindUI: Boolean) :
      * @return View
      */
     val currentView: View
-        get() = uiMixin.currentView
+        get() = uiController.currentView
 
     /**
      * 构造器，初始化组件的内部数据

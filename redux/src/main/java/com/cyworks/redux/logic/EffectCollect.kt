@@ -1,25 +1,30 @@
 package com.cyworks.redux.logic
 
 import com.cyworks.redux.ReduxContext
-import com.cyworks.redux.state.State
 import com.cyworks.redux.action.Action
+import com.cyworks.redux.action.ActionType
 import com.cyworks.redux.lifecycle.LifeCycleAction
+import com.cyworks.redux.state.State
 import com.cyworks.redux.types.Effect
 
 /**
- * Desc: Effect收集器，用于外部配置组件的Effect,
- * 内部会将一个组件对应的Effect合并成一个
+ * Effect收集器，用于外部配置组件的Effect, 内部会将一个组件对应的Effect合并成一个.
  */
 class EffectCollect<S : State> {
     /**
+     * 获取合并之后的Effect
+     */
+    val effect: Effect<S>
+        get() = innerEffect
+
+    /**
      * Effect 集合
      */
-    private val functions = HashMap<Action<Any>, Effect<S>>()
+    private val functions = HashMap<ActionType, Effect<S>>()
 
-    private val innerEffect: Effect<S> =
-        Effect { action: Action<Any>, ctx: ReduxContext<S> ->
-            doAction(action, ctx)
-        }
+    private val innerEffect = Effect { action, ctx ->
+        doAction(action, ctx)
+    }
 
     /**
      * 给当前组件注册一个Action对应的Effect，保持可替换
@@ -27,22 +32,20 @@ class EffectCollect<S : State> {
      * @param effect Effect
      */
     fun add(action: Action<Any>, effect: Effect<S>) {
-        functions[action] = effect
+        functions[action.type] = effect
     }
 
     fun remove(action: Action<Any>) {
-        functions.remove(action)
+        functions.remove(action.type)
     }
 
-    /**
-     * 获取合并之后的Effect
-     */
-    val effect: Effect<S>
-        get() = innerEffect
+    fun remove(type: ActionType) {
+        functions.remove(type)
+    }
 
-    private fun doAction(action: Action<Any>, ctx: ReduxContext<S>): Boolean {
+    private fun doAction(action: Action<Any>, ctx: ReduxContext<S>?): Boolean {
         if (functions.isNotEmpty()) {
-            val effect: Effect<S>? = functions[action]
+            val effect: Effect<S>? = functions[action.type]
             if (effect != null) {
                 effect.doAction(action, ctx)
                 return true

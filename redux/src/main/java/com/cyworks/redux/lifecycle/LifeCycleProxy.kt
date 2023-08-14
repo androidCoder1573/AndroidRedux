@@ -24,7 +24,7 @@ interface LifeCycleProxy {
     /**
      * 获取页面的初始化参数
      */
-    val bundle: Bundle?
+    val props: Bundle?
 
     /**
      * 获取Lifecycle
