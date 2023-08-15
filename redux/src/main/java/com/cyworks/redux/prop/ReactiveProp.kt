@@ -72,6 +72,11 @@ class ReactiveProp<T>(propValue: T, state: State) {
     val token: String
 
     /**
+     * 首次渲染组件时，是否通知UI更新
+     */
+    internal val isUpdateWithInitValue = true
+
+    /**
      * 创建一个ReactiveProp
      */
     init {

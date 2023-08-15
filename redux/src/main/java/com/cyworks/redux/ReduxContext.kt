@@ -214,7 +214,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
                     pendingChangedProps!!.values
                 )
                 pendingChangedProps!!.clear()
-                pendingChangedProps.onChange(state, props)
+                componentStateChangeListener!!.onChange(state, props)
             }
         }
     }
@@ -256,7 +256,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         markNeedUpdate()
 
         // 通知属性订阅者，状态发生了变化
-        logic.propWatcher.notifyPropChanged(props, this)
+        // logic.propWatcher.notifyPropChanged(props, this)
     }
 
     /**
