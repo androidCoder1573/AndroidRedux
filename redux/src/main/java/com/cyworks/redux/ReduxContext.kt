@@ -190,6 +190,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
             bus.setPageEffectDispatch(effectDispatch)
         }
     }
+
     private fun injectStateGetter() {
         // 给页面store用，用于获取当前组件的state
         val getter: StateGetter<S> = StateGetter { state }
@@ -288,7 +289,10 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         if (pendingChangedProps == null) {
             pendingChangedProps = HashMap()
         }
-        pendingChangedProps!![key] = reactiveProp
+
+        if (key != null) {
+            pendingChangedProps?.set(key, reactiveProp)
+        }
     }
 
     private fun markNeedUpdate() {
@@ -322,7 +326,6 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      * 子组件直接给Page发送action, 只能Effect来接收
      *
      * @param action Action
-     * @param payload 携带的参数
      */
     fun dispatchToPage(action: Action<Any>) {
         if (isDestroy || !isStateReady || environment == null) {
@@ -336,91 +339,73 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      * 子组件发action给父组件，只能使用Effect来接收
      *
      * @param action Action
-     * @param payload 携带的参数
      */
-    fun dispatchToParent(action: Action<Any>, payload: Any?) {
+    fun dispatchToParent(action: Action<Any>) {
         if (isDestroy || !isStateReady || environment == null) {
-            return
-        }
-
-        if (!action.isPrivate()) {
-            logger.w(ILogger.ERROR_TAG, "only private action can interact parent & child")
             return
         }
 
         // 交给父组件的dispatch
         val parentDispatch: Dispatch? = environment!!.parentDispatch
-        parentDispatch?.dispatch(action, payload)
+        parentDispatch?.dispatch(action)
     }
 
     /**
      * 父组件发action给子组件，只能使用Effect来接收
      *
      * @param action Action
-     * @param payload 携带的参数
      */
-    fun dispatchToChildren(action: Action<Any>, payload: Any) {
+    fun dispatchToChildren(action: Action<Any>) {
         if (isDestroy || !isStateReady || environment == null) {
             return
         }
-        if (!action.isPrivate()) {
-            logger.w(ILogger.ERROR_TAG, "only private action can interact parent & child")
-            return
-        }
-        val component: LogicComponent<BaseComponentState?>? =
-            logic as LogicComponent<BaseComponentState?>?
-        dispatchToSubComponent(component, action, payload)
-        dispatchToAdapter(component, action, payload)
+
+        val component: LogicComponent<State>? = logic as LogicComponent<State>?
+        dispatchToSubComponent(component, action)
+        // dispatchToAdapter(component, action, payload)
     }
 
-    private fun dispatchToSubComponent(
-        component: LogicComponent<BaseComponentState?>?,
-        action: Action<Any>, payload: Any
-    ) {
+    private fun dispatchToSubComponent(component: LogicComponent<State>?, action: Action<Any>) {
         // 发给组件依赖的子组件
-        val maps: HashMap<String, Dependant<out BaseComponentState?, State>>? =
-            component!!.childrenDependant
+        val maps: HashMap<String, Dependant<out State, State>>? = component!!.childrenDependant
         if (maps != null) {
             for (dependant in maps.values) {
-                val logic: Logic<out BaseComponentState?> = dependant.logic
-                logic.context?.effectDispatch?.dispatch(action, payload)
+                val logic: Logic<out State> = dependant.logic
+                logic.context.effectDispatch?.dispatch(action)
             }
         }
     }
 
-    private fun dispatchToAdapter(
-        component: LogicComponent<BaseComponentState?>?, action: Action<Any>, payload: Any) {
-        val dependant: Dependant<out BaseComponentState?, State>? = component!!.adapterDependant
-        if (dependant != null) {
-            val logic: Logic<out BaseComponentState?> = dependant.logic
-            logic.context?.effectDispatch?.dispatch(action, payload)
-        }
-    }
+//    private fun dispatchToAdapter(component: LogicComponent<State>?, action: Action<Any>) {
+//        val dependant: Dependant<out State, State>? = component!!.adapterDependant
+//        if (dependant != null) {
+//            val logic: Logic<out State> = dependant.logic
+//            logic.context.effectDispatch?.dispatch(action)
+//        }
+//    }
 
     /**
      * 发送全局广播，本方法在App级别是全局的, 只有page下的Effect才可以处理
      *
      * @param action 要分发的Action
-     * @param payload 携带的参数
      */
-    fun broadcast(action: Action<Any>?, payload: Any?) {
+    fun broadcast(action: Action<Any>) {
         if (isDestroy || !isStateReady || environment == null) {
             return
         }
-        environment!!.dispatchBus!!.broadcast(action, payload)
+        environment!!.dispatchBus!!.broadcast(action)
     }
 
     /**
      * 发送页面内广播，仅Page可以发送页面内广播
      *
      * @param action Action
-     * @param payload 参数
      */
-    fun broadcastInPage(action: Action<Any>?, payload: Any?) {
+    fun broadcastInPage(action: Action<Any>) {
         if (environment == null || !stateReady() || logic !is LogicPage<*>) {
             return
         }
-        environment!!.dispatchBus!!.dispatch(action, payload)
+        environment!!.dispatchBus!!.dispatch(action)
     }
 
     /**
@@ -488,7 +473,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         storeObserverDispose?.let { it() }
         uiUpdaterDispose?.let { it() }
         stateGetterDispose?.let { it() }
-        logic = null
+        // logic = null
         environment = null
     }
 }

@@ -3,6 +3,7 @@ package com.cyworks.redux.adapter
 import android.view.View
 import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.action.Action
+import com.cyworks.redux.component.AdapterItemComponent
 import com.cyworks.redux.state.State
 import com.cyworks.redux.types.DependantCreator
 import com.cyworks.redux.util.Environment
@@ -16,12 +17,12 @@ class ReduxAdapter<PS: State> {
     /**
      * 用于保存从父组件继承下来的属性
      */
-    protected var env: Environment? = null;
+    protected var env: Environment? = null
 
-    private var dependantList: DependantList<PS>
+    private val dependantList: DependantList<PS>
 
     public constructor(depBuilder: DependantCreator<PS>) {
-        this.dependantList = DependantList(depBuilder);
+        dependantList = DependantList(depBuilder)
     }
 
     fun setEnv(context: ReduxContext<PS>, env: Environment) {
@@ -39,16 +40,22 @@ class ReduxAdapter<PS: State> {
      * 这里也可以根据可见索引，将其reducer/effect/interceptor的通道打断，这样可以保证性能开销最小
      *
      * @param type
+     * @param index
      * @param data
      */
-    fun buildItem(type: String, data: Object): View {
-        val depend = dependantList.buildDependant(index, type, data)
-        return depend.buildComponent(this.copyEnvironmentToSub());
+    fun buildItem(index: Int, type: String, data: Any): View {
+        val depend = dependantList.buildDependant<State>(index, type, data)
+        this.copyEnvironmentToSub()?.let { depend.install(it) }
+        val component = depend.logic
+        if (component !is AdapterItemComponent) {
+            throw RuntimeException("list item must be a AdapterItemComponent")
+        }
+        return component.createUI() ?: throw RuntimeException("list item must have a view")
     }
 
     fun doInterceptorAction(action: Action<Any>) {
         val interceptor = dependantList.getInterceptor()
-        interceptor(action, this.context as ReduxContext<State>)
+        interceptor.doAction(action, this.context as ReduxContext<State>)
     }
 
     fun getListItemType(index: Int): String {
@@ -58,9 +65,9 @@ class ReduxAdapter<PS: State> {
     fun copyEnvironmentToSub(): Environment? {
         val env = this.env?.let { Environment.copy(it) }
         context?.state?.let { env?.setParentState(it) }
-        env?.setParentDispatch(this.context.dispatcher)
+        context?.effectDispatch?.let { env?.setParentDispatch(it) }
         // 代表当前组件运行在列表中
-        env.setIsInAdapter(true)
+        // env.setIsInAdapter(true)
         return env
     }
 }

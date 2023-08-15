@@ -5,7 +5,6 @@ import androidx.annotation.CallSuper
 import com.cyworks.redux.BaseController
 import com.cyworks.redux.ReduxContextBuilder
 import com.cyworks.redux.action.InnerActionTypes
-import com.cyworks.redux.adapter.ReduxAdapter
 import com.cyworks.redux.dependant.Dependant
 import com.cyworks.redux.dependant.DependentCollect
 import com.cyworks.redux.interceptor.InterceptorCollector
@@ -13,7 +12,6 @@ import com.cyworks.redux.interceptor.InterceptorManager
 import com.cyworks.redux.logic.EffectCollector
 import com.cyworks.redux.state.State
 import com.cyworks.redux.store.GlobalStoreSubscribe
-import com.cyworks.redux.types.Dispose
 import com.cyworks.redux.types.IPropsChanged
 import com.cyworks.redux.types.IStateChange
 import com.cyworks.redux.util.Environment
@@ -34,7 +32,7 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
     /**
      * 用于观察全局store
      */
-    private var globalStoresubscribe: GlobalStoreSubscribe<S>? = null
+    private var globalStoreSubscribe: GlobalStoreSubscribe<S>? = null
 
     /**
      * 组件的依赖的子组件的集合
@@ -52,9 +50,9 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
     /**
      * 当前组件的与页面的连接器
      */
-    protected var adapter: ReduxAdapter<S>? = null
+    // protected var adapter: ReduxAdapter<S>? = null
 
-    protected var adapterDispose: Dispose? = null
+    // protected var adapterDispose: Dispose? = null
 
     /**
      * 用于注入拦截器
@@ -123,10 +121,10 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
         connector?.dependParentState(state, parentState)
 
         // 创建全局store监听器
-        globalStoresubscribe = GlobalStoreSubscribe(cb, state)
+        globalStoreSubscribe = GlobalStoreSubscribe(cb, state)
         // 绑定全局store的state中的属性
-        connector?.dependGlobalState(globalStoresubscribe!!)
-        globalStoresubscribe?.generateDependant()
+        connector?.dependGlobalState(globalStoreSubscribe!!)
+        globalStoreSubscribe?.generateDependant()
 
         // 标记结束merge，后续不可再继续开启
         state.endMergeState()
@@ -140,9 +138,9 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
             this.interceptorDispose = manager.addInterceptorEx(collect as InterceptorCollector<State>)
         }
 
-        if (this.adapter != null) {
-            this.adapterDispose = manager.addAdapter(this.adapter as ReduxAdapter<State>)
-        }
+//        if (this.adapter != null) {
+//            this.adapterDispose = manager.addAdapter(this.adapter as ReduxAdapter<State>)
+//        }
 
         val map = this.dependencies?.dependantMap
         if (map != null) {
@@ -211,17 +209,13 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
         }
 
         val map: HashMap<String, Dependant<out State, State>>? = dependencies?.dependantMap
-        if (map == null || map.isEmpty()) {
+        if (map.isNullOrEmpty()) {
             return
         }
 
         val env = Environment.copy(environment!!)
-        context?.state?.let {
-            env.setParentState(it)
-        }
-        context?.effectDispatch?.let {
-            env.setParentDispatch(it)
-        }
+        env.setParentState(context.state)
+        context.effectDispatch?.let { env.setParentDispatch(it) }
 
         for (dependant in map.values) {
             dependant.initComponent(env)
@@ -278,7 +272,7 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
         if (future != null && !future!!.isDone) {
             future!!.cancel(true)
         }
-        globalStoresubscribe!!.clear()
+        globalStoreSubscribe!!.clear()
         if (dependencies != null) {
             dependencies?.clear()
             dependencies = null

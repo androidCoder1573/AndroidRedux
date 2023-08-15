@@ -21,7 +21,7 @@ import com.cyworks.redux.util.ILogger
  * 2、设置Atom，用于UI的局部更新;
  * 3、设置UI组件的View的显示/隐藏以及绑定/删除操作;
  *
- * todo: 可以考虑将此类让开发者实现，更加定制化的操作UI
+ * todo: 考虑将此类让开发者实现，更加定制化的操作UI
  */
 class ComponentUIController<S : State>(private val component: BaseComponent<S>, lazyBindUI: Boolean) {
     /**
@@ -201,7 +201,7 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
 
         // 处理子组件
         val map: HashMap<String, Dependant<out State, State>>? = component.childrenDependant
-        if (map == null || map.isEmpty()) {
+        if (map.isNullOrEmpty()) {
             return
         }
 
@@ -257,8 +257,8 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
     private fun installComponent(dependant: Dependant<out State, State>) {
         val context = component.context
         val env = Environment.copy(component.environment!!)
-        context?.state?.let { env.setParentState(it) }
-        context?.effectDispatch?.let { env.setParentDispatch(it) }
+        env.setParentState(context.state)
+        context.effectDispatch?.let { env.setParentDispatch(it) }
         dependant.initComponent(env)
     }
 
@@ -308,7 +308,7 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
             return
         }
         val context = component.context
-        if (context != null && context.stateReady()) {
+        if (context.stateReady()) {
             isRunFirstUpdate = true
             context.runFirstUpdate()
         }
@@ -319,13 +319,13 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
      */
     internal fun fullUpdate() {
         val context = component.context
-        context?.runFullUpdate()
+        context.runFullUpdate()
     }
 
     private fun setShow(show: Boolean) {
         isShow = show
         val context = component.context
-        context?.state?.innerSetProp("isShowUI", isShow)
+        context.state.innerSetProp("isShowUI", isShow)
     }
 
     /**
@@ -341,7 +341,7 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
         uiChangedBean.landscapeView = landscapeView
         uiChangedBean.uiChangeType = type
         val context = component.context
-        context?.dispatchEffect(Action(LifeCycleAction.ACTION_ON_UI_CHANGED, uiChangedBean))
+        context.dispatchEffect(Action(LifeCycleAction.ACTION_ON_UI_CHANGED, uiChangedBean))
     }
 
     /**
@@ -399,7 +399,7 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
      */
     private fun callViewBuilder(): View? {
         val context = component.context
-        if (viewModule == null || context == null) {
+        if (viewModule == null) {
             return null
         }
 

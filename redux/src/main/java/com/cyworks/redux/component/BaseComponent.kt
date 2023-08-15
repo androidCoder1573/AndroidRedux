@@ -132,9 +132,7 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
     override fun clear() {
         super.clear()
         observer?.let { liveData?.removeObserver(it) }
-        if (context != null) {
-            context!!.destroy()
-        }
+        context.destroy()
         uiController.clear()
         environment = null
     }
@@ -156,7 +154,7 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
     /**
      * 用于初始化Component
      */
-    private fun onCreate() {
+    protected open fun onCreate() {
         val time = System.currentTimeMillis()
 
         // 1、创建Context
@@ -174,7 +172,7 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
         observe()
 
         // 4、发送onCreate Effect
-        context!!.onLifecycle(Action(LifeCycleAction.ACTION_ON_CREATE, null))
+        context.onLifecycle(Action(LifeCycleAction.ACTION_ON_CREATE, null))
 
         // 打印初始化的耗时
         logger.d(ILogger.PERF_TAG, "component: <" + javaClass.simpleName + ">"
@@ -201,28 +199,28 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
 
         @OnLifecycleEvent(Lifecycle.Event.ON_START)
         fun onStart() {
-            component.context!!.onLifecycle(Action(LifeCycleAction.ACTION_ON_START, null))
+            component.context.onLifecycle(Action(LifeCycleAction.ACTION_ON_START, null))
         }
 
         @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
         fun onResume() {
-            component.context!!.onLifecycle(Action(LifeCycleAction.ACTION_ON_RESUME, null))
+            component.context.onLifecycle(Action(LifeCycleAction.ACTION_ON_RESUME, null))
         }
 
         @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
         fun onPause() {
-            component.context!!.onLifecycle(Action(LifeCycleAction.ACTION_ON_PAUSE, null))
+            component.context.onLifecycle(Action(LifeCycleAction.ACTION_ON_PAUSE, null))
         }
 
         @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
         fun onStop() {
-            component.context!!.onLifecycle(Action(LifeCycleAction.ACTION_ON_STOP, null))
+            component.context.onLifecycle(Action(LifeCycleAction.ACTION_ON_STOP, null))
         }
 
         @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
         fun onDestroy() {
             // 这里的调用顺序不能乱
-            component.context!!.onLifecycle(Action(LifeCycleAction.ACTION_ON_DESTROY, null))
+            component.context.onLifecycle(Action(LifeCycleAction.ACTION_ON_DESTROY, null))
             component.clear()
         }
     }

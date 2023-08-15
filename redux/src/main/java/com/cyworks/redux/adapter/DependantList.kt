@@ -1,5 +1,6 @@
 package com.cyworks.redux.adapter
 
+import com.cyworks.redux.component.LiveComponent
 import com.cyworks.redux.dependant.Dependant
 import com.cyworks.redux.interceptor.InterceptorManager
 import com.cyworks.redux.state.State
@@ -14,13 +15,13 @@ data class ListDependant<PS : State>(
 )
 
 class DependantList<PS : State> {
-    // 用于保存adapter下的自组件的拦截器
+    // 用于保存adapter下的子组件的拦截器
     protected var interceptorManager: InterceptorManager = InterceptorManager()
         private set
 
     private var builder: DependantCreator<PS>? = null
 
-    private var depMap: Map<Int, ListDependant<PS>> = HashMap()
+    private var depMap = HashMap<Int, ListDependant<PS>>()
 
     constructor(builder: DependantCreator<PS>) {
         this.builder = builder
@@ -51,38 +52,38 @@ class DependantList<PS : State> {
         var dep: Dependant<CS, PS>
         var listDep = this.depMap[index]
         if (listDep != null) {
-            if (JSON.stringify(listDep.data) !== JSON.stringify(data)) {
-                if (listDep.type === type) {
-                    // 如果类型一致，则直接更新props
-                    listDep.data = data;
-                    const logic = listDep?.depend.getLogic()
-                    if (logic != null) {
-                        (logic as LiveComponent<State>).onPropsChanged(data)
-                    }
-                } else {
-                    // 如果类型不一致，则新建
-                    this.removeNotVisibleItem(index);
-                    listDep = this.makeDep(type, data);
-                    this.depMap[index] = listDep
-                }
-            }
+//            if (JSON.stringify(listDep.data) !== JSON.stringify(data)) {
+//                if (listDep.type === type) {
+//                    // 如果类型一致，则直接更新props
+//                    listDep.data = data;
+//                    const logic = listDep?.depend.getLogic()
+//                    if (logic != null) {
+//                        (logic as LiveComponent<State>).onPropsChanged(data)
+//                    }
+//                } else {
+//                    // 如果类型不一致，则新建
+//                    this.removeNotVisibleItem(index);
+//                    listDep = this.makeDep(type, data);
+//                    this.depMap[index] = listDep
+//                }
+//            }
 
             if (listDep.isDetach) {
                 listDep.isDetach = false
-                val logic = listDep?.depend?.logic
-                listDep.isDetach = true;
+                val logic = listDep.depend?.logic
+                listDep.isDetach = true
                 if (logic != null) {
-                    (logic as LiveComponent<State>).attach();
+                    (logic as LiveComponent<State>).attach()
                 }
             }
-            dep = listDep.depend;
+            dep = listDep.depend!! as Dependant<CS, PS>
         } else {
-            listDep = this.makeDep(type, data);
-            dep = listDep.depend
+            listDep = this.makeDep(type, data)
+            dep = listDep.depend!! as Dependant<CS, PS>
             depMap[index] = listDep
         }
 
-        return dep as Dependant<CS, PS>;
+        return dep
     }
 
     fun removeNotVisibleItem(index: Int) {
@@ -92,8 +93,8 @@ class DependantList<PS : State> {
     fun detachDep(index: Int): ListDependant<PS>? {
         val listDep = depMap[index]
         if (listDep?.isDetach == false) {
-            val logic = listDep?.depend?.logic
-            listDep?.isDetach = true
+            val logic = listDep.depend?.logic
+            listDep.isDetach = true
             if (logic != null) {
                 (logic as LiveComponent<State>).detach()
             }
@@ -103,9 +104,8 @@ class DependantList<PS : State> {
 
     private fun makeDep(type: String, data: Any): ListDependant<PS> {
         val dep = builder?.create(type, data)
-        dep.mergeInterceptor(interceptorManager)
-        val newDep = ListDependant<PS>(data, type, dep)
-        return newDep
+        dep?.mergeInterceptor(interceptorManager)
+        return ListDependant(data, type, dep)
     }
 }
 

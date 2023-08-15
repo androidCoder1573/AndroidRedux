@@ -21,7 +21,17 @@ class DependentCollect<PS : State> {
     /**
      * 当前组件持有的Adapter，一个组件只能持有一个Adapter，组件粒度按列表划分
      */
-    private var rootAdapterDependant: Dependant<State, PS>? = null
+    // private var rootAdapterDependant: Dependant<State, PS>? = null
+
+//    var adapterDependant: Dependant<State, PS>?
+//        get() = rootAdapterDependant
+//
+//        set(dependant) {
+//            rootAdapterDependant = dependant
+//        }
+
+    val dependantMap: HashMap<String, Dependant<out State, PS>>?
+        get() = dependants
 
     /**
      * 给组件添加一个子组件依赖
@@ -38,16 +48,6 @@ class DependentCollect<PS : State> {
         }
         dependants!![key] = dependant
     }
-
-    val dependantMap: HashMap<String, Dependant<out State, PS>>?
-        get() = dependants
-
-    var adapterDependant: Dependant<State, PS>?
-        get() = rootAdapterDependant
-
-        set(dependant) {
-            rootAdapterDependant = dependant
-        }
 
     fun clear() {
         if (dependants != null) {

@@ -181,12 +181,6 @@ interface IBus : Dispatch {
  * Adapter 统一接口，方便进行类型转换
  */
 interface IAdapter {
-    /**
-     * 触发Action操作
-     * @param action Action
-     * @param payload 参数
-     */
-    fun dispatchReducer(action: Action<Any>)
 
     /**
      * 触发Action操作

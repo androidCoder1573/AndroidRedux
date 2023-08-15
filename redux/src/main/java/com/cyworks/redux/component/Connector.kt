@@ -1,7 +1,6 @@
 package com.cyworks.redux.component
 
 import com.cyworks.redux.interceptor.InterceptorCollector
-import com.cyworks.redux.prop.PropWatcher
 import com.cyworks.redux.state.State
 import com.cyworks.redux.store.GlobalStoreSubscribe
 import com.cyworks.redux.types.ComponentContextWrapper
@@ -79,13 +78,4 @@ abstract class Connector<CS : State, PS : State> {
      * 通过此接口配置与外界通信的interceptor
      */
     abstract fun interceptorCollector(collect: InterceptorCollector<CS>)
-
-    /**
-     * 通过这个接口来订阅自己组件下的属性变化，这里需要调用watchProp注入
-     *
-     * @param watcher 属性订阅器
-     */
-    protected fun subscribeProps(watcher: PropWatcher<CS>) {
-        // sub class impl
-    }
 }

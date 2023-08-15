@@ -136,6 +136,6 @@ abstract class LiveComponent<S : State>(lazyBindUI: Boolean) : BaseComponent<S>(
         observe()
 
         // 重新设置UI状态
-        context!!.runFullUpdate()
+        context.runFullUpdate()
     }
 }
