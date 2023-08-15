@@ -5,7 +5,7 @@ import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.dependant.Dependant
 import com.cyworks.redux.interceptor.InterceptorBean
-import com.cyworks.redux.logic.EffectCollect
+import com.cyworks.redux.logic.EffectCollector
 import com.cyworks.redux.logic.LogicModule
 import com.cyworks.redux.state.State
 import com.cyworks.redux.types.Dispose
@@ -41,12 +41,12 @@ abstract class Logic<S : State>(b: Bundle?) {
     /**
      * 组件的Effect
      */
-    protected var effect: Effect<S>? = null
+    internal var effect: Effect<S>? = null
 
     /**
      * 组件的Context
      */
-    var context: ReduxContext<S>? = null
+    lateinit var context: ReduxContext<S>
         protected set
 
     /**
@@ -89,22 +89,22 @@ abstract class Logic<S : State>(b: Bundle?) {
         var logicModule: LogicModule<S>? = getLogicModule()
         if (logicModule == null) {
             logicModule = object : LogicModule<S> {
-                override fun addLocalEffects(collect: EffectCollect<S>) {}
+                override fun addLocalEffects(collect: EffectCollector<S>) {}
             }
         }
 
         // 初始化Effect
-        val effectCollect: EffectCollect<S> = EffectCollect()
-        logicModule.addLocalEffects(effectCollect)
+        val effectCollector: EffectCollector<S> = EffectCollector()
+        logicModule.addLocalEffects(effectCollector)
         // 检查Effect的注册, 并注入一些框架内部的Action
-        checkEffect(effectCollect)
-        effect = effectCollect.effect
+        checkEffect(effectCollector)
+        effect = effectCollector.effect
     }
 
-    fun copyEnvironmentToSub(): Environment? {
+    fun copyEnvironmentToChild(): Environment? {
         val env = this.environment?.let { Environment.copy(it) }
-        context?.state?.let { env?.setParentState(it) }
-        env?.setParentDispatch(context?.dispatcher)
+        env?.setParentState(context.state)
+        env?.setParentDispatch(context.dispatcher)
         return env
     }
 
@@ -136,9 +136,9 @@ abstract class Logic<S : State>(b: Bundle?) {
      * 1、检查组件有没有注册过框架内部的Action，这些外部注册需要无效化
      * 2、重新注册框架内部的Action
      *
-     * @param effectCollect EffectCollect
+     * @param effectCollector EffectCollect
      */
-    protected open fun checkEffect(effectCollect: EffectCollect<S>?) {
+    protected open fun checkEffect(effectCollector: EffectCollector<S>?) {
         // sub class impl
     }
 

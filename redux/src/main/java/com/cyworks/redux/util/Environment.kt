@@ -14,39 +14,42 @@ class Environment private constructor() {
     /**
      * 页面LifeCycle 代理
      */
-    private var mProxy: LifeCycleProxy? = null
+    private var proxy: LifeCycleProxy? = null
 
     /**
      * 页面store
      */
-    var store: Store<out State>? = null
+    internal var store: Store<out State>? = null
         private set
 
     /**
      * 页面的Dispatch总线，只负责在页面内发送Effect Action
      */
-    var dispatchBus: DispatchBus? = null
+    internal var dispatchBus: DispatchBus? = null
         private set
 
     /**
      * 当前组件对应的父组件的State
      */
-    var parentState: State? = null
+    internal var parentState: State? = null
         private set
 
     /**
      * 当前页面的根View
      */
-    var rootView: View? = null
+    internal var rootView: View? = null
         private set
 
     /**
      * 当前组件对应的父组件的Effect Dispatch
      */
-    private var mParentDispatch: Dispatch? = null
+    internal var parentDispatch: Dispatch? = null
+
+    val lifeCycleProxy: LifeCycleProxy?
+        get() = proxy
 
     fun setLifeCycleProxy(proxy: LifeCycleProxy): Environment {
-        mProxy = proxy
+        this.proxy = proxy
         return this
     }
 
@@ -71,15 +74,9 @@ class Environment private constructor() {
     }
 
     fun setParentDispatch(parentDispatch: Dispatch): Environment {
-        mParentDispatch = parentDispatch
+        this.parentDispatch = parentDispatch
         return this
     }
-
-    val lifeCycleProxy: LifeCycleProxy?
-        get() = mProxy
-
-    val parentDispatch: Dispatch?
-        get() = mParentDispatch
 
     /**
      * 做一些清理操作
@@ -91,7 +88,7 @@ class Environment private constructor() {
         if (store != null) {
             store!!.clear()
         }
-        mProxy = null
+        proxy = null
         rootView = null
     }
 
@@ -113,7 +110,7 @@ class Environment private constructor() {
         @JvmStatic
         fun copy(env: Environment): Environment {
             val copy = Environment()
-            copy.mProxy = env.mProxy
+            copy.proxy = env.proxy
             copy.store = env.store
             copy.dispatchBus = env.dispatchBus
             copy.rootView = env.rootView

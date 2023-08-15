@@ -2,20 +2,20 @@ package com.cyworks.redux.component
 
 import android.os.Bundle
 import androidx.annotation.CallSuper
-import com.cyworks.redux.*
+import com.cyworks.redux.BaseController
+import com.cyworks.redux.ReduxContextBuilder
 import com.cyworks.redux.action.InnerActionTypes
 import com.cyworks.redux.adapter.ReduxAdapter
 import com.cyworks.redux.dependant.Dependant
 import com.cyworks.redux.dependant.DependentCollect
 import com.cyworks.redux.interceptor.InterceptorCollector
 import com.cyworks.redux.interceptor.InterceptorManager
-import com.cyworks.redux.logic.EffectCollect
+import com.cyworks.redux.logic.EffectCollector
 import com.cyworks.redux.state.State
 import com.cyworks.redux.store.GlobalStoreWatcher
 import com.cyworks.redux.types.Dispose
 import com.cyworks.redux.types.IPropsChanged
 import com.cyworks.redux.types.IStateChange
-import com.cyworks.redux.types.IStateChangeForUI
 import com.cyworks.redux.util.Environment
 import com.cyworks.redux.util.IPlatform
 import java.util.concurrent.Future
@@ -29,7 +29,6 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
     /**
      * 当前组件的与页面的连接器
      */
-    @JvmField
     protected var connector: Connector<S, State>? = null
 
     /**
@@ -43,12 +42,12 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
     var dependencies: DependentCollect<State>? = null
 
 
-    protected var stateChangeForUI: IStateChangeForUI<S>? = null
+    protected var stateChangedListener: IStateChange<S>? = null
 
     /**
      * 用于取消异步任务
      */
-    private var mFuture: Future<*>? = null
+    private var future: Future<*>? = null
 
     /**
      * 当前组件的与页面的连接器
@@ -107,17 +106,6 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
      * @param state 当前组件的State
      */
     private fun mergeState(state: S, cb: IPropsChanged) {
-        // 关联框架内部数据
-//        if (parentState is BaseComponentState) {
-//            state.mCurrentOrientation.dependantProp(
-//                (parentState as BaseComponentState?).mCurrentOrientation
-//            )
-//        } else if (parentState is BasePageState) {
-//            state.mCurrentOrientation.dependantProp(
-//                (parentState as BasePageState?).mCurrentOrientation
-//            )
-//        }
-
         val parentState = connector?.parentState
         if (parentState == null) {
             return
@@ -127,12 +115,15 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
         state.startMergeState()
 
         state.setParentState(parentState)
+
+        // 关联框架内部数据
+        state.currentOrientation = parentState.currentOrientation
+
         // 生成依赖的属性
         connector?.dependParentState(state, parentState)
 
         // 创建全局store监听器
         globalStoreWatcher = GlobalStoreWatcher(cb, state)
-
         // 绑定全局store的state中的属性
         connector?.dependGlobalState(globalStoreWatcher!!)
         globalStoreWatcher?.generateDependant()
@@ -178,16 +169,6 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
 
     @CallSuper
     protected fun createContext() {
-//        if (ReduxManager.instance.asyncMode) {
-//            createContextAsync()
-//        } else {
-//
-//        }
-
-        createContextSync()
-    }
-
-    private fun createContextSync() {
         // 生成初始State
         val componentState = onCreateState(props)
 
@@ -202,7 +183,7 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
         }
 
         // 负责处理额外的事情
-        onStateDetected(componentState)
+        onStateMerged(componentState)
 
         // 创建Context
         context = ReduxContextBuilder<S>()
@@ -216,50 +197,10 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
     }
 
     /**
-     * 异步模式，对性能极致需求
-     */
-//    private fun createContextAsync() {
-//        // 生成初始State
-//        val componentState = onCreateState(mBundle)
-//        val detectFinishRunnable = Runnable {
-//            context!!.setStateReady()
-//            // 负责处理额外的事情
-//            onStateDetected(componentState)
-//        }
-//        val detectRunnable = Runnable {
-//            componentState.detectField()
-//
-//            // 合并page State以及global State
-//            mergeState(componentState, IPropsChanged { props ->
-//                if (context != null) {
-//                    context!!.onStateChange(props)
-//                }
-//            })
-//
-//            // 提交到主线程
-//            ReduxManager.getInstance().submitInMainThread(detectFinishRunnable)
-//        }
-//
-//        // 检测以及merge state
-//        mFuture = ReduxManager.getInstance().submitInSubThread(detectRunnable)
-//
-//        // 创建Context
-//        context = ReduxContextBuilder<S>()
-//            .setLogic(this)
-//            .setState(componentState)
-//            .setOnStateChangeListener(makeUIListener())
-//            .setPlatform(createPlatform())
-//            .build()
-//        context.setController(controller)
-//    }
-
-    /**
      * 如果是UI组件，可能要设置额外的信息，比如组件是否可见，当前屏幕方向等
-     * @param componentState BaseState
+     * @param componentState 子组件state
      */
-    protected open fun onStateDetected(componentState: S) {
-        // impl sub class
-    }
+    protected open fun onStateMerged(componentState: S) {}
 
     /**
      * 每个组件下可能也会挂子组件，通过此方法初始化组件下挂载的子组件
@@ -310,11 +251,11 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
 
     /**
      * 对组件来说，不需要关注这些内部action，防止用户错误的注册框架的action
-     * @param effectCollect EffectCollect
+     * @param effectCollector EffectCollect
      */
-    override fun checkEffect(effectCollect: EffectCollect<S>?) {
-        effectCollect?.remove(InnerActionTypes.INTERCEPT_ACTION_TYPE)
-        effectCollect?.remove(InnerActionTypes.INSTALL_EXTRA_FEATURE_ACTION_TYPE)
+    override fun checkEffect(effectCollector: EffectCollector<S>?) {
+        effectCollector?.remove(InnerActionTypes.INTERCEPT_ACTION_TYPE)
+        effectCollector?.remove(InnerActionTypes.INSTALL_EXTRA_FEATURE_ACTION_TYPE)
     }
 
     /**
@@ -327,18 +268,15 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
     /**
      * 用于父组件安装子组件接口，并注入环境和连接器
      *
-     * @param environment 组件需要的环境
+     * @param env 组件需要的环境
      * @param connector 父组件的连接器
      */
-    abstract fun install(environment: Environment?, connector: Connector<S, State>?)
+    abstract fun install(env: Environment?, connector: Connector<S, State>?)
 
-    /**
-     * 清理操作，需要子类重写
-     */
     @CallSuper
     override fun clear() {
-        if (mFuture != null && !mFuture!!.isDone) {
-            mFuture!!.cancel(true)
+        if (future != null && !future!!.isDone) {
+            future!!.cancel(true)
         }
         globalStoreWatcher!!.clear()
         if (dependencies != null) {

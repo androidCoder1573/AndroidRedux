@@ -167,7 +167,7 @@ open class Store<S : State>  {
      * 页面退出时的清理操作
      */
     @CallSuper
-    protected open fun clear() {
+    open fun clear() {
         isDestroy = true
         listeners?.clear()
     }

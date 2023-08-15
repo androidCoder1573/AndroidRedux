@@ -6,5 +6,5 @@ import com.cyworks.redux.state.State
  * Desc: 承载业务逻辑的接口
  */
 interface LogicModule<S : State> {
-    fun addLocalEffects(collect: EffectCollect<S>)
+    fun addLocalEffects(collect: EffectCollector<S>)
 }

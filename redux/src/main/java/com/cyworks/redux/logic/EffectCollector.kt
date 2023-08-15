@@ -10,7 +10,7 @@ import com.cyworks.redux.types.Effect
 /**
  * Effect收集器，用于外部配置组件的Effect, 内部会将一个组件对应的Effect合并成一个.
  */
-class EffectCollect<S : State> {
+class EffectCollector<S : State> {
     /**
      * 获取合并之后的Effect
      */
@@ -33,6 +33,13 @@ class EffectCollect<S : State> {
      */
     fun add(action: Action<Any>, effect: Effect<S>) {
         functions[action.type] = effect
+    }
+
+    /**
+     * 给当前组件注册一个Action对应的Effect，保持可替换
+     */
+    fun add(type: ActionType, effect: Effect<S>) {
+        functions[type] = effect
     }
 
     fun remove(action: Action<Any>) {

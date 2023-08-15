@@ -18,19 +18,19 @@ class ReduxContextBuilder<S : State> {
     /**
      * 组件实例
      */
-    var logic: Logic<S>? = null
+    lateinit var logic: Logic<S>
         private set
 
     /**
      * 组件状态
      */
-    var state: S? = null
+    lateinit var state: S
         private set
 
     /**
      * 平台操作相关
      */
-    var platform: IPlatform? = null
+    lateinit var platform: IPlatform
         private set
 
     fun setState(state: S): ReduxContextBuilder<S> {
@@ -43,12 +43,12 @@ class ReduxContextBuilder<S : State> {
         return this
     }
 
-    fun setLogic(logic: Logic<S>?): ReduxContextBuilder<S> {
+    fun setLogic(logic: Logic<S>): ReduxContextBuilder<S> {
         this.logic = logic
         return this
     }
 
-    fun setPlatform(platform: IPlatform?): ReduxContextBuilder<S> {
+    fun setPlatform(platform: IPlatform): ReduxContextBuilder<S> {
         this.platform = platform
         return this
     }

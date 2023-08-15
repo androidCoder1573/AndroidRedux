@@ -2,11 +2,14 @@ package com.cyworks.redux
 
 import android.os.Looper
 import com.cyworks.redux.action.Action
+import com.cyworks.redux.action.InnerActionTypes
 import com.cyworks.redux.component.LiveDialogComponent
 import com.cyworks.redux.component.Logic
 import com.cyworks.redux.component.LogicComponent
 import com.cyworks.redux.component.LogicPage
 import com.cyworks.redux.dependant.Dependant
+import com.cyworks.redux.dialog.ILRDialog
+import com.cyworks.redux.interceptor.InterceptorPayload
 import com.cyworks.redux.lifecycle.LifeCycleAction
 import com.cyworks.redux.prop.ReactiveProp
 import com.cyworks.redux.state.State
@@ -19,7 +22,7 @@ import com.cyworks.redux.util.ILogger
 import com.cyworks.redux.util.IPlatform
 
 /**
- * Desc: Redux Context, context是开发者主要关心的类，主要用来做一些界面交互，发送Action等.
+ * ReduxContext是开发者主要关心的类，主要用来做一些界面交互，发送Action等.
  *
  * 为什么将对store的操作封装成context对象？
  * context里主要做了这几件事情：
@@ -35,20 +38,19 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     /**
      * ReduxContext对应的组件实例
      */
-    private var logic: Logic<S>? = null
+    private var logic: Logic<S>
 
     /**
      * 组件对应的State
      */
-    var state: S? = null
-        get() = if (field != null) {
-            State.copyState(field!!)
-        } else null
+    var state: S
+        get() = State.copyState(field) // 返回的State不具备修改通知能力
+        private set
 
     /**
      * 当状态发生变化时，通过此接口分发给UI
      */
-    private val stateChangeListener: IStateChange<S> = TODO()
+    private var componentStateChangeListener: IStateChange<S>? = null
 
     /**
      * 保存对state provider的反注册器
@@ -68,7 +70,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     /**
      * 保存对store观察的反注册器
      */
-    private val storeObserverDispose: Dispose? = null
+    private var storeObserverDispose: Dispose? = null
 
     /**
      * 存放当前组件已更新的属性，在下一次vsync信号过来时，用于UI更新
@@ -89,8 +91,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     /**
      * 平台操作相关
      */
-    var platform: IPlatform? = null
-        private set
+    val platform: IPlatform
 
     private val logger: ILogger = ReduxManager.instance.logger
 
@@ -102,50 +103,12 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     /**
      * 是否检测状态完成
      */
-    @Volatile
-    private var isStateReady = false
+    @Volatile private var isStateReady = false
 
     /**
      * 存放因为异步操作而被挂起的action
      */
     private var pendingLifeCycleActionList: ArrayList<Action<Any>>? = null
-
-    /**
-     * 构造器，通过builder创建
-     * @param builder ReduxContextBuilder
-     */
-    init {
-        logic = builder.logic
-        environment = logic?.environment
-        platform = builder.platform
-
-        // 初始化Dispatch
-        initDispatch()
-
-        // 获取组件的初始state
-        state = builder.state
-
-        // 初始化State Getter，用注册到Store中，获取当前组件对应的State
-        initStateGetter()
-
-        // 监听Store抛出来的变化
-        val propsChanged = object : IPropsChanged {
-            override fun onPropsChanged(props: List<ReactiveProp<Any>>?) {
-                if (props != null) {
-                    onStateChange(props)
-                }
-            }
-        }
-
-        val observer = StoreObserver(propsChanged, state?.hashCode().toString())
-        storeObserverDispose = environment!!.store!!.observe(observer)
-
-        // UI观察者，当state变化时，需要触发ui刷新
-        stateChangeListener = builder.stateChangeListener!!
-
-        // 注册Vsync同步信号，统一时机刷新UI
-        registerUIUpdater()
-    }
 
     /**
      * 如果开发这不想使用Action驱动，可以通过传统的方式书写逻辑代码，需继承BaseController
@@ -176,39 +139,51 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
 //            return if (adapter == null) null else adapter.getRealAdapter()
 //        }
 
+    init {
+        logic = builder.logic
+        environment = logic.environment
+        platform = builder.platform
+
+        // 初始化Dispatch
+        initDispatch()
+
+        // 获取组件的初始state
+        state = builder.state
+
+        // 初始化State Getter，用注册到Store中，获取当前组件对应的State
+        injectStateGetter()
+
+        // 监听Store抛出来的变化
+        val propsChanged = IPropsChanged { props ->
+            if (props != null) {
+                onStateChange(props)
+            }
+        }
+        val observer = StoreObserver(state.hashCode().toString(), propsChanged)
+        storeObserverDispose = environment?.store?.observe(observer)
+
+        // 当state变化时，需要触发给具体的组件，由组件进行UI以及数据逻辑
+        componentStateChangeListener = builder.stateChangeListener
+
+        // 注册Vsync同步信号，统一时机刷新UI
+        injectUIUpdater()
+    }
+
     private fun initDispatch() {
         // 创建负责分发Effect Action的Dispatch
-        effectDispatch = object : Dispatch {
-            override fun dispatch(action: Action<Any>) {
-                logger.d(
-                    ILogger.ACTION_TAG,
-                    "effect action is <" + action.type.name
-                            + ">, in <" + logger.javaClass.simpleName.toString() + ">"
-                )
+        effectDispatch = Dispatch { action ->
+            logger.d(ILogger.ACTION_TAG, "effect action is <" + action.type.name + ">,"
+                        + " in <" + logger.javaClass.simpleName.toString() + ">")
 
-                logger.mEffect.doAction(action, this, payload)
-                // 如果是非严格模式，这个Effect的action还会发送到其他组件中
-
-                // 如果不是私有action，则拦截此action，并交给感兴趣的组件处理
-                // 比如: 考虑这个场景：礼物模块发送了一个礼物，其他模块要同时进行一些响应。
-                if (!action.isPrivate()) {
-                    logger.d(
-                        ILogger.ACTION_TAG,
-                        "action is <" + action.type.name
-                                + "> is public action, will send to any component in page"
-                    )
-                    // Interceptor只能由Page来拦截, 拦截时排除自己
-                    dispatchToPage(
-                        InnerActions.INTERCEPT_ACTION,
-                        InterceptorPayload(action, payload, mEffectDispatch)
-                    )
-                }
-            }
+            logic.effect?.doAction(action, this)
+            // Interceptor只能由Page来拦截, 拦截时排除自己
+            dispatchToPage(Action(InnerActionTypes.INTERCEPT_ACTION_TYPE,
+                InterceptorPayload(action, effectDispatch)))
         }
 
         val bus = environment!!.dispatchBus
         // 注册effect dispatch, 用于组件间交互
-        dispatchDispose = bus!!.registerReceiver(effectDispatch)
+        dispatchDispose = bus!!.register(effectDispatch)
         if (logic is LogicPage<*>) {
             // 为了防止组件发广播时，其他组件也可以接收此广播，导致组件间通信通过广播来进行。
             // 规定只有page才能接收广播，因此在此设置整个page的Effect分发状态。
@@ -216,34 +191,32 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         }
     }
 
-    private fun initStateGetter() {
-        // 主要给store来用
-        val getter: ComponentStateGetter<S?> = ComponentStateGetter<S> { state }
-        val store = mEnvironment!!.store
+    private fun injectStateGetter() {
+        // 给页面store用，用于获取当前组件的state
+        val getter: StateGetter<S> = StateGetter { state }
+        val store = environment!!.store
         if (store is PageStore<*>) {
-            mStateGetterDispose = (store as PageStore<out State?>)
-                .setStateGetter(getter as ComponentStateGetter<State?>)
+            stateGetterDispose = (store as PageStore<out State>)
+                .addStateGetter(getter as StateGetter<State>)
         }
     }
 
-    private fun registerUIUpdater() {
+    private fun injectUIUpdater() {
         val store = environment!!.store
-        if (stateChangeListener == null || store !is PageStore<*>) {
+        if (componentStateChangeListener == null || store !is PageStore<*>) {
             return
         }
 
         // 接收Vsync信号，优化刷新性能
-        uiUpdaterDispose = (store as PageStore<State>).addUIUpdater(object : UIFrameUpdater {
-            override fun onNewFrameCome() {
-                if (pendingChangedProps != null && !pendingChangedProps!!.isEmpty()) {
-                    val props: List<ReactiveProp<Any>> = ArrayList(
-                        pendingChangedProps!!.values
-                    )
-                    pendingChangedProps!!.clear()
-                    pendingChangedProps.onChange(state, props)
-                }
+        uiUpdaterDispose = (store as PageStore<State>).addUIUpdater {
+            if (pendingChangedProps != null && pendingChangedProps!!.isNotEmpty()) {
+                val props: List<ReactiveProp<Any>> = ArrayList(
+                    pendingChangedProps!!.values
+                )
+                pendingChangedProps!!.clear()
+                pendingChangedProps.onChange(state, props)
             }
-        })
+        }
     }
 
     /**
@@ -258,7 +231,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     }
 
     private fun innerUpdateState(reducer: Reducer<S>) {
-        state?.setStateProxy(StateProxy())
+        state.setStateProxy(StateProxy())
         val newState: S = reducer.update(state) ?: return
 
         // 获取私有属性变化，并本地更新
@@ -272,47 +245,42 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      * @param props 变化的属性列表 [ReactiveProp]
      */
     fun onStateChange(props: List<ReactiveProp<Any>>) {
-        if (logic == null) {
-            return
-        }
-
         for (prop in props) {
             val key = prop.getKey()
             putChangedProp(key, prop)
-            logger.d(ILogger.ACTION_TAG, "current changed prop is <"
-                    + key + "> in <" + logic!!.javaClass.simpleName + ">"
+            logger.d(ILogger.ACTION_TAG, "current changed prop is <" + key + ">"
+                    + "in <" + logic.javaClass.simpleName + ">"
             )
         }
 
         markNeedUpdate()
 
         // 通知属性订阅者，状态发生了变化
-        logic!!.propWatcher.notifyPropChanged(props, this)
-    }
-
-    /**
-     * 进行一次全量更新：
-     * 主要用组件隐藏之后再显示的操作，或者横竖屏切换时的操作
-     */
-    fun runFullUpdate() {
-        val map = state!!.dataMap
-        for (key in map.keys) {
-            val prop = map[key]
-            prop?.let { putChangedProp(key, it) }
-        }
-        markNeedUpdate()
+        logic.propWatcher.notifyPropChanged(props, this)
     }
 
     /**
      * 首次创建UI时，根据是否更新初始值来展示UI
      */
-    fun firstUpdate() {
-        val map = state!!.dataMap
+    fun runFirstUpdate() {
+        val map = state.dataMap
         for (key in map.keys) {
             val reactiveProp = map[key]
             if (reactiveProp != null && reactiveProp.isUpdateWithInitValue) {
                 putChangedProp(key, reactiveProp)
             }
+        }
+        markNeedUpdate()
+    }
+
+    /**
+     * 进行一次全量更新：主要用组件隐藏之后再显示的操作，或者横竖屏切换时的操作
+     */
+    fun runFullUpdate() {
+        val map = state.dataMap
+        for (key in map.keys) {
+            val prop = map[key]
+            prop?.let { putChangedProp(key, it) }
         }
         markNeedUpdate()
     }
@@ -333,26 +301,6 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
 
     fun isSameEffectDispatch(dispatch: Dispatch): Boolean {
         return dispatch == effectDispatch
-    }
-
-    /**
-     * 获取当前组件的State, 这里返回的State不具备修改通知能力
-     *
-     * @return 当前组件的State
-     */
-
-
-    /**
-     * 分发Reducer Action
-     *
-     * @param action 携带的Action
-     * @param payload 携带的参数
-     */
-    fun dispatchReducer(action: Action<Any>?, payload: Any?) {
-        if (isDestroy || !isStateReady) {
-            return
-        }
-        reducerDispatch.dispatch(action, payload)
     }
 
     /**
@@ -377,12 +325,12 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      * @param action Action
      * @param payload 携带的参数
      */
-    fun dispatchToPage(action: Action<Any>?, payload: Any?) {
+    fun dispatchToPage(action: Action<Any>) {
         if (isDestroy || !isStateReady || environment == null) {
             return
         }
         val bus = environment!!.dispatchBus
-        bus!!.pageDispatch!!.dispatch(action, payload)
+        bus!!.pageDispatch!!.dispatch(action)
     }
 
     /**
@@ -527,7 +475,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      */
     fun showComponentDialog(dialog: ILRDialog?) {
         if (logic is LiveDialogComponent<*>) {
-            (logic as LiveDialogComponent<out BaseComponentState?>).showDialog(dialog)
+            (logic as LiveDialogComponent<out State>).showDialog(dialog)
         }
     }
 
@@ -536,7 +484,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      */
     fun destroy() {
         isDestroy = true
-        state!!.clear()
+        state.clear()
         dispatchDispose?.let { it() }
         storeObserverDispose?.let { it() }
         uiUpdaterDispose?.let { it() }

@@ -64,9 +64,6 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
      */
     protected var propsWatcher: PropsWatcher<S>? = null
 
-    /**
-     * Log 组件
-     */
     private val logger: ILogger = ReduxManager.instance.logger
 
     /**
@@ -78,7 +75,7 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
 
     init {
         viewModule = component.viewModule
-        // 如果是延迟加载，表明初始状态时不加载UI
+        // 如果是延迟加载，表明初始状态时不加载UI, 后续由开发者自己控制加载时机
         isShow = !lazyBindUI
     }
 
@@ -90,7 +87,7 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
             return
         }
 
-        // 创建UI更新器
+        // 创建属性订阅器
         propsWatcher = PropsWatcher()
         viewModule.subscribeProps(state, propsWatcher)
     }
@@ -138,14 +135,11 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
         attachAdapter()
 
         // 处理子组件
-        val map: HashMap<String, Dependant<out S, State>>? = component.childrenDependant
-        if (map == null || map.isEmpty()) {
+        val map: HashMap<String, Dependant<out State, State>>? = component.childrenDependant
+        if (map.isNullOrEmpty()) {
             return
         }
         for (dependant in map.values) {
-            if (dependant == null) {
-                continue
-            }
             if (!dependant.isInstalled) {
                 installComponent(dependant)
                 continue
@@ -179,8 +173,8 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
         detachAdapter()
 
         // 处理子组件
-        val map: HashMap<String, Dependant<out S, State>>? = component.childrenDependant
-        if (map != null && !map.isEmpty()) {
+        val map: HashMap<String, Dependant<out State, State>>? = component.childrenDependant
+        if (!map.isNullOrEmpty()) {
             for (dependant in map.values) {
                 dependant.hide()
             }
@@ -206,7 +200,7 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
         attachAdapter()
 
         // 处理子组件
-        val map: HashMap<String, Dependant<out S, State>>? = component.childrenDependant
+        val map: HashMap<String, Dependant<out State, State>>? = component.childrenDependant
         if (map == null || map.isEmpty()) {
             return
         }
@@ -249,37 +243,34 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
     }
 
     private fun detachChildren() {
-        if (component == null) {
-            return
-        }
         detachAdapter()
 
         // 处理子组件
-        val map: HashMap<String, Dependant<out S, State>>? = component.childrenDependant
-        if (map != null && !map.isEmpty()) {
+        val map: HashMap<String, Dependant<out State, State>>? = component.childrenDependant
+        if (!map.isNullOrEmpty()) {
             for (dependant in map.values) {
                 dependant.detach()
             }
         }
     }
 
-    private fun installComponent(dependant: Dependant<out S, State>) {
+    private fun installComponent(dependant: Dependant<out State, State>) {
         val context = component.context
         val env = Environment.copy(component.environment!!)
-        env.setParentState(context!!.state)
-            .setParentDispatch(context.effectDispatch)
+        context?.state?.let { env.setParentState(it) }
+        context?.effectDispatch?.let { env.setParentDispatch(it) }
         dependant.initComponent(env)
     }
 
     private fun attachAdapter() {
         // 子组件也包含adapter, Adapter要单独处理，adapter是否可复用
-        val adapter: Dependant<out S, State>? = component.adapterDependant
+        val adapter: Dependant<out State, State>? = component.adapterDependant
         adapter?.attach()
     }
 
     private fun detachAdapter() {
         // 子组件也包含adapter, Adapter要单独处理
-        val adapter: Dependant<out S, State>? = component.adapterDependant
+        val adapter: Dependant<out State, State>? = component.adapterDependant
         adapter?.detach()
     }
 
@@ -319,7 +310,7 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
         val context = component.context
         if (context != null && context.stateReady()) {
             isRunFirstUpdate = true
-            context.firstUpdate()
+            context.runFirstUpdate()
         }
     }
 
@@ -334,7 +325,7 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
     private fun setShow(show: Boolean) {
         isShow = show
         val context = component.context
-        context?.state?.isShowUI?.innerSetter(isShow)
+        context?.state?.innerSetProp("isShowUI", isShow)
     }
 
     /**
@@ -413,7 +404,7 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
         }
 
         try {
-            return viewModule.getView(context, component.rootView)
+            return viewModule.getView(context, component.environment?.rootView!!)
         } catch (e: Exception) {
             // 这里可能会产生多种异常，比如空指针，重复添加等
             logger.printStackTrace(ILogger.ERROR_TAG, "call view builder fail: ", e)

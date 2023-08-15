@@ -1,7 +1,6 @@
 package com.cyworks.redux.component
 
 import android.annotation.SuppressLint
-import android.os.SystemClock
 import androidx.annotation.CallSuper
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
@@ -13,6 +12,7 @@ import com.cyworks.redux.lifecycle.LifeCycleAction
 import com.cyworks.redux.lifecycle.LifeCycleProxy
 import com.cyworks.redux.prop.ChangedState
 import com.cyworks.redux.state.State
+import com.cyworks.redux.types.IStateChange
 import com.cyworks.redux.ui.ViewModule
 import com.cyworks.redux.util.Environment
 import com.cyworks.redux.util.ILogger
@@ -20,17 +20,19 @@ import com.cyworks.redux.util.IPlatform
 import com.cyworks.redux.util.Platform
 
 /**
- * Desc:组件基类，框架内部实现，外部不能直接使用, 用来承载一个Redux组件.
+ * 组件基类，框架内部实现，外部不能直接使用, 用来承载一个Redux组件.
  * Component = Action + State + Reducer + Effect + Dependant(依赖的子组件)
  *
  * 组件生命周期自治：组件通过注入LifecycleObserver，写法上不依赖activity等环境。
- *
+ * <p>
  * note:
  * 由于每个组件自己管理生命周期，可能会跟Page生命周期时机对不上，所以有些依赖生命周期的操作要比较小心。
  *
  * Component支持UI懒加载, 组件UI懒加载：
  * 组件初始化过程中，绑定UI是整个环节中最耗时的操作，如果能延后UI绑定操作，能一定程度上缓解初始化压力。
- * 框架提供了[isShowUI] 来懒加载UI界面，开发者可以自己控制UI展示的时机。
+ * 框架提供了isShowUI来懒加载UI界面，开发者可以自己控制UI展示的时机。
+ *
+ * @params: lazyBindUI 是否延迟加载UI
  */
 abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>(null) {
     /**
@@ -46,7 +48,7 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
     /**
      * 将对UI的操作放在这里
      */
-    val uiController: ComponentUIController<S>?
+    internal val uiController: ComponentUIController<S>
 
     /**
      * 获取View模块，外部设置
@@ -55,29 +57,24 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
      */
     abstract val viewModule: ViewModule<S>?
 
-    /**
-     * 构造器，初始一些组件的内部数据
-     *
-     * @param lazyBindUI 是否延迟加载UI
-     */
     init {
         uiController = ComponentUIController(this, lazyBindUI)
     }
 
     fun show() {
-        uiController?.show(false)
+        uiController.show(false)
     }
 
     fun hide() {
-        uiController?.hide(false)
+        uiController.hide(false)
     }
 
     fun attach() {
-        uiController?.attach()
+        uiController.attach()
     }
 
     fun detach() {
-        uiController?.detach()
+        uiController.detach()
     }
 
     /**
@@ -90,15 +87,14 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
         environment!!.lifeCycleProxy!!.lifecycleOwner?.let { liveData?.observe(it, observer!!) }
     }
 
-    override fun install(environment: Environment?, connector: Connector<S, State>?) {
-        var environment = environment
+    override fun install(env: Environment?, connector: Connector<S, State>?) {
         if (uiController.isBind) {
             return
         }
-
         uiController.isBind = true
+
         this.connector = connector
-        environment = environment
+        environment = env
 
         // 获取启动参数
         val lifeCycleProxy: LifeCycleProxy? = environment!!.lifeCycleProxy
@@ -121,54 +117,51 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
         return platform
     }
 
-    override fun makeUIListener(): StateChangeForUI<S> {
-        return StateChangeForUI<S> { state, changedProps ->
-            val stateCompare: ChangedState<S> = ChangedState()
-            stateCompare.mState = state
-            stateCompare.mChangedProps = changedProps
-            liveData.setValue(stateCompare)
+    override fun makeStateChangeCB(): IStateChange<S> {
+        return IStateChange { state, changedProps ->
+            val stateCompare = ChangedState(state, changedProps)
+            liveData?.setValue(stateCompare)
         }
     }
 
     @CallSuper
     override fun clear() {
         super.clear()
-        liveData.removeObserver(observer)
+        observer?.let { liveData?.removeObserver(it) }
         if (context != null) {
             context!!.destroy()
         }
-        uiController!!.clear()
+        uiController.clear()
         environment = null
     }
 
-    override fun onStateDetected(componentState: S) {
+    override fun onStateMerged(componentState: S) {
         // 检查默认属性设置
-        componentState.isShowUI.innerSetter(uiController!!.isShow)
+        componentState.innerSetProp("isShowUI", uiController.isShow)
 
         // 获取初始的屏幕方向
-        uiController?.lastOrientation = componentState.mCurrentOrientation.value()
+        uiController.lastOrientation = componentState.currentOrientation
 
         // 设置状态 -- UI 监听
-        uiController?.makeUIWatcher(componentState)
+        uiController.makeUIWatcher(componentState)
 
         // 运行首次UI更新
-        uiController?.firstUpdate()
+        uiController.firstUpdate()
     }
 
     /**
      * 用于初始化Component
      */
     private fun onCreate() {
-        val time = SystemClock.uptimeMillis()
+        val time = System.currentTimeMillis()
 
         // 1、创建Context
         createContext()
 
         // 2、如果不懒加载，直接加载界面
-        if (uiController!!.isShow) {
+        if (uiController.isShow) {
             uiController.initUI()
             uiController.firstUpdate()
-
             // 遍历依赖
             initSubComponent()
         }
@@ -180,10 +173,8 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
         context!!.onLifecycle(Action(LifeCycleAction.ACTION_ON_CREATE, null))
 
         // 打印初始化的耗时
-        logger.d(
-            ILogger.PERF_TAG, "component: <" + javaClass.simpleName + ">"
-                    + "init consumer: " + (SystemClock.uptimeMillis() - time)
-        )
+        logger.d(ILogger.PERF_TAG, "component: <" + javaClass.simpleName + ">"
+                    + "init consume: " + (System.currentTimeMillis() - time))
     }
 
     /**
@@ -193,47 +184,42 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
         /**
          * 内部持有组件实例
          */
-        private val mComponent: BaseComponent<out State>
+        private val component: BaseComponent<out State>
 
-        /**
-         * 构造器，初始化生命周期观察者
-         *
-         * @param component AbsComponent
-         */
         init {
-            mComponent = component
+            this.component = component
         }
 
         @OnLifecycleEvent(Lifecycle.Event.ON_CREATE)
         fun onCreate() {
-            mComponent.onCreate()
+            component.onCreate()
         }
 
         @OnLifecycleEvent(Lifecycle.Event.ON_START)
         fun onStart() {
-            mComponent.context!!.onLifecycle(Action(LifeCycleAction.ACTION_ON_START, null))
+            component.context!!.onLifecycle(Action(LifeCycleAction.ACTION_ON_START, null))
         }
 
         @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
         fun onResume() {
-            mComponent.context!!.onLifecycle(Action(LifeCycleAction.ACTION_ON_RESUME, null))
+            component.context!!.onLifecycle(Action(LifeCycleAction.ACTION_ON_RESUME, null))
         }
 
         @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
         fun onPause() {
-            mComponent.context!!.onLifecycle(Action(LifeCycleAction.ACTION_ON_PAUSE, null))
+            component.context!!.onLifecycle(Action(LifeCycleAction.ACTION_ON_PAUSE, null))
         }
 
         @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
         fun onStop() {
-            mComponent.context!!.onLifecycle(Action(LifeCycleAction.ACTION_ON_STOP, null))
+            component.context!!.onLifecycle(Action(LifeCycleAction.ACTION_ON_STOP, null))
         }
 
         @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
         fun onDestroy() {
             // 这里的调用顺序不能乱
-            mComponent.context!!.onLifecycle(Action(LifeCycleAction.ACTION_ON_DESTROY, null))
-            mComponent.clear()
+            component.context!!.onLifecycle(Action(LifeCycleAction.ACTION_ON_DESTROY, null))
+            component.clear()
         }
     }
 }

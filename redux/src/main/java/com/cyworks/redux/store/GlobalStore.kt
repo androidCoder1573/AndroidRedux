@@ -3,12 +3,10 @@ package com.cyworks.redux.store
 import com.cyworks.redux.state.State
 import com.cyworks.redux.state.StateProxy
 import com.cyworks.redux.action.Action
-import com.cyworks.redux.logic.EffectCollect
-import com.cyworks.redux.prop.ReactiveProp
+import com.cyworks.redux.logic.EffectCollector
 import com.cyworks.redux.types.CreateGlobalState
 import com.cyworks.redux.types.Effect
 import com.cyworks.redux.types.Reducer
-import com.cyworks.redux.util.ILogger
 import com.cyworks.redux.util.ThreadUtil
 
  enum class StoreType {
@@ -33,9 +31,9 @@ abstract class GlobalStore<S : State> : Store<S> {
     constructor()
 
     public constructor(creator: CreateGlobalState<S>) : this() {
-        val effectCollect: EffectCollect<S> = EffectCollect()
-        addEffects(effectCollect)
-        effect = effectCollect.effect
+        val effectCollector: EffectCollector<S> = EffectCollector()
+        addEffects(effectCollector)
+        effect = effectCollector.effect
         state = creator.create()
         state.detectField()
     }
@@ -47,7 +45,7 @@ abstract class GlobalStore<S : State> : Store<S> {
     /**
      * 注入Effect，不强制实现，如果开发者使用action驱动，需要实现此方法
      */
-    protected fun addEffects(effectCollect: EffectCollect<S>?) {
+    protected fun addEffects(effectCollector: EffectCollector<S>?) {
         // sub class maybe impl
     }
 

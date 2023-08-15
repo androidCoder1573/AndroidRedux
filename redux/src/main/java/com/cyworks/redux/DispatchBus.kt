@@ -4,36 +4,44 @@ import com.cyworks.redux.action.Action
 import com.cyworks.redux.types.Dispatch
 import com.cyworks.redux.types.Dispose
 import com.cyworks.redux.types.IBus
-import java.util.ArrayList
 
 class DispatchBus internal constructor() : IBus {
     /**
+     * 每个bus中，保存的dispatch需要根据Page以及父组件分别保存。
+     * 目前需求的通信方式是，组件只能发action给Page，但是Page可以发送Action给所有的组件，所以这里区分一下
+     */
+    internal var pageDispatch: Dispatch? = null
+
+    /**
      * 保存当前bus的父亲
      */
-    private var mParent: DispatchBus? = null
+    private var parent: DispatchBus? = null
 
     /**
      * 保存当前bus的孩子，根bus会持有多个孩子
      */
-    private val mChildList: MutableList<Dispatch>
+    private val childList: MutableList<Dispatch>
 
     /**
      * 删除添加的某个DispatchBus
      */
-    private var mRemoveSelf: Dispose? = null
+    private var removeSelf: Dispose? = null
     private var isDetach = false
-
-    /**
-     * 每个bus中，保存的dispatch需要分Page以及组件，目前需求的通信方式是，组件只能发action给Page，
-     * 但是Page可以发送Action给所有的组件，所以这里区分一下
-     */
-    private var mPageDispatch: Dispatch? = null
 
     /**
      * 初始化依赖列表，为了防止事件关系混乱，这个创建过程由框架来维护
      */
     init {
-        mChildList = ArrayList<Dispatch>()
+        childList = ArrayList<Dispatch>()
+    }
+
+    override fun register(dispatch: Dispatch?): Dispose? {
+        if (isDetach || dispatch == null) {
+            return null
+        }
+
+        childList.add(dispatch)
+        return { childList.remove(dispatch) }
     }
 
     /**
@@ -42,31 +50,29 @@ class DispatchBus internal constructor() : IBus {
      * @param dispatch Dispatch
      */
     fun setPageEffectDispatch(dispatch: Dispatch?) {
-        mPageDispatch = dispatch
+        pageDispatch = dispatch
     }
-
-    val pageDispatch: Dispatch?
-        get() = mPageDispatch
 
     override fun attach(parent: IBus?) {
         if (parent !is DispatchBus) {
             return
         }
-        mParent = parent
-        mRemoveSelf?.let { it() }
-        mRemoveSelf = parent.registerReceiver(this)
+        this.parent = parent
+        removeSelf?.let { it() }
+        removeSelf = parent.register(this)
     }
 
     override fun detach() {
         isDetach = true
-        mRemoveSelf?.let { it() }
+        removeSelf?.let { it() }
     }
 
     override fun broadcast(action: Action<Any>) {
         if (isDetach) {
             return
         }
-        var parent = mParent
+
+        var parent = parent
         if (parent == null) {
             // 本身就在顶层
             innerBroadcast(action)
@@ -74,8 +80,8 @@ class DispatchBus internal constructor() : IBus {
         }
 
         // 查找最顶层
-        while (parent!!.mParent != null) {
-            parent = parent.mParent
+        while (parent!!.parent != null) {
+            parent = parent.parent
         }
         parent.innerBroadcast(action)
     }
@@ -85,36 +91,28 @@ class DispatchBus internal constructor() : IBus {
      * page接收之后可以通过拦截器的方式转给组件。
      */
     private fun innerBroadcast(action: Action<Any>) {
-        if (mChildList.isEmpty()) {
+        if (childList.isEmpty()) {
             return
         }
-        for (dispatch in mChildList) {
+        for (dispatch in childList) {
             if (dispatch !is DispatchBus) {
                 continue
             }
 
             // 交给page来处理
-            dispatch.mPageDispatch?.dispatch(action)
+            dispatch.pageDispatch?.dispatch(action)
         }
-    }
-
-    override fun registerReceiver(dispatch: Dispatch): Dispose? {
-        if (!isDetach) {
-            mChildList.add(dispatch)
-            return { mChildList.remove(dispatch) }
-        }
-        return null
     }
 
     override fun dispatch(action: Action<Any>) {
         dispatch(action, null)
     }
 
-    fun dispatch(action: Action<Any>, exclude: Dispatch?) {
+    internal fun dispatch(action: Action<Any>, exclude: Dispatch?) {
         if (isDetach) {
             return
         }
-        for (dispatcher in mChildList) {
+        for (dispatcher in childList) {
             if (dispatcher !== exclude) {
                 dispatcher.dispatch(action)
             }

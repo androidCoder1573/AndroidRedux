@@ -1,15 +1,26 @@
 package com.cyworks.redux.component
 
 import android.view.View
-import com.tencent.redux.beans.UIChangedBean
-import java.util.ArrayList
+import androidx.lifecycle.Observer
+import com.cyworks.redux.beans.UIChangedType
+import com.cyworks.redux.prop.ChangedState
+import com.cyworks.redux.prop.ReactiveProp
+import com.cyworks.redux.state.State
 
 /**
  * Desc: 一个UI组件的基类，主要针对组件的显示/隐藏，
  * 屏幕方向切换做了一些特殊处理
  */
-abstract class LiveComponent<S : BaseComponentState?>(lazyBindUI: Boolean) :
-    BaseComponent<S>(lazyBindUI) {
+abstract class LiveComponent<S : State>(lazyBindUI: Boolean) : BaseComponent<S>(lazyBindUI) {
+    val currentView: View?
+        get() = uiController.currentView
+
+    init {
+        observer = Observer { stateCompare: ChangedState<S> ->
+            onDataChangedCB(stateCompare)
+        }
+    }
+
     /**
      * UI数据变化时的回调，检查本次变化的数据，对可见性以及屏幕旋转做一些特殊处理
      *
@@ -19,16 +30,16 @@ abstract class LiveComponent<S : BaseComponentState?>(lazyBindUI: Boolean) :
         if (uiController.canNotUpdateUI() || environment == null) {
             return
         }
-        val props: List<ReactiveProp<Any>> = stateCompare.mChangedProps
+        val props: List<ReactiveProp<Any>> = stateCompare.changedProps
         // 检查属性是否合法
-        if (props == null || props.isEmpty()) {
+        if (props.isEmpty()) {
             return
         }
 
         // 将变化的属性的key抽离到一个列表中
         val propKeys: MutableList<String?> = ArrayList()
         for (prop in props) {
-            propKeys.add(prop.key)
+            propKeys.add(prop.getKey())
         }
 
         // 检查是否组件可见性发生变化
@@ -42,7 +53,7 @@ abstract class LiveComponent<S : BaseComponentState?>(lazyBindUI: Boolean) :
         }
 
         // 最后更新UI
-        uiController.callUIUpdate(stateCompare.mState, propKeys, uiController.viewHolder)
+        uiController.callUIUpdate(stateCompare.lastState, uiController.viewHolder)
     }
 
     /**
@@ -52,7 +63,7 @@ abstract class LiveComponent<S : BaseComponentState?>(lazyBindUI: Boolean) :
      * @return 是否需要处理可见性变化
      */
     private fun visibilityChanged(propKeys: List<String?>): Boolean {
-        val show: Boolean = context!!.state.isShowUI.value()
+        val show: Boolean = context.state.isShowUI
         if (!propKeys.contains("show_ui")) {
             // 当前变化的属性不包含可见性变化的属性
             return false
@@ -66,7 +77,7 @@ abstract class LiveComponent<S : BaseComponentState?>(lazyBindUI: Boolean) :
         uiController.isShow = show
 
         // 如果可见性发生变化，更新旋转方向
-        uiController.lastOrientation = context!!.state.mCurrentOrientation.value()
+        uiController.lastOrientation = context.state.currentOrientation
 
         // 如果最新的状态是隐藏UI，则进行UI隐藏操作
         if (!uiController.isShow) {
@@ -92,7 +103,7 @@ abstract class LiveComponent<S : BaseComponentState?>(lazyBindUI: Boolean) :
         propKeys.remove(orientationKey)
 
         // 读取最新的屏幕方向
-        val nowOrientation: Int = context!!.state.mCurrentOrientation.value()
+        val nowOrientation: Int = context.state.currentOrientation
 
         // 防重入
         if (uiController.lastOrientation == nowOrientation) {
@@ -112,11 +123,11 @@ abstract class LiveComponent<S : BaseComponentState?>(lazyBindUI: Boolean) :
      */
     private fun onConfigurationChanged(orientation: Int) {
         // 先移除观察者
-        liveData.removeObserver(observer)
+        observer?.let { liveData?.removeObserver(it) }
         uiController.changeView(orientation)
 
         // 通知组件当前组件UI发生变化了，给用户一个机会做一些善后处理
-        uiController.sendUIChangedAction(UIChangedBean.TYPE_ORIENTATION_CHANGE)
+        uiController.sendUIChangedAction(UIChangedType.TYPE_ORIENTATION_CHANGE)
 
         // 重新创建holder
         uiController.resetViewHolder()
@@ -126,24 +137,5 @@ abstract class LiveComponent<S : BaseComponentState?>(lazyBindUI: Boolean) :
 
         // 重新设置UI状态
         context!!.runFullUpdate()
-    }
-
-    /**
-     * 获取当前组件正在显示的View
-     *
-     * @return View
-     */
-    val currentView: View
-        get() = uiController.currentView
-
-    /**
-     * 构造器，初始化组件的内部数据
-     *
-     * @param lazyBindUI 是否延迟加载UI
-     */
-    init {
-        observer = Observer<ChangedState<S>> { stateCompare: ChangedState<S> ->
-            onDataChangedCB(stateCompare)
-        }
     }
 }

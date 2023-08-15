@@ -32,18 +32,6 @@ fun interface StateGetter<S : State> {
 }
 
 /**
- * 当当前State发生变化时，通知给UI的接口
- */
-fun interface IStateChange<S : State> {
-    /**
-     * 组件state变化的回调
-     * @param state 上一次的PureState
-     * @param changedProps 组件变化的属性列表
-     */
-    fun onChange(state: S, changedProps: List<ReactiveProp<Any>>)
-}
-
-/**
  * 通过此接口来更新state，不需要发送action
  */
 fun interface Reducer<S : State> {
@@ -117,10 +105,15 @@ fun interface IPropsChanged {
 }
 
 /**
- * Desc: 当当前State发生变化时，通知给UI的接口
+ * 当当前State发生变化时，通知给UI的接口
  */
-fun interface IStateChangeForUI<S : State> {
-    fun onStateChange(state: S, changedProps: List<ReactiveProp<Any>>)
+fun interface IStateChange<S : State> {
+    /**
+     * 组件state变化的回调
+     * @param state 上一次的PureState
+     * @param changedProps 组件变化的属性列表
+     */
+    fun onChange(state: S, changedProps: List<ReactiveProp<Any>>)
 }
 
 /**
@@ -179,7 +172,7 @@ interface IBus : Dispatch {
      * @param dispatch 每个Bus会持有多个Dispatch，用于处理当前Page下的Effect
      * @return 返回一个反注册器
      */
-    fun registerReceiver(dispatch: Dispatch): Dispose?
+    fun register(dispatch: Dispatch?): Dispose?
 }
 
 /**

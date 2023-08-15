@@ -31,7 +31,7 @@ class Dependant<CS : State, PS : State> {
     /**
      * 组件对应的连接器
      */
-    var connector: Connector<CS, State>? = null
+    var connector: Connector<CS, PS>? = null
         private set
 
     /**
@@ -49,19 +49,17 @@ class Dependant<CS : State, PS : State> {
     }
 
     private fun initConnector(connector: Connector<CS, PS>?) {
-        this.connector = connector as Connector<CS, State>?
+        this.connector = connector
         if (connector == null) {
-            this.connector = createDefaultConnector() as Connector<CS, State>
+            this.connector = createDefaultConnector()
         }
 
         // 注入子组件State的获取接口
-        val stateGetter: StateGetter<CS> = object : StateGetter<CS> {
-            override fun copy(): CS {
-                val context = logic.context
-                val state = context?.state
-                state?.setStateProxy(StateProxy())
-                return state
-            }
+        val stateGetter: StateGetter<CS> = StateGetter {
+            val context = logic.context
+            val state = context.state
+            state.setStateProxy(StateProxy())
+            state
         }
 
         // 注入子组件私有属性变化时的监听器
@@ -92,7 +90,7 @@ class Dependant<CS : State, PS : State> {
         }
     }
 
-    protected fun install(env: Environment) {
+    internal fun install(env: Environment) {
         initComponent(env)
         // initAdapter(env)
     }

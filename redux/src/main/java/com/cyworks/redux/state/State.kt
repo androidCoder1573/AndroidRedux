@@ -2,8 +2,8 @@ package com.cyworks.redux.state
 
 import android.content.res.Configuration
 import com.cyworks.redux.ReduxManager
-import com.cyworks.redux.state.State.Reactive
 import com.cyworks.redux.prop.ReactiveProp
+import com.cyworks.redux.state.State.Reactive
 import com.cyworks.redux.util.ILogger
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.properties.ReadWriteProperty
@@ -26,7 +26,7 @@ abstract class State {
      * key: 某个属性对应的key；
      * value: PropValue, 某个属性对应的值；
      */
-    val dataMap = ConcurrentHashMap<String, ReactiveProp<Any>>()
+    internal val dataMap = ConcurrentHashMap<String, ReactiveProp<Any>>()
 
     /**
      * 用于存放组件响应式数据的Map, 方便框架进行修改数据，开发者无感知。
@@ -75,7 +75,7 @@ abstract class State {
     /**
      * Log 组件，组件内共享
      */
-    private val logger: ILogger? = ReduxManager.instance.logger
+    private val logger: ILogger = ReduxManager.instance.logger
 
     /**
      * 页面内部默认的属性，表示当前的横竖屏状态
