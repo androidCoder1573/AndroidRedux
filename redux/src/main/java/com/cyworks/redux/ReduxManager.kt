@@ -3,8 +3,11 @@ package com.cyworks.redux
 import android.util.Log
 import com.cyworks.redux.util.ILogger
 import com.cyworks.redux.util.MainThreadExecutor
-import java.util.concurrent.Executors
 import java.util.concurrent.Future
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadFactory
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 /**
  * Desc: 保存一些Redux运行过程中的全局对象
@@ -72,7 +75,9 @@ class ReduxManager private constructor() {
     /**
      * 执行State检测的线程池
      */
-    private val executor = Executors.newSingleThreadExecutor()
+    private val executor = ThreadPoolExecutor(1, 1, 0,
+        TimeUnit.SECONDS, LinkedBlockingQueue(),
+        ThreadFactory { Thread("Live_Redux_bg_thread") })
 
     /**
      * 用于在主线程上执行一些操作

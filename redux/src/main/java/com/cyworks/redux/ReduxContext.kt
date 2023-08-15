@@ -190,7 +190,6 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
             bus.setPageEffectDispatch(effectDispatch)
         }
     }
-
     private fun injectStateGetter() {
         // 给页面store用，用于获取当前组件的state
         val getter: StateGetter<S> = StateGetter { state }
@@ -441,7 +440,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
             pendingLifeCycleActionList!!.add(action)
             return
         }
-        dispatchEffect(action, null)
+        dispatchEffect(action)
     }
 
     /**

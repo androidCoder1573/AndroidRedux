@@ -6,7 +6,7 @@ import android.os.Bundle
 import android.content.Intent
 
 /**
- * Desc: 使用此Fragment来启动Activity，专用于优雅的获取onActivityResult
+ * 使用此Fragment来启动Activity，专用于优雅的获取onActivityResult
  */
 class ReceiveResultFragment : Fragment() {
     /**

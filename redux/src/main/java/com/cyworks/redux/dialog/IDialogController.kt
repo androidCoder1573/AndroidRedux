@@ -10,7 +10,7 @@ interface IDialogController {
      * 获取当前组件的View实例
      * @return [View]
      */
-    val view: View?
+    fun getView(): View?
 
     /**
      * 对话框销毁的回调，框架内做一些清理操作

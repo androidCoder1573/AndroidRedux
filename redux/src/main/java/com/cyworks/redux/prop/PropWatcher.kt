@@ -5,7 +5,7 @@ import com.cyworks.redux.state.State
 import com.cyworks.redux.types.IPropChanged
 
 /**
- * Desc: 用于观察组件中某一个属性的类;
+ * 用于观察组件中某一个属性的类;
  * 有一种情况需要这些观察者：比如需要监听某个状态改变然后做一些逻辑
  */
 class PropWatcher<S : State> {
@@ -38,7 +38,7 @@ class PropWatcher<S : State> {
         }
 
         for (prop in props) {
-            val iPropChanged: IPropChanged<S, Any>? = listenerMap!![prop?.key]
+            val iPropChanged: IPropChanged<S, Any>? = listenerMap!![prop?.getKey()]
             if (prop != null) {
                 iPropChanged?.onPropChanged(prop, context)
             }

@@ -12,7 +12,7 @@ import com.cyworks.redux.interceptor.InterceptorCollector
 import com.cyworks.redux.interceptor.InterceptorManager
 import com.cyworks.redux.logic.EffectCollector
 import com.cyworks.redux.state.State
-import com.cyworks.redux.store.GlobalStoreWatcher
+import com.cyworks.redux.store.GlobalStoreSubscribe
 import com.cyworks.redux.types.Dispose
 import com.cyworks.redux.types.IPropsChanged
 import com.cyworks.redux.types.IStateChange
@@ -34,7 +34,7 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
     /**
      * 用于观察全局store
      */
-    private var globalStoreWatcher: GlobalStoreWatcher<S>? = null
+    private var globalStoresubscribe: GlobalStoreSubscribe<S>? = null
 
     /**
      * 组件的依赖的子组件的集合
@@ -123,19 +123,19 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
         connector?.dependParentState(state, parentState)
 
         // 创建全局store监听器
-        globalStoreWatcher = GlobalStoreWatcher(cb, state)
+        globalStoresubscribe = GlobalStoreSubscribe(cb, state)
         // 绑定全局store的state中的属性
-        connector?.dependGlobalState(globalStoreWatcher!!)
-        globalStoreWatcher?.generateDependant()
+        connector?.dependGlobalState(globalStoresubscribe!!)
+        globalStoresubscribe?.generateDependant()
 
         // 标记结束merge，后续不可再继续开启
         state.endMergeState()
     }
 
-    fun mergeInterceptor(manager: InterceptorManager, dep: Dependant<S, State>) {
+    override fun mergeInterceptor(manager: InterceptorManager, selfDep: Dependant<S, State>) {
         interceptorManager = manager
 
-        val collect = dep.connector?.getInterceptorCollector()
+        val collect = selfDep.connector?.getInterceptorCollector()
         if (collect?.isOK() == true) {
             this.interceptorDispose = manager.addInterceptorEx(collect as InterceptorCollector<State>)
         }
@@ -177,8 +177,8 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
 
         // 合并page State以及global State
         mergeState(componentState) { props ->
-            if (context != null && props != null) {
-                context!!.onStateChange(props)
+            if (props != null) {
+                context.onStateChange(props)
             }
         }
 
@@ -190,10 +190,10 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
             .setLogic(this)
             .setState(componentState)
             .setOnStateChangeListener(makeStateChangeCB())
-            .setPlatform(createPlatform())
+            .setPlatform(createPlatform()!!)
             .build()
-        context!!.controller = controller
-        context!!.setStateReady()
+        context.controller = controller
+        context.setStateReady()
     }
 
     /**
@@ -278,7 +278,7 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
         if (future != null && !future!!.isDone) {
             future!!.cancel(true)
         }
-        globalStoreWatcher!!.clear()
+        globalStoresubscribe!!.clear()
         if (dependencies != null) {
             dependencies?.clear()
             dependencies = null

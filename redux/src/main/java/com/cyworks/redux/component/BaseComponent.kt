@@ -61,6 +61,10 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
         uiController = ComponentUIController(this, lazyBindUI)
     }
 
+    fun isInstalled(): Boolean {
+        return uiController.isBind
+    }
+
     fun show() {
         uiController.show(false)
     }

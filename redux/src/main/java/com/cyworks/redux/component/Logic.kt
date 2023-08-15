@@ -5,6 +5,7 @@ import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.dependant.Dependant
 import com.cyworks.redux.interceptor.InterceptorBean
+import com.cyworks.redux.interceptor.InterceptorManager
 import com.cyworks.redux.logic.EffectCollector
 import com.cyworks.redux.logic.LogicModule
 import com.cyworks.redux.state.State
@@ -104,12 +105,16 @@ abstract class Logic<S : State>(b: Bundle?) {
     fun copyEnvironmentToChild(): Environment? {
         val env = this.environment?.let { Environment.copy(it) }
         env?.setParentState(context.state)
-        env?.setParentDispatch(context.dispatcher)
+        context.effectDispatch?.let { env?.setParentDispatch(it) }
         return env
     }
 
     fun addPendingInterceptor(bean: InterceptorBean<S>) {
         pendingInterceptorList.add(bean)
+    }
+
+    open fun mergeInterceptor(manager: InterceptorManager, selfDep: Dependant<S, State>) {
+        // sub class impl
     }
 
     /**

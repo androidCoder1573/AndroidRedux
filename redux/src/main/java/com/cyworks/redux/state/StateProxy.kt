@@ -1,10 +1,9 @@
 package com.cyworks.redux.state
 
 import com.cyworks.redux.prop.ReactiveProp
-import java.util.ArrayList
 
 /**
- * Desc: 主要用于记录State的变化，具有几个功能：
+ * 主要用于记录State的变化，具有几个功能：
  * 1、记录本次修改的私有属性
  * 2、记录本次修改的公共属性
  * 3、检查组件是否可以修改某个值
@@ -17,10 +16,10 @@ class StateProxy {
      * 每次执行reducer并不一定只更新一个属性， 用一个表来记录哪些数据发生了变化，
      * 当store更新界面的时候会统一提取这个表中的数据，进行统一更新
      */
-    private val mChangeQueue: MutableList<ReactiveProp<Any>>
+    private val changeQueue: MutableList<ReactiveProp<Any>>
 
     init {
-        mChangeQueue = ArrayList()
+        changeQueue = ArrayList()
     }
 
     /**
@@ -29,7 +28,7 @@ class StateProxy {
      * @param prop 属性值 [ReactiveProp]
      */
     fun recordChangedProp(prop: ReactiveProp<Any>) {
-        mChangeQueue.add(prop)
+        changeQueue.add(prop)
     }
 
     /**
@@ -38,11 +37,11 @@ class StateProxy {
      */
     val changedPrivateProps: List<ReactiveProp<Any>>?
         get() {
-            if (mChangeQueue.isEmpty()) {
+            if (changeQueue.isEmpty()) {
                 return null
             }
             val list: MutableList<ReactiveProp<Any>> = ArrayList()
-            val it = mChangeQueue.iterator()
+            val it = changeQueue.iterator()
             while (it.hasNext()) {
                 val changedProp = it.next()
                 if (changedProp.isPrivateProp) {
@@ -59,16 +58,16 @@ class StateProxy {
      */
     val changedPublicProps: List<ReactiveProp<Any>>?
         get() {
-            if (mChangeQueue.isEmpty()) {
+            if (changeQueue.isEmpty()) {
                 return null
             }
             val list: MutableList<ReactiveProp<Any>> = ArrayList()
-            for (changedProp in mChangeQueue) {
+            for (changedProp in changeQueue) {
                 if (!changedProp.isPrivateProp) {
                     list.add(changedProp)
                 }
             }
-            mChangeQueue.clear()
+            changeQueue.clear()
             return if (list.isEmpty()) null else list
         }
 
@@ -78,10 +77,10 @@ class StateProxy {
      */
     val isChanged: Boolean
         get() {
-            if (mChangeQueue.isEmpty()) {
+            if (changeQueue.isEmpty()) {
                 return false
             }
-            for (prop in mChangeQueue) {
+            for (prop in changeQueue) {
                 if (!prop.isPrivateProp) {
                     return true
                 }

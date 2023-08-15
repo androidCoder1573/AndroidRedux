@@ -12,18 +12,19 @@ enum class PropFromType {
 }
 
 /**
- * Desc: 将属性封装成一个ReactiveProp，包括属性值，属性类型，是否是私有数据等。
+ * 将属性封装成一个ReactiveProp，包括属性值，属性类型，是否是私有数据等。
  *
  * 私有数据的作用？
  * 对于一个组件来说，绝大多数的数据都是私有数据，如果所有数据都是公开的，会导致page state变得特别庞大，
  * 处理组件任意数据的更新也将变得繁琐。
  * 所以这里将只属于某个组件的私有数据设置成私有属性，发生变化后只在组件内部更新。
+ *
  * 因此：
  * 在reducer执行成功之后对更新的状态进行分类，如果状态变化的是私有数据，则直接在组件内部循环，
  * 如果更新的公开数据，则通过store在全局更新。
  *
  * 为什么不直接在ReactiveProp中通知每个关联属性更新?
- * 如果类似live data的方式更新，将导致UI频繁刷新，因为一个数据对应一块UI，假设一次Reducer更新了10个数据，
+ * 如果类似LiveData的方式更新，将导致UI频繁刷新，因为一个数据对应一块UI，假设一次Reducer更新了10个数据，
  * 将会调用UI更新callback 10次，性能上会有一定的损耗。
  */
 class ReactiveProp<T>(propValue: T, state: State) {
@@ -75,7 +76,7 @@ class ReactiveProp<T>(propValue: T, state: State) {
      */
     init {
         isPrivate = true
-        token = state.javaClass.name
+        token = state.hashCode().toString()
     }
 
     /**
@@ -122,22 +123,22 @@ class ReactiveProp<T>(propValue: T, state: State) {
     internal fun canSet(value: T, stateProxy: StateProxy?): Boolean {
         // 防止开发者在非Reducer中更新UI属性
         if (stateProxy == null) {
-            ReduxManager.instance.logger
-                .e("", "{this.key} can not use = set prop when not in updateState function")
+            ReduxManager.instance.logger.e("ReactiveProp",
+                "${this.key} can not use = operate set prop when not in updateState function")
             return false
         }
 
         // 组件在修改state prop过程中, 不能改全局store的属性
         if (parent!!.fromType == PropFromType.FROM_GLOBAL_STORE) {
-            ReduxManager.instance.logger
-                .e("", "component can not change global state prop!")
+            ReduxManager.instance.logger.e("ReactiveProp",
+                "component can not change global state prop!")
             return false
         }
 
         // 记录哪些数据变更了
-        stateProxy.recordChangedProp(this)
-
+        stateProxy.recordChangedProp(this as ReactiveProp<Any>)
         this.value = value
+
         return true
     }
 
@@ -175,7 +176,7 @@ class ReactiveProp<T>(propValue: T, state: State) {
 
     internal fun myStateIsGlobalState(): Boolean {
         if (this.state != null) {
-            return this.state!!.getStateType() == StateType.GlobalType
+            return this.state!!.getStateType() == StateType.GLOBAL_TYPE
         }
 
         return false
@@ -235,7 +236,7 @@ class ReactiveProp<T>(propValue: T, state: State) {
         innerSetter(value)
 
         // 记录哪些数据变更了
-        stateProxy!!.recordChangedProp(this)
+        stateProxy!!.recordChangedProp(this as ReactiveProp<Any>)
     }
 
     internal fun attach() {

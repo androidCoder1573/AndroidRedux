@@ -10,7 +10,7 @@ internal class StoreObserver(token: String, cb: IPropsChanged) {
     /**
      * 通知属性变化的callback
      */
-    private val mCB: IPropsChanged
+    private val callback: IPropsChanged
 
     /**
      * 当前组件对应的State的类名
@@ -18,7 +18,7 @@ internal class StoreObserver(token: String, cb: IPropsChanged) {
     val token: String
 
     init {
-        mCB = cb
+        callback = cb
         this.token = token
     }
 
@@ -31,6 +31,6 @@ internal class StoreObserver(token: String, cb: IPropsChanged) {
         if (props.isNullOrEmpty()) {
             return
         }
-        mCB.onPropsChanged(props)
+        callback.onPropsChanged(props)
     }
 }

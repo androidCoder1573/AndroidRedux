@@ -4,7 +4,7 @@ import com.cyworks.redux.state.State
 import com.cyworks.redux.types.Dispatch
 
 /**
- * Desc: MiddleWare, 用于对Reducer运行过程红进行一些拦截
+ * MiddleWare, 用于对Reducer运行过程红进行一些拦截
  */
 interface Middleware {
     /**

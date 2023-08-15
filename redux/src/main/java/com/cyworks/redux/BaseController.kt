@@ -40,6 +40,6 @@ class BaseController<S : State> {
     }
 
     fun doAction(action: Action<Any>) {
-        mEffectCollector.doAction(action, mReduxContext)
+        mEffectCollector.effect.doAction(action, mReduxContext)
     }
 }

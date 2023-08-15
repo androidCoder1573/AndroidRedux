@@ -3,8 +3,8 @@ package com.cyworks.redux.store
 import android.os.SystemClock
 import android.view.Choreographer
 import com.cyworks.redux.ReduxManager
-import com.cyworks.redux.state.State
 import com.cyworks.redux.prop.ReactiveProp
+import com.cyworks.redux.state.State
 import com.cyworks.redux.types.Dispose
 import com.cyworks.redux.types.StateGetter
 import com.cyworks.redux.types.UIFrameUpdater
@@ -233,11 +233,7 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
             "page store update consumer: " + (System.currentTimeMillis() - time))
     }
 
-    fun getType(): StoreType {
-        return StoreType.PAGE
-    }
-
-    public override fun clear() {
+    override fun clear() {
         super.clear()
         isThreadRun = false
         semaphore.release()

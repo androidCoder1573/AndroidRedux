@@ -7,9 +7,6 @@ import com.cyworks.redux.state.State
 import com.cyworks.redux.types.Interceptor
 
 class PageInterceptorCollect<S : State> {
-    /**
-     * Effect 集合
-     */
     private val functions: HashMap<ActionType, Interceptor<S>> = HashMap()
 
     private val pageInterceptor: Interceptor<S> = Interceptor<S> { action, ctx ->

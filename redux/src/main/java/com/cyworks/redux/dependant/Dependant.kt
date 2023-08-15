@@ -10,7 +10,7 @@ import com.cyworks.redux.interceptor.InterceptorCollector
 import com.cyworks.redux.interceptor.InterceptorManager
 import com.cyworks.redux.state.State
 import com.cyworks.redux.state.StateProxy
-import com.cyworks.redux.store.GlobalStoreWatcher
+import com.cyworks.redux.store.GlobalStoreSubscribe
 import com.cyworks.redux.types.ComponentContextWrapper
 import com.cyworks.redux.types.StateGetter
 import com.cyworks.redux.util.Environment
@@ -26,22 +26,31 @@ class Dependant<CS : State, PS : State> {
     /**
      * 组件实例
      */
-    val logic: Logic<CS>
+    internal val logic: Logic<CS>
 
     /**
      * 组件对应的连接器
      */
-    var connector: Connector<CS, PS>? = null
+    internal var connector: Connector<CS, PS>? = null
         private set
 
     /**
      * 当前组件是否已经安装到父组件中
      * @return 是否已安装
      */
-    val isInstalled: Boolean
+    internal val isInstalled: Boolean
         get() = if (logic is BaseComponent<*>) {
             (logic as BaseComponent<*>).isInstalled()
         } else true
+
+    /**
+     * 如果界面存在列表，通过这个接口获取RootAdapter
+     * @return RootAdapter
+     */
+//    protected val adapter: RootAdapter<CS?>?
+//        protected get() = if (mLogic is RootAdapter) {
+//            mLogic as RootAdapter<CS?>
+//        } else null
 
     constructor(logic: Logic<CS>, connector: Connector<CS, PS>?) {
         this.logic = logic
@@ -80,7 +89,7 @@ class Dependant<CS : State, PS : State> {
                 // do nothing
             }
 
-            override fun dependGlobalState(watcher: GlobalStoreWatcher<CS>) {
+            override fun dependGlobalState(watcher: GlobalStoreSubscribe<CS>) {
                 // do nothing
             }
 
@@ -88,6 +97,10 @@ class Dependant<CS : State, PS : State> {
                 // do nothing
             }
         }
+    }
+
+    internal fun mergeInterceptor(manager: InterceptorManager) {
+        logic.mergeInterceptor(manager, this as Dependant<CS, State>)
     }
 
     internal fun install(env: Environment) {
@@ -99,12 +112,12 @@ class Dependant<CS : State, PS : State> {
      * 对当前组件的子组件进行初始化操作
      * @param env 父组件的一些信息
      */
-    fun initComponent(env: Environment) {
+    internal fun initComponent(env: Environment) {
         if (logic !is BaseComponent<*>) { //  || logic is LogicTestComponent
             return
         }
         connector!!.parentState = env.parentState
-        (logic as LogicComponent<CS>).install(env, connector)
+        (logic as LogicComponent<CS>).install(env, connector as Connector<CS, State>)
     }
 
     /**
@@ -122,7 +135,7 @@ class Dependant<CS : State, PS : State> {
     /**
      * 显示组件UI
      */
-    fun show() {
+    internal fun show() {
         if (logic is BaseComponent<*>) {
             (logic as BaseComponent<*>).show()
         }
@@ -131,7 +144,7 @@ class Dependant<CS : State, PS : State> {
     /**
      * 隐藏组件UI
      */
-    fun hide() {
+    internal fun hide() {
         if (logic is BaseComponent<*>) {
             (logic as BaseComponent<*>).hide()
         }
@@ -140,7 +153,7 @@ class Dependant<CS : State, PS : State> {
     /**
      * 绑定组件UI
      */
-    fun attach() {
+    internal fun attach() {
         if (logic is BaseComponent<*>) {
             (logic as BaseComponent<*>).attach()
             return
@@ -153,7 +166,7 @@ class Dependant<CS : State, PS : State> {
     /**
      * 卸载组件UI
      */
-    fun detach() {
+    internal fun detach() {
         if (logic is BaseComponent<*>) {
             (logic as BaseComponent<*>).detach()
             return
@@ -162,18 +175,4 @@ class Dependant<CS : State, PS : State> {
 //            (logic as RootAdapter<BaseComponentState?>).detach()
 //        }
     }
-
-    /**
-     * 如果界面存在列表，通过这个接口获取RootAdapter
-     * @return RootAdapter
-     */
-//    protected val adapter: RootAdapter<CS?>?
-//        protected get() = if (mLogic is RootAdapter) {
-//            mLogic as RootAdapter<CS?>
-//        } else null
-
-    fun mergeInterceptor(manager: InterceptorManager) {
-        logic.mergeInterceptor(manager, this as Dependant<CS, State>);
-    }
-
 }

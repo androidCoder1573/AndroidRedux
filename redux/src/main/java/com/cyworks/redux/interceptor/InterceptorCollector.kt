@@ -7,32 +7,24 @@ import com.cyworks.redux.types.ComponentContextWrapper
 import com.cyworks.redux.types.Interceptor
 
 /**
- * Interceptor收集器
+ * Interceptor收集器, 这里的状态是当前组件的状态
  */
-class InterceptorCollector<CS: State>(private val contextWrapper: ComponentContextWrapper<CS>) {
-    /**
-     * Interceptor 集合
-     */
-    val interceptorMap: HashMap<Action<Any>, InterceptorBean<CS>> = HashMap()
+class InterceptorCollector<S: State>(private val contextWrapper: ComponentContextWrapper<S>) {
+    internal val interceptorMap: HashMap<Action<Any>, InterceptorBean<S>> = HashMap()
 
     val isEmpty: Boolean
         get() = interceptorMap.isEmpty()
 
     /**
-     * 获取合并之后的Interceptor，这里使用InnerInterceptor进行包装
-     * @return InnerInterceptor
+     * 获取合并之后的Interceptor
      */
-    val interceptor = object: Interceptor<State> {
-        override fun doAction(action: Action<Any>, ctx: ReduxContext<State>?) {
-            doAction(action)
-        }
-    }
+    val interceptor = Interceptor<State> { action, ctx -> doAction(action) }
 
     fun isOK(): Boolean {
         return interceptorMap.size > 0
     }
 
-    fun addInterceptor(action: Action<Any>, interceptor: Interceptor<CS>) {
+    fun addInterceptor(action: Action<Any>, interceptor: Interceptor<S>) {
         val bean = InterceptorBean(interceptor, contextWrapper)
         interceptorMap[action] = bean
     }
@@ -42,7 +34,7 @@ class InterceptorCollector<CS: State>(private val contextWrapper: ComponentConte
         val interceptor = bean?.interceptor
         val ctxProvider = bean?.ctxProvider
         if (interceptor != null && ctxProvider != null) {
-            interceptor.doAction(action, ctxProvider.getCtx() as ReduxContext<CS>)
+            interceptor.doAction(action, ctxProvider.getCtx() as ReduxContext<S>)
         }
     }
 }

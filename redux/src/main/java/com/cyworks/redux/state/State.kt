@@ -4,21 +4,20 @@ import android.content.res.Configuration
 import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.prop.ReactiveProp
 import com.cyworks.redux.state.State.Reactive
+import com.cyworks.redux.types.PropertySet
 import com.cyworks.redux.util.ILogger
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
 enum class StateType {
-    PageType,
-    ComponentType,
-    GlobalType,
+    PAGE_TYPE,
+    COMPONENT_TYPE,
+    GLOBAL_TYPE,
 }
 
-typealias PropertySet<T> = (value: T) -> Unit
-
 /**
- * Desc: 状态基类，state中只有用[Reactive]委托的属性才有响应式
+ * 状态基类，state中只有用[Reactive]委托的属性才有响应式
  */
 abstract class State {
     /**
@@ -280,7 +279,7 @@ abstract class State {
             }
 
             val prop = dataMap[name]
-            if ((stateType == StateType.ComponentType) && isMergingState && !stateHasMerged) {
+            if ((stateType == StateType.COMPONENT_TYPE) && isMergingState && !stateHasMerged) {
                 if (prop != null) {
                     depProp(prop)
                 }

@@ -3,7 +3,7 @@ package com.cyworks.redux.component
 import com.cyworks.redux.interceptor.InterceptorCollector
 import com.cyworks.redux.prop.PropWatcher
 import com.cyworks.redux.state.State
-import com.cyworks.redux.store.GlobalStoreWatcher
+import com.cyworks.redux.store.GlobalStoreSubscribe
 import com.cyworks.redux.types.ComponentContextWrapper
 import com.cyworks.redux.types.StateGetter
 
@@ -73,7 +73,7 @@ abstract class Connector<CS : State, PS : State> {
     /**
      * 通过此接口依赖全局store, 集合，无法区分泛型
      */
-    abstract fun dependGlobalState(watcher: GlobalStoreWatcher<CS>)
+    abstract fun dependGlobalState(watcher: GlobalStoreSubscribe<CS>)
 
     /**
      * 通过此接口配置与外界通信的interceptor

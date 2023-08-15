@@ -1,26 +1,20 @@
 package com.cyworks.redux.store
 
-import com.cyworks.redux.state.State
-import com.cyworks.redux.state.StateProxy
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.logic.EffectCollector
+import com.cyworks.redux.state.State
+import com.cyworks.redux.state.StateProxy
 import com.cyworks.redux.types.CreateGlobalState
 import com.cyworks.redux.types.Effect
 import com.cyworks.redux.types.Reducer
 import com.cyworks.redux.util.ThreadUtil
 
- enum class StoreType {
-    PAGE,
-    GLOBAL
-}
-
 /**
- * Desc: 带Effect的Store，为全局Store优化的产物，增加Effect处理能力，方便全局store处理异步请求。
+ * 带Effect的Store，为全局Store优化的产物，增加Effect处理能力，方便全局store处理异步请求。
  *
  * 主要是因为store不具备ReduxContext，导致无法发送处理Effect的Action。
  *
- * 给开发这一个选择，可以使用action来驱动全局store，
- * 也可以不使用，直接通过面向对象的方式操作
+ * 给开发这一个选择，可以使用action来驱动全局store，也可以不使用，直接通过面向对象的方式操作
  */
 abstract class GlobalStore<S : State> : Store<S> {
     /**
@@ -38,14 +32,10 @@ abstract class GlobalStore<S : State> : Store<S> {
         state.detectField()
     }
 
-    fun getType(): StoreType {
-        return StoreType.GLOBAL
-    }
-
     /**
      * 注入Effect，不强制实现，如果开发者使用action驱动，需要实现此方法
      */
-    protected fun addEffects(effectCollector: EffectCollector<S>?) {
+    open fun addEffects(effectCollector: EffectCollector<S>?) {
         // sub class maybe impl
     }
 

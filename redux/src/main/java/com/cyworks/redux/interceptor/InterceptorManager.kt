@@ -20,7 +20,7 @@ class InterceptorManager {
         doActionInner(action)
     }
 
-    fun addInterceptorEx(collector: InterceptorCollect<State>): ArrayList<Dispose>? {
+    fun addInterceptorEx(collector: InterceptorCollector<State>): ArrayList<Dispose>? {
         val map = collector.interceptorMap
         if (collector.isEmpty) {
             return null
@@ -73,7 +73,7 @@ class InterceptorManager {
         val array = this.funcMap[payload.realAction.type]
         if (array != null && array.size > 0) {
             array.forEach {
-                val ctx = it.ctxProvider?.provider()
+                val ctx = it.ctxProvider?.getCtx()
                 if (ctx != null) {
                     it.interceptor?.doAction(payload.realAction, ctx)
                 }

@@ -1,36 +1,48 @@
 package com.cyworks.redux.component
 
-import android.support.annotation.CallSuper
 import android.view.View
+import androidx.annotation.CallSuper
+import androidx.lifecycle.Observer
 import com.cyworks.redux.ReduxContext
-import java.lang.Exception
-import java.util.ArrayList
+import com.cyworks.redux.dialog.IDialogController
+import com.cyworks.redux.dialog.ILRDialog
+import com.cyworks.redux.prop.ChangedState
+import com.cyworks.redux.prop.ReactiveProp
+import com.cyworks.redux.state.State
+import com.cyworks.redux.util.ILogger
+import com.cyworks.redux.util.IPlatform
 
 /**
- * Desc: 对话框组件基类，扩展了打开对话框的功能，控制了初始化的一些特殊操作。
+ * 对话框组件基类，扩展了打开对话框的功能，控制了初始化的一些特殊操作。
  *
- * note: 如果对话框本身功能比较复杂，还是建议使用Page来实现,
- * 防止单一组件功能过多。
+ * @note: 如果对话框本身功能比较复杂，还是建议使用Page来实现, 防止单一组件功能过多。
  */
-abstract class LiveDialogComponent<S : BaseComponentState?> : BaseComponent<S>(true) {
+abstract class LiveDialogComponent<S : State> : BaseComponent<S>(true) {
     /**
      * 当前展示的对话框实例,
      * 通过这种方式，框架不需要关心对话框的具体形式(Dialog 或者 FragmentDialog，androidX等)
      */
-    private var mDialog: ILRDialog? = null
+    private var dialogInstance: ILRDialog? = null
 
     /**
      * 框架注入的对话框控制接口
      */
-    private var mDialogInterface: IDialogController? = object : IDialogController() {
-        val view: View
-            get() = uiController.currentView
+    private var dialogInterface: IDialogController? = object : IDialogController {
+        override fun getView(): View? {
+            return uiController.currentView
+        }
 
-        fun onDialogDismiss() {
+        override fun onDialogDismiss() {
             detach()
             // UI detach之后再清理，保证安全
-            this@LiveDialogComponent.onDialogDismiss(context)
-            mDialog = null
+            this@LiveDialogComponent.onDialogDismiss(this@LiveDialogComponent.context)
+            dialogInstance = null
+        }
+    }
+
+    init {
+        observer = Observer<ChangedState<S>> { stateCompare: ChangedState<S> ->
+            onDataChangedCB(stateCompare)
         }
     }
 
@@ -43,22 +55,23 @@ abstract class LiveDialogComponent<S : BaseComponentState?> : BaseComponent<S>(t
         if (uiController.canNotUpdateUI() || environment == null) {
             return
         }
-        val props: List<ReactiveProp<Any>> = stateCompare.mChangedProps
+
+        val props: List<ReactiveProp<Any>> = stateCompare.changedProps
         // 检查属性是否合法
-        if (props == null || props.isEmpty()) {
+        if (props.isEmpty()) {
             return
         }
 
         // 将变化的属性的key抽离到一个列表中
         val propKeys: MutableList<String?> = ArrayList()
         for (prop in props) {
-            propKeys.add(prop.key)
+            propKeys.add(prop.getKey())
         }
 
         // 如果组件UI不可见
         if (!uiController.isShow) {
             // 更新一次旋转方向
-            uiController.lastOrientation = context!!.state.mCurrentOrientation.value()
+            uiController.lastOrientation = context.state.currentOrientation
             return
         }
 
@@ -68,7 +81,7 @@ abstract class LiveDialogComponent<S : BaseComponentState?> : BaseComponent<S>(t
         }
 
         // 最后更新UI
-        uiController.callUIUpdate(stateCompare.mState, propKeys, uiController.viewHolder)
+        uiController.callUIUpdate(stateCompare.lastState, uiController.viewHolder)
     }
 
     /**
@@ -77,7 +90,7 @@ abstract class LiveDialogComponent<S : BaseComponentState?> : BaseComponent<S>(t
      * @return 是否可以处理屏幕旋转
      */
     private fun needHandleOrientation(propKeys: MutableList<String?>): Boolean {
-        val orientationKey: String = ORIENTATION_KEY
+        val orientationKey = "currentOrientation"
         if (!propKeys.contains(orientationKey)) {
             return false
         }
@@ -86,7 +99,7 @@ abstract class LiveDialogComponent<S : BaseComponentState?> : BaseComponent<S>(t
         propKeys.remove(orientationKey)
 
         // 读取最新的屏幕方向
-        val nowOrientation: Int = context!!.state.mCurrentOrientation.value()
+        val nowOrientation: Int = context.state.currentOrientation
 
         // 防重入
         if (uiController.lastOrientation == nowOrientation) {
@@ -107,27 +120,25 @@ abstract class LiveDialogComponent<S : BaseComponentState?> : BaseComponent<S>(t
             return
         }
         closeDialog()
-        mDialog = dialog
+
+        dialogInstance = dialog
         attach()
-        mDialog.setIDialog(mDialogInterface)
-        val platform: IPlatform = context!!.platform
-        if (platform != null) {
-            mDialog.showDialog(platform.getActivity())
-        }
+
+        dialogInterface?.let { dialogInstance?.setIDialog(it) }
+
+        val platform: IPlatform = context.platform
+        platform.activity?.let { dialogInstance?.showDialog(it) }
     }
 
     private fun closeDialog() {
-        if (mDialog != null) {
+        if (dialogInstance != null) {
             try {
-                mDialog.closeDialog()
+                dialogInstance?.closeDialog()
             } catch (e: Exception) {
-                // 关闭对话框可能存在多种异常，比如空指针，bad token等
-                mLogger.printStackTrace(
-                    ILogger.ERROR_TAG,
-                    "close component dialog exception ", e
-                )
+                logger.printStackTrace(
+                    ILogger.ERROR_TAG, "close component dialog exception ", e)
             }
-            mDialog = null
+            dialogInstance = null
         }
     }
 
@@ -135,19 +146,13 @@ abstract class LiveDialogComponent<S : BaseComponentState?> : BaseComponent<S>(t
     override fun clear() {
         super.clear()
         closeDialog()
-        mDialogInterface = null
+        dialogInterface = null
     }
 
     /**
      * 当组件的对话框销毁的时候，给组件一个机会去做一些清理操作
      */
-    protected fun onDialogDismiss(context: ReduxContext<S?>?) {
+    protected fun onDialogDismiss(context: ReduxContext<S>?) {
         // sub class impl
-    }
-
-    init {
-        observer = Observer<ChangedState<S>> { stateCompare: ChangedState<S> ->
-            onDataChangedCB(stateCompare)
-        }
     }
 }

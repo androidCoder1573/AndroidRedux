@@ -3,7 +3,7 @@ package com.cyworks.redux.middleware
 import com.cyworks.redux.types.Dispatch
 
 /**
- * Desc: Middleware相关的辅助方法
+ * Middleware相关的辅助方法
  */
 object MiddlewareUtil {
     /**
@@ -15,18 +15,21 @@ object MiddlewareUtil {
         initDispatch: Dispatch,
         provider: Middleware.PageStateProvider
     ): Dispatch {
-        if (middleware == null || middleware.isEmpty()) {
+        if (middleware.isNullOrEmpty()) {
             return initDispatch
         }
+
         val array: MutableList<Compose<Dispatch>> = ArrayList()
-        val middlewareSize = middleware.size
-        for (i in 0 until middlewareSize) {
-            array.add(middleware[i].middleware(provider))
+
+        for (middle in middleware) {
+            array.add(middle.middleware(provider))
         }
+
         var initialValue: Dispatch = initDispatch
-        for (i in 0 until middlewareSize) {
-            initialValue = array[i].compose(initialValue)
+        for (com in array) {
+            initialValue = com.compose(initialValue)
         }
+
         return initialValue
     }
 }

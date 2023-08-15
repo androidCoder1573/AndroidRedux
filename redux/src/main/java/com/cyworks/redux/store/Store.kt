@@ -57,7 +57,7 @@ open class Store<S : State>  {
     /**
      * 注册的观察者列表，用于分发store的变化
      */
-    protected var listeners: CopyOnWriteArrayList<StoreObserver>? = null
+    internal var listeners: CopyOnWriteArrayList<StoreObserver>? = null
 
     /**
      * 分发Reducer的dispatch, 需要在page中使用，扩展dispatch能力

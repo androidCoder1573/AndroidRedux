@@ -8,6 +8,8 @@ import com.cyworks.redux.action.Action
 import com.cyworks.redux.interceptor.InterceptorBean
 import com.cyworks.redux.prop.ReactiveProp
 
+typealias PropertySet<T> = (value: T) -> Unit
+
 /**
  * 此函数用于解注册
  */
