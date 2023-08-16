@@ -2,20 +2,21 @@ package com.cyworks.redux.atom
 
 import com.cyworks.redux.state.State
 import com.cyworks.redux.types.DepProps
+import com.cyworks.redux.types.OnUIAtomChanged
 import com.cyworks.redux.ui.ComponentViewHolder
 
 /**
  * 用于UI Updater中收集Atom，将UI更新颗粒化。
  */
-class PropsWatcher<S : State> {
+class UIPropsWatcher<S : State> {
     /**
      * 原子化UI的更新列表
      */
-    private val atomList = ArrayList<Atom<S>>()
+    private val atomList = ArrayList<UIAtom<S>>()
 
-    fun watch(dep: DepProps, changed: OnAtomChanged<S>) {
-        val atom = Atom<S>()
-        atom.setDep(dep)
+    fun watch(dep: DepProps, changed: OnUIAtomChanged<S>) {
+        val atom = UIAtom<S>()
+        atom.setDepProps(dep)
         atom.setAtomChangedCB(changed)
         atomList.add(atom)
     }

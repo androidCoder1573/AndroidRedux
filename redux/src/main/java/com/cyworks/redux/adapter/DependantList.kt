@@ -73,7 +73,7 @@ class DependantList<PS : State> {
                 val logic = listDep.depend?.logic
                 listDep.isDetach = true
                 if (logic != null) {
-                    (logic as LiveComponent<State>).attach()
+                    // (logic as LiveComponent<State>).attach()
                 }
             }
             dep = listDep.depend!! as Dependant<CS, PS>
@@ -96,7 +96,7 @@ class DependantList<PS : State> {
             val logic = listDep.depend?.logic
             listDep.isDetach = true
             if (logic != null) {
-                (logic as LiveComponent<State>).detach()
+                // (logic as LiveComponent<State>).detach()
             }
         }
         return listDep

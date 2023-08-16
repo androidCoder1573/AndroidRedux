@@ -7,6 +7,7 @@ import com.cyworks.redux.state.State
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.interceptor.InterceptorBean
 import com.cyworks.redux.prop.ReactiveProp
+import com.cyworks.redux.ui.ComponentViewHolder
 
 typealias PropertySet<T> = (value: T) -> Unit
 
@@ -119,6 +120,26 @@ fun interface IStateChange<S : State> {
 }
 
 /**
+ * 当UI Atom对应的dep发生变化时，触发对应UI的更新方法
+ */
+fun interface OnUIAtomChanged<S : State> {
+    /**
+     * 更新UI，这里抽象更彻底，某一个组件内部的UI，只能绑定
+     */
+    fun update(state: S, oldDeps: Array<Any>?, holder: ComponentViewHolder?)
+}
+
+/**
+ * 当Logic Atom对应的dep发生变化时，触发对应的更新方法
+ */
+fun interface OnLogicAtomChanged<S : State> {
+    /**
+     * 更新UI，这里抽象更彻底，某一个组件内部的UI，只能绑定
+     */
+    fun update(state: S, oldDeps: Array<Any>?, ctx: ReduxContext<S>?)
+}
+
+/**
  * 创建全局store的state接口
  */
 interface CreateGlobalState<S: State> {
@@ -128,7 +149,7 @@ interface CreateGlobalState<S: State> {
 /**
  * watch 属性时，通过此方法获取当前关注的属性list
  */
-typealias DepProps = () -> List<Any>
+typealias DepProps = () -> Array<Any>
 
 /**
  * 当前公共状态变化监听器

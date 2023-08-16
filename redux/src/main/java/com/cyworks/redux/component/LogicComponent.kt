@@ -71,7 +71,7 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
      */
     private var interceptorManager: InterceptorManager? = null
 
-    protected var controller: BaseController<S>? = null
+    private var controller: BaseController<S>? = null
 
     init {
         if (dependencies == null) {
@@ -184,6 +184,8 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
             .build()
         context.controller = controller
         context.setStateReady()
+
+        logicModule.subscribeProps(context.state, propsWatcher)
     }
 
     /**
@@ -191,27 +193,6 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
      * @param componentState 子组件state
      */
     protected open fun onStateMerged(componentState: S) {}
-
-    /**
-     * 如果组件有列表型的UI，通过绑定框架提供的Adapter，这样列表型组件也可以纳入状态管理数据流中；
-     * 通过此方法初始化Adapter，每个组件只可绑定一个Adapter，以保证组件的粒度可控。
-     */
-    fun initAdapter() {
-//        if (dependencies == null) {
-//            return
-//        }
-//        val dependant: HashMap<String, Dependant<out State, State>>? = dependencies?.dependantMap
-//        if (dependant != null) {
-//            val env = Environment.copy(environment!!)
-//            context?.state?.let {
-//                env.setParentState(it)
-//            }
-//            context?.effectDispatch?.let {
-//                env.setParentDispatch(it)
-//            }
-//            dependant.initAdapter(env)
-//        }
-    }
 
     /**
      * 对组件来说，不需要关注这些内部action，防止用户错误的注册框架的action
@@ -234,28 +215,6 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
      * @param connector 父组件的连接器
      */
     abstract fun install(env: Environment?, connector: Connector<S, State>?)
-
-    /**
-     * 每个组件下可能也会挂子组件，通过此方法初始化组件下挂载的子组件
-     */
-    fun installSubComponents() {
-        if (dependencies == null) {
-            return
-        }
-
-        val map: HashMap<String, Dependant<out State, State>>? = dependencies?.dependantMap
-        if (map.isNullOrEmpty()) {
-            return
-        }
-
-        val env = Environment.copy(environment!!)
-        env.setParentState(context.state)
-        context.effectDispatch?.let { env.setParentDispatch(it) }
-
-        for (dependant in map.values) {
-            dependant.installComponent(env)
-        }
-    }
 
     @CallSuper
     override fun clear() {

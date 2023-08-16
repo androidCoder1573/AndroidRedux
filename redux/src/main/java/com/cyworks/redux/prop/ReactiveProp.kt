@@ -27,7 +27,7 @@ enum class PropFromType {
  * 如果类似LiveData的方式更新，将导致UI频繁刷新，因为一个数据对应一块UI，假设一次Reducer更新了10个数据，
  * 将会调用UI更新callback 10次，性能上会有一定的损耗。
  */
-class ReactiveProp<T>(propValue: T, state: State) {
+class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, state: State) {
     /**
      * 属性对应的Key，用于State中进行属性key-value关联
      */

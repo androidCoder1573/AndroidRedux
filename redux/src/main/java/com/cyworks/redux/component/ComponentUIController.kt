@@ -2,9 +2,10 @@ package com.cyworks.redux.component
 
 import android.content.res.Configuration
 import android.view.View
+import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.action.Action
-import com.cyworks.redux.atom.PropsWatcher
+import com.cyworks.redux.atom.UIPropsWatcher
 import com.cyworks.redux.beans.UIChangedBean
 import com.cyworks.redux.beans.UIChangedType
 import com.cyworks.redux.dependant.Dependant
@@ -20,10 +21,8 @@ import com.cyworks.redux.util.ILogger
  * 1、初始化UI;
  * 2、设置Atom，用于UI的局部更新;
  * 3、设置UI组件的View的显示/隐藏以及绑定/删除操作;
- *
- * todo: 考虑将此类让开发者实现，更加定制化的操作UI
  */
-class ComponentUIController<S : State>(private val component: BaseComponent<S>, lazyBindUI: Boolean) {
+class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
     /**
      * 组件是否bind到父组件上
      */
@@ -31,8 +30,9 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
 
     /**
      * 当前组件的UI界面是否显示
+     * 如果是延迟加载，表明初始状态时不加载UI, 后续由开发者自己控制加载时机
      */
-    internal var isShow: Boolean = false
+    internal var isShow: Boolean = !proxy.lazyBindUI
 
     /**
      * Component自己的View，可以被detach，横屏UI
@@ -47,49 +47,59 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
     /**
      * Component当前显示的View
      */
-    var currentView: View? = null
+    internal var currentView: View? = null
 
     /**
      * 保存当前组件View的辅助类，方便在更新接口中获取view
      */
-    var viewHolder: ComponentViewHolder? = null
+    internal var viewHolder: ComponentViewHolder? = null
 
-    /**
-     * 当前组件对应的UI的更新接口
-     */
-    private val viewModule: ViewModule<S>?
+    private val innerViewModule: ViewModule<S>
 
     /**
      * 用于监听本组件的属性变化, 并进行UI更新，运行在主线程不要做耗时操作
      */
-    protected var propsWatcher: PropsWatcher<S>? = null
+    private var uiPropsWatcher: UIPropsWatcher<S>? = null
 
     private val logger: ILogger = ReduxManager.instance.logger
 
     /**
      * 上次的屏幕方向
      */
-    var lastOrientation = Configuration.ORIENTATION_PORTRAIT
+    internal var lastOrientation = Configuration.ORIENTATION_PORTRAIT
 
     private var isRunFirstUpdate = false
 
     init {
-        viewModule = component.viewModule
-        // 如果是延迟加载，表明初始状态时不加载UI, 后续由开发者自己控制加载时机
-        isShow = !lazyBindUI
+        innerViewModule = object : ViewModule<S> {
+            override fun getView(context: ReduxContext<S>, parent: View): View? {
+                return proxy.viewModule.getView(context, parent)
+            }
+
+            override fun subscribeProps(state: S, watcher: UIPropsWatcher<S>?) {
+                proxy.viewModule.subscribeProps(state, watcher)
+            }
+        }
+    }
+
+    fun onStateMerged(componentState: S) {
+        // 获取初始的屏幕方向
+        lastOrientation = componentState.currentOrientation
+
+        // 设置状态 -- UI 监听
+        makeUIWatcher(componentState)
+
+        // 运行首次UI更新
+        firstUpdate()
     }
 
     /**
      * 为当前组件创建UI片段观察者
      */
-    internal fun makeUIWatcher(state: S) {
-        if (viewModule == null) {
-            return
-        }
-
+    private fun makeUIWatcher(state: S) {
         // 创建属性订阅器
-        propsWatcher = PropsWatcher()
-        viewModule.subscribeProps(state, propsWatcher)
+        uiPropsWatcher = UIPropsWatcher()
+        innerViewModule.subscribeProps(state, uiPropsWatcher)
     }
 
     /**
@@ -97,7 +107,7 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
      *
      * @param needVisible 只有调用过程中的第一个View才需要显示
      */
-    internal fun show(needVisible: Boolean) {
+    internal fun show(needVisible: Boolean = false) {
         // 如果已经绑定了，则直接走构建UI的逻辑
         if (lastOrientation == Configuration.ORIENTATION_PORTRAIT && portraitView == null
             || lastOrientation == Configuration.ORIENTATION_LANDSCAPE && landscapeView == null
@@ -107,7 +117,7 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
 
         // 根组件进行展示
         if (needVisible) {
-            if (currentView != null) {
+            if (currentView != null && currentView!!.visibility != View.VISIBLE) {
                 currentView!!.visibility = View.VISIBLE
             }
         }
@@ -115,8 +125,7 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
         // 更新一次UI
         fullUpdate()
 
-        // 通知组件当前组件UI发生变化了，给用户一个机会做一些善后处理
-        // 首次初始化不需要这些
+        // 通知组件当前组件UI发生变化了，给用户一个机会做一些善后处理, 首次初始化不需要这些
         sendUIChangedAction(UIChangedType.TYPE_VISIBILITY_CHANGE)
         showChildren()
     }
@@ -125,7 +134,7 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
         // attachAdapter()
 
         // 处理子组件
-        val map: HashMap<String, Dependant<out State, State>>? = component.childrenDepMap
+        val map: HashMap<String, Dependant<out State, State>>? = proxy.childrenDepMap
         if (map.isNullOrEmpty()) {
             return
         }
@@ -137,7 +146,7 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
 
             // 如果绑定了，则走show的逻辑
             if (dependant.logic is BaseComponent<*>) {
-                dependant.logic.show()
+                dependant.logic.uiController.show()
             }
         }
     }
@@ -148,7 +157,7 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
      *
      * @param needGone 只有调用过程中的第一个View才需要隐藏
      */
-    internal fun hide(needGone: Boolean) {
+    internal fun hide(needGone: Boolean = false) {
         if (needGone) {
             if (currentView != null) {
                 currentView!!.visibility = View.GONE
@@ -165,11 +174,11 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
         // detachAdapter()
 
         // 处理子组件
-        val map: HashMap<String, Dependant<out State, State>>? = component.childrenDepMap
+        val map: HashMap<String, Dependant<out State, State>>? = proxy.childrenDepMap
         if (!map.isNullOrEmpty()) {
             for (dependant in map.values) {
                 if (dependant.logic is BaseComponent<*>) {
-                    dependant.logic.hide()
+                    dependant.logic.uiController.hide()
                 }
             }
         }
@@ -194,7 +203,7 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
         // attachAdapter()
 
         // 处理子组件
-        val map: HashMap<String, Dependant<out State, State>>? = component.childrenDepMap
+        val map: HashMap<String, Dependant<out State, State>>? = proxy.childrenDepMap
         if (map.isNullOrEmpty()) {
             return
         }
@@ -208,13 +217,18 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
 
             // 如果已经绑定了，走attach流程
             if (dependant.logic is BaseComponent<*>) {
-                dependant.logic.attach()
+                dependant.logic.uiController.attach()
             } else {
 //        if (logic is RootAdapter) {
 //            (logic as RootAdapter<BaseComponentState?>).attach()
 //        }
             }
         }
+    }
+
+    private fun installComponent(dependant: Dependant<out State, State>) {
+        val env = copyEnvironment()
+        dependant.installComponent(env!!)
     }
 
     /**
@@ -231,26 +245,15 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
         setViewNUll()
     }
 
-    private fun setViewNUll() {
-        // 清理一些View
-        currentView = null
-        landscapeView = null
-        portraitView = null
-        if (viewHolder != null) {
-            viewHolder!!.dispose()
-            viewHolder = null
-        }
-    }
-
     private fun detachChildren() {
         // detachAdapter()
 
         // 处理子组件
-        val map: HashMap<String, Dependant<out State, State>>? = component.childrenDepMap
+        val map: HashMap<String, Dependant<out State, State>>? = proxy.childrenDepMap
         if (!map.isNullOrEmpty()) {
             for (dependant in map.values) {
                 if (dependant.logic is BaseComponent<*>) {
-                    dependant.logic.detach()
+                    dependant.logic.uiController.detach()
                 } else {
 //        if (logic is RootAdapter) {
 //            (logic as RootAdapter<BaseComponentState?>).detach()
@@ -258,14 +261,6 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
                 }
             }
         }
-    }
-
-    private fun installComponent(dependant: Dependant<out State, State>) {
-        val context = component.context
-        val env = Environment.copy(component.environment!!)
-        env.setParentState(context.state)
-        context.effectDispatch?.let { env.setParentDispatch(it) }
-        dependant.installComponent(env)
     }
 
 //    private fun attachAdapter() {
@@ -280,20 +275,26 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
 //        adapter?.detach()
 //    }
 
+    internal fun createUI() {
+        if (!isShow) {
+            return
+        }
+
+        initUI()
+        firstUpdate()
+        // 遍历依赖
+        installSubComponents()
+    }
+
     /**
      * 初始化组件UI，主要是创建UI实例，初始化Adapter，发起发起首次UI更新动作
      */
     internal fun initUI() {
-        // 绑定View
-        if (viewModule == null) {
-            return
-        }
-
         // Adapter 要先于View初始化，因为创建View的过程中会初始化RecyclerView
-        component.initAdapter()
+        // component.initAdapter()
 
-        // 根据屏幕方向，进行View的初始化操作
-        changeView(lastOrientation)
+        // 根据屏幕方向，进行View的创建动作
+        createView(lastOrientation)
 
         // 创建View Holder
         if (viewHolder != null) {
@@ -313,7 +314,7 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
         if (currentView == null || isRunFirstUpdate) {
             return
         }
-        val context = component.context
+        val context = proxy.ctx
         if (context.stateReady()) {
             isRunFirstUpdate = true
             context.runFirstUpdate()
@@ -324,13 +325,13 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
      * 触发一次全量更新
      */
     internal fun fullUpdate() {
-        val context = component.context
+        val context = proxy.ctx
         context.runFullUpdate()
     }
 
     private fun setShow(show: Boolean) {
         isShow = show
-        val context = component.context
+        val context = proxy.ctx
         context.state.innerSetProp("isShowUI", isShow)
     }
 
@@ -346,7 +347,7 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
         uiChangedBean.partialView = portraitView
         uiChangedBean.landscapeView = landscapeView
         uiChangedBean.uiChangeType = type
-        val context = component.context
+        val context = proxy.ctx
         context.dispatchEffect(Action(LifeCycleAction.ACTION_ON_UI_CHANGED, uiChangedBean))
     }
 
@@ -355,7 +356,7 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
      *
      * @param orientation 当前屏幕的旋转方向
      */
-    internal fun changeView(orientation: Int) {
+    internal fun createView(orientation: Int) {
         if (orientation == Configuration.ORIENTATION_PORTRAIT) {
             setPortraitView()
             return
@@ -375,9 +376,7 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
             portraitView = landscapeView
         }
         if (portraitView == null) {
-            throw RuntimeException(
-                "create view failed in portrait, component is: " + component.javaClass.name
-            )
+            throw RuntimeException("create view failed in portrait, component is: " + proxy.token)
         }
         currentView = portraitView
     }
@@ -392,38 +391,24 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
             landscapeView = portraitView
         }
         if (landscapeView == null) {
-            throw RuntimeException(
-                "create view failed in landscape, component is: " + component.javaClass.name
-            )
+            throw RuntimeException("create view failed in landscape, component is: " + proxy.token)
         }
         currentView = landscapeView
     }
 
     /**
      * 获取UI组件的View实例
-     * @return 组件View实例
      */
     private fun callViewBuilder(): View? {
-        val context = component.context
-        if (viewModule == null) {
-            return null
-        }
+        val context = proxy.ctx
 
         try {
-            return viewModule.getView(context, component.environment?.rootView!!)
+            return innerViewModule.getView(context, proxy.environment?.rootView!!)
         } catch (e: Exception) {
             // 这里可能会产生多种异常，比如空指针，重复添加等
             logger.printStackTrace(ILogger.ERROR_TAG, "call view builder fail: ", e)
             return null
         }
-    }
-
-    /**
-     * 针对UI组件来说，需要检查是否可以更新UI
-     * @return 当mViewUpdater不为null时，此时说明当前组件存在UI，可以更新UI
-     */
-    fun canNotUpdateUI(): Boolean {
-        return viewModule == null
     }
 
     /**
@@ -433,7 +418,7 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
      * @param holder 当前UI组件的View Holder
      */
     fun callUIUpdate(state: S, holder: ComponentViewHolder?) {
-        propsWatcher?.update(state, holder)
+        uiPropsWatcher?.update(state, holder)
     }
 
     /**
@@ -444,6 +429,65 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
             viewHolder?.dispose()
         }
         viewHolder = currentView?.let { ComponentViewHolder(it) }
+    }
+
+    /**
+     * 如果组件有列表型的UI，通过绑定框架提供的Adapter，这样列表型组件也可以纳入状态管理数据流中；
+     * 通过此方法初始化Adapter，每个组件只可绑定一个Adapter，以保证组件的粒度可控。
+     */
+    internal fun initAdapter() {
+//        if (dependencies == null) {
+//            return
+//        }
+//        val dependant: HashMap<String, Dependant<out State, State>>? = dependencies?.dependantMap
+//        if (dependant != null) {
+//            val env = Environment.copy(environment!!)
+//            context?.state?.let {
+//                env.setParentState(it)
+//            }
+//            context?.effectDispatch?.let {
+//                env.setParentDispatch(it)
+//            }
+//            dependant.initAdapter(env)
+//        }
+    }
+
+    /**
+     * 每个组件下可能也会挂子组件，通过此方法初始化组件下挂载的子组件
+     */
+    fun installSubComponents() {
+        val map: HashMap<String, Dependant<out State, State>>? = proxy.childrenDepMap
+        if (map.isNullOrEmpty()) {
+            return
+        }
+
+        val env = copyEnvironment()
+
+        for (dependant in map.values) {
+            dependant.installComponent(env!!)
+        }
+    }
+
+    private fun copyEnvironment(): Environment? {
+        if (proxy.environment == null) {
+            return null
+        }
+
+        val env = Environment.copy(proxy.environment)
+        env.setParentState(proxy.ctx.state)
+        proxy.ctx.effectDispatch?.let { env.setParentDispatch(it) }
+        return env
+    }
+
+    private fun setViewNUll() {
+        // 清理一些View
+        currentView = null
+        landscapeView = null
+        portraitView = null
+        if (viewHolder != null) {
+            viewHolder!!.dispose()
+            viewHolder = null
+        }
     }
 
     fun clear() {

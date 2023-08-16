@@ -3,6 +3,7 @@ package com.cyworks.redux.component
 import android.os.Bundle
 import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.ReduxManager
+import com.cyworks.redux.atom.StatePropsWatcher
 import com.cyworks.redux.dependant.Dependant
 import com.cyworks.redux.interceptor.InterceptorBean
 import com.cyworks.redux.interceptor.InterceptorManager
@@ -14,20 +15,6 @@ import com.cyworks.redux.types.Effect
 import com.cyworks.redux.util.Environment
 import com.cyworks.redux.util.ILogger
 
-enum class LogicType {
-    PAGE,
-    COMPONENT,
-}
-
-enum class LogicLifecycleEvent {
-    UNKNOWN,
-    ON_CREATE,
-    ON_START,
-    ON_RESUME,
-    ON_PAUSE,
-    ON_STOP,
-    ON_DESTROY
-}
 
 /**
  * Desc: Page以及Component的基类，封装组件和页面的公共逻辑，一个组件可能会有多个子组件。
@@ -71,27 +58,34 @@ abstract class Logic<S : State>(b: Bundle?) {
      */
     protected var interceptorDispose: ArrayList<Dispose>? = null
 
-    /**
-     * 当前组件的生命周期
-     */
-    protected var lifecycleEvent: LogicLifecycleEvent = LogicLifecycleEvent.UNKNOWN
-
     protected var pendingInterceptorList: ArrayList<InterceptorBean<S>> = ArrayList()
+
+    /**
+     * 用于监听本组件的属性变化
+     */
+    internal val propsWatcher: StatePropsWatcher<S>
+
+    protected var logicModule: LogicModule<S> = object : LogicModule<S> {
+        override fun addLocalEffects(collect: EffectCollector<S>) {}
+        override fun subscribeProps(
+            state: S,
+            watcher: StatePropsWatcher<S>
+        ) {}
+    }
 
     /**
      * 初始Effect以及一些依赖
      */
     init {
+        propsWatcher = StatePropsWatcher()
         initCollect()
     }
 
     private fun initCollect() {
         // 初始化Reducer
-        var logicModule: LogicModule<S>? = getLogicModule()
-        if (logicModule == null) {
-            logicModule = object : LogicModule<S> {
-                override fun addLocalEffects(collect: EffectCollector<S>) {}
-            }
+        val module: LogicModule<S>? = createLogicModule()
+        if (module != null) {
+            logicModule = module
         }
 
         // 初始化Effect
@@ -124,10 +118,6 @@ abstract class Logic<S : State>(b: Bundle?) {
         return null
     }
 
-    fun getLogicLifeEvent(): LogicLifecycleEvent {
-        return lifecycleEvent
-    }
-
     open fun clear() {
         if (interceptorDispose != null && interceptorDispose!!.size > 0) {
             interceptorDispose?.forEach {
@@ -151,7 +141,7 @@ abstract class Logic<S : State>(b: Bundle?) {
      * LogicModule，用户主动设置
      * @return LogicModule
      */
-    abstract fun getLogicModule(): LogicModule<S>?
+    abstract fun createLogicModule(): LogicModule<S>?
 
     /**
      * 获取依赖的子组件集合

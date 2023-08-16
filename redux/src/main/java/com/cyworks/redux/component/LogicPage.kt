@@ -137,6 +137,8 @@ abstract class LogicPage<S : State>(proxy: LifeCycleProxy) : Logic<S>(proxy.prop
             .build()
         context.controller = controller
         context.setStateReady()
+
+        logicModule.subscribeProps(context.state, propsWatcher)
     }
 
     /**

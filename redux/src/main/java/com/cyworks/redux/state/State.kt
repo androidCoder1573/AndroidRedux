@@ -3,12 +3,11 @@ package com.cyworks.redux.state
 import android.content.res.Configuration
 import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.prop.ReactiveProp
-import com.cyworks.redux.state.State.Reactive
 import com.cyworks.redux.types.PropertySet
 import com.cyworks.redux.util.ILogger
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
+import kotlin.reflect.full.memberProperties
 
 enum class StateType {
     PAGE_TYPE,
@@ -25,7 +24,7 @@ abstract class State {
      * key: 某个属性对应的key；
      * value: PropValue, 某个属性对应的值；
      */
-    internal val dataMap = ConcurrentHashMap<String, ReactiveProp<Any>>()
+    internal val dataMap = HashMap<String, ReactiveProp<Any>>()
 
     /**
      * 用于存放组件响应式数据的Map, 方便框架进行修改数据，开发者无感知。
@@ -79,12 +78,12 @@ abstract class State {
     /**
      * 页面内部默认的属性，表示当前的横竖屏状态
      */
-    var currentOrientation: Int by Reactive(Configuration.ORIENTATION_PORTRAIT)
+    var currentOrientation: Int by ReactUIProp(Configuration.ORIENTATION_PORTRAIT)
 
     /**
      * 组件内部默认的属性，表示当前是否需要懒加载，此属性定位为私有属性
      */
-    var isShowUI: Boolean by Reactive(true)
+    var isShowUI: Boolean by ReactUIProp(true)
 
     /**
      * 获取组件私有数据变化的情况, 在子组件的reducer执行完成后调用，仅限框架内部使用。
@@ -159,7 +158,9 @@ abstract class State {
     }
 
     internal fun detectField() {
-
+        this::class.memberProperties.forEach {
+            it.getter.call()
+        }
     }
 
     /**
@@ -188,7 +189,7 @@ abstract class State {
     }
 
     internal fun attach() {
-        for (key in dataMap.keys()) {
+        for (key in dataMap.keys) {
             val value = dataMap[key]
             value?.attach()
         }
@@ -202,7 +203,7 @@ abstract class State {
             return
         }
 
-        for (key in dataMap.keys()) {
+        for (key in dataMap.keys) {
             val value = dataMap[key]
             value?.detach()
         }
@@ -242,16 +243,36 @@ abstract class State {
         return dataMap[key]
     }
 
+    inner class ReactUIProp<V : Any?>(initialValue: V) : ReactLogicProp<V>(initialValue) {
+        private fun checkDataMap(key: String, value: Any, set: PropertySet<V>) {
+            if (dataMap[key] == null) {
+                propertyMap[key] = set as PropertySet<Any>
+                val prop = ReactiveProp(value, true, this@State)
+                prop.setKey(key)
+                dataMap[key] = prop
+            }
+        }
+
+        override fun getValue(thisRef: Any?, property: KProperty<*>): V {
+            val key = property.name
+            curDepPropKey = key
+            checkDataMap(key, value as Any) {
+                value = it
+            }
+            return value
+        }
+    }
+
     /**
      * 内部类，用于实现响应式属性的委托
      */
-    inner class Reactive<V : Any?>(initialValue: V) : ReadWriteProperty<Any?, V> {
-        private var value = initialValue
+    open inner class ReactLogicProp<V : Any?>(initialValue: V) : ReadWriteProperty<Any?, V> {
+        protected var value = initialValue
 
         private fun checkDataMap(key: String, value: Any, set: PropertySet<V>) {
             if (dataMap[key] == null) {
                 propertyMap[key] = set as PropertySet<Any>
-                val prop = ReactiveProp(value, this@State);
+                val prop = ReactiveProp(value, false, this@State)
                 prop.setKey(key)
                 dataMap[key] = prop
             }
@@ -259,7 +280,6 @@ abstract class State {
 
         /**
          * 获取属性的值
-         *
          */
         override fun getValue(thisRef: Any?, property: KProperty<*>): V {
             val key = property.name

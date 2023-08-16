@@ -3,7 +3,6 @@ package com.cyworks.redux.adapter
 import android.view.View
 import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.action.Action
-import com.cyworks.redux.component.AdapterItemComponent
 import com.cyworks.redux.state.State
 import com.cyworks.redux.types.DependantCreator
 import com.cyworks.redux.util.Environment
@@ -47,10 +46,12 @@ class ReduxAdapter<PS: State> {
         val depend = dependantList.buildDependant<State>(index, type, data)
         this.copyEnvironmentToSub()?.let { depend.install(it) }
         val component = depend.logic
-        if (component !is AdapterItemComponent) {
-            throw RuntimeException("list item must be a AdapterItemComponent")
-        }
-        return component.createUI() ?: throw RuntimeException("list item must have a view")
+//        if (component !is AdapterItemComponent) {
+//            throw RuntimeException("list item must be a AdapterItemComponent")
+//        }
+//        return component.createUI() ?: throw RuntimeException("list item must have a view")
+
+        throw RuntimeException("list item must have a view")
     }
 
     fun doInterceptorAction(action: Action<Any>) {

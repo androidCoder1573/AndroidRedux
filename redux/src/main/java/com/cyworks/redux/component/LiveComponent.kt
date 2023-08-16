@@ -12,6 +12,8 @@ import com.cyworks.redux.state.State
  * 屏幕方向切换做了一些特殊处理
  */
 abstract class LiveComponent<S : State>(lazyBindUI: Boolean) : BaseComponent<S>(lazyBindUI) {
+    private val changedPropKeys: ArrayList<String> = ArrayList()
+
     val currentView: View?
         get() = uiController.currentView
 
@@ -27,9 +29,10 @@ abstract class LiveComponent<S : State>(lazyBindUI: Boolean) : BaseComponent<S>(
      * @param stateCompare ChangedState 本次变化的state集合
      */
     private fun onDataChangedCB(stateCompare: ChangedState<S>) {
-        if (uiController.canNotUpdateUI() || environment == null) {
+        if (environment == null) {
             return
         }
+
         val props: List<ReactiveProp<Any>> = stateCompare.changedProps
         // 检查属性是否合法
         if (props.isEmpty()) {
@@ -37,18 +40,22 @@ abstract class LiveComponent<S : State>(lazyBindUI: Boolean) : BaseComponent<S>(
         }
 
         // 将变化的属性的key抽离到一个列表中
-        val propKeys: MutableList<String?> = ArrayList()
+        changedPropKeys.clear()
         for (prop in props) {
-            propKeys.add(prop.getKey())
+            val key = prop.getKey()
+            if (key != null && prop.isUIProp) {
+                // 必须是UI属性
+                changedPropKeys.add(key)
+            }
         }
 
         // 检查是否组件可见性发生变化
-        if (visibilityChanged(propKeys)) {
+        if (visibilityChanged(changedPropKeys)) {
             return
         }
 
         // 如果存在屏幕旋转，则优先处理屏幕旋转
-        if (needHandleOrientation(propKeys)) {
+        if (needHandleOrientation(changedPropKeys)) {
             return
         }
 
@@ -62,7 +69,7 @@ abstract class LiveComponent<S : State>(lazyBindUI: Boolean) : BaseComponent<S>(
      * @param propKeys 当前组件变化的属性列表
      * @return 是否需要处理可见性变化
      */
-    private fun visibilityChanged(propKeys: List<String?>): Boolean {
+    private fun visibilityChanged(propKeys: ArrayList<String>): Boolean {
         val show: Boolean = context.state.isShowUI
         if (!propKeys.contains("show_ui")) {
             // 当前变化的属性不包含可见性变化的属性
@@ -93,7 +100,7 @@ abstract class LiveComponent<S : State>(lazyBindUI: Boolean) : BaseComponent<S>(
      * @param propKeys 当前状态变化的属性对应key
      * @return 是否可以处理屏幕旋转
      */
-    private fun needHandleOrientation(propKeys: MutableList<String?>): Boolean {
+    private fun needHandleOrientation(propKeys: ArrayList<String>): Boolean {
         val orientationKey = "current_orientation"
         if (!propKeys.contains(orientationKey)) {
             return false
@@ -124,7 +131,7 @@ abstract class LiveComponent<S : State>(lazyBindUI: Boolean) : BaseComponent<S>(
     private fun onConfigurationChanged(orientation: Int) {
         // 先移除观察者
         observer?.let { liveData?.removeObserver(it) }
-        uiController.changeView(orientation)
+        uiController.createView(orientation)
 
         // 通知组件当前组件UI发生变化了，给用户一个机会做一些善后处理
         uiController.sendUIChangedAction(UIChangedType.TYPE_ORIENTATION_CHANGE)
@@ -133,7 +140,7 @@ abstract class LiveComponent<S : State>(lazyBindUI: Boolean) : BaseComponent<S>(
         uiController.resetViewHolder()
 
         // 观察数据，界面创建完成之后再进行观察，以防出现异常
-        observeLifeCycle()
+        observeUIData()
 
         // 重新设置UI状态
         context.runFullUpdate()

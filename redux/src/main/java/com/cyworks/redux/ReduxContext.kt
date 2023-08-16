@@ -16,7 +16,12 @@ import com.cyworks.redux.state.State
 import com.cyworks.redux.state.StateProxy
 import com.cyworks.redux.store.PageStore
 import com.cyworks.redux.store.StoreObserver
-import com.cyworks.redux.types.*
+import com.cyworks.redux.types.Dispatch
+import com.cyworks.redux.types.Dispose
+import com.cyworks.redux.types.IPropsChanged
+import com.cyworks.redux.types.IStateChange
+import com.cyworks.redux.types.Reducer
+import com.cyworks.redux.types.StateGetter
 import com.cyworks.redux.util.Environment
 import com.cyworks.redux.util.ILogger
 import com.cyworks.redux.util.IPlatform
@@ -256,7 +261,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         markNeedUpdate()
 
         // 通知属性订阅者，状态发生了变化
-        // logic.propWatcher.notifyPropChanged(props, this)
+        logic.propsWatcher.update(state, this)
     }
 
     /**
@@ -308,9 +313,6 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
 
     /**
      * 分发 Effect Action
-     *
-     * @param action 携带的Action
-     * @param payload 携带的参数
      */
     fun dispatchEffect(action: Action<Any>?) {
         if (isDestroy || !isStateReady) {
@@ -324,8 +326,6 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
 
     /**
      * 子组件直接给Page发送action, 只能Effect来接收
-     *
-     * @param action Action
      */
     fun dispatchToPage(action: Action<Any>) {
         if (isDestroy || !isStateReady || environment == null) {
@@ -337,8 +337,6 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
 
     /**
      * 子组件发action给父组件，只能使用Effect来接收
-     *
-     * @param action Action
      */
     fun dispatchToParent(action: Action<Any>) {
         if (isDestroy || !isStateReady || environment == null) {
@@ -352,8 +350,6 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
 
     /**
      * 父组件发action给子组件，只能使用Effect来接收
-     *
-     * @param action Action
      */
     fun dispatchToChildren(action: Action<Any>) {
         if (isDestroy || !isStateReady || environment == null) {
@@ -386,8 +382,6 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
 
     /**
      * 发送全局广播，本方法在App级别是全局的, 只有page下的Effect才可以处理
-     *
-     * @param action 要分发的Action
      */
     fun broadcast(action: Action<Any>) {
         if (isDestroy || !isStateReady || environment == null) {
@@ -398,8 +392,6 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
 
     /**
      * 发送页面内广播，仅Page可以发送页面内广播
-     *
-     * @param action Action
      */
     fun broadcastInPage(action: Action<Any>) {
         if (environment == null || !stateReady() || logic !is LogicPage<*>) {
@@ -410,8 +402,6 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
 
     /**
      * 用于组件生命周期响应的方法
-     *
-     * @param action Action
      */
     fun onLifecycle(action: Action<Any>) {
         if (isDestroy || !LifeCycleAction.isLifeCycle(action)) {
@@ -448,7 +438,6 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
 
     /**
      * 是否状态ready
-     * @return boolean
      */
     fun stateReady(): Boolean {
         return isStateReady
@@ -458,8 +447,8 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      * 展示一个对话框组件
      */
     fun showComponentDialog(dialog: ILRDialog?) {
-        if (logic is LiveDialogComponent<*>) {
-            (logic as LiveDialogComponent<out State>).showDialog(dialog)
+        if (dialog is LiveDialogComponent<*>) {
+            (dialog as LiveDialogComponent<out State>).showDialog(dialog)
         }
     }
 

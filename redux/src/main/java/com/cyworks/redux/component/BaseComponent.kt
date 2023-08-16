@@ -7,7 +7,9 @@ import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import androidx.lifecycle.OnLifecycleEvent
+import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.action.Action
+import com.cyworks.redux.dependant.Dependant
 import com.cyworks.redux.lifecycle.LifeCycleAction
 import com.cyworks.redux.lifecycle.LifeCycleProxy
 import com.cyworks.redux.prop.ChangedState
@@ -18,6 +20,15 @@ import com.cyworks.redux.util.Environment
 import com.cyworks.redux.util.ILogger
 import com.cyworks.redux.util.IPlatform
 import com.cyworks.redux.util.Platform
+
+data class ComponentProxy<S : State>(
+    val childrenDepMap: HashMap<String, Dependant<out State, State>>?,
+    val environment: Environment?,
+    val token: String,
+    val lazyBindUI: Boolean,
+    val viewModule: ViewModule<S>,
+    val ctx: ReduxContext<S>
+)
 
 /**
  * 组件基类，框架内部实现，外部不能直接使用, 用来承载一个Redux组件.
@@ -50,41 +61,26 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
      */
     internal val uiController: ComponentUIController<S>
 
-    /**
-     * 获取View模块，外部设置
-     *
-     * @return ViewModule
-     */
-    abstract val viewModule: ViewModule<S>?
-
     init {
-        uiController = ComponentUIController(this, lazyBindUI)
+        val componentProxy = ComponentProxy(
+            childrenDepMap,
+            environment,
+            this.javaClass.name,
+            lazyBindUI,
+            createViewModule(),
+            context
+        )
+        uiController = ComponentUIController(componentProxy)
     }
 
     fun isInstalled(): Boolean {
         return uiController.installed
     }
 
-    fun show() {
-        uiController.show(false)
-    }
-
-    fun hide() {
-        uiController.hide(false)
-    }
-
-    fun attach() {
-        uiController.attach()
-    }
-
-    fun detach() {
-        uiController.detach()
-    }
-
     /**
      * 使用LiveData观察数据，触发UI更新
      */
-    fun observeLifeCycle() {
+    fun observeUIData() {
         if (environment == null || observer == null) {
             return
         }
@@ -101,7 +97,7 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
         environment = env
 
         // 获取启动参数
-        // todo 都从统一的地方拿启动参数
+        // todo 都从统一的地方拿启动参数是否合理
         val lifeCycleProxy: LifeCycleProxy? = environment!!.lifeCycleProxy
         props = lifeCycleProxy?.props
 
@@ -112,7 +108,7 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
 
     @SuppressLint("ResourceType")
     override fun createPlatform(): IPlatform? {
-        val lifeCycleProxy: LifeCycleProxy? = environment!!.lifeCycleProxy
+        val lifeCycleProxy: LifeCycleProxy? = environment?.lifeCycleProxy
         val platform = lifeCycleProxy?.let { environment!!.rootView?.let { it1 ->
             Platform(it, it1)
         } }
@@ -139,18 +135,14 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
     }
 
     override fun onStateMerged(componentState: S) {
-        // 检查默认属性设置
-        componentState.innerSetProp("isShowUI", uiController.isShow)
-
-        // 获取初始的屏幕方向
-        uiController.lastOrientation = componentState.currentOrientation
-
-        // 设置状态 -- UI 监听
-        uiController.makeUIWatcher(componentState)
-
-        // 运行首次UI更新
-        uiController.firstUpdate()
+        componentState.innerSetProp("isShowUI", uiController.isShow) // 检查默认属性设置
+        uiController.onStateMerged(componentState)
     }
+
+    /**
+     * 创建View模块，外部设置
+     */
+    abstract fun createViewModule(): ViewModule<S>
 
     /**
      * 用于初始化Component
@@ -161,16 +153,11 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
         // 1、创建Context
         createContext()
 
-        // 2、如果不懒加载，直接加载界面
-        if (uiController.isShow) {
-            uiController.initUI()
-            uiController.firstUpdate()
-            // 遍历依赖
-            installSubComponents()
-        }
+        // 2、加载界面
+        uiController.createUI()
 
         // 3、观察数据
-        observeLifeCycle()
+        observeUIData()
 
         // 4、发送onCreate Effect
         context.onLifecycle(Action(LifeCycleAction.ACTION_ON_CREATE, null))

@@ -33,7 +33,7 @@ abstract class LiveDialogComponent<S : State> : BaseComponent<S>(true) {
         }
 
         override fun onDialogDismiss() {
-            detach()
+            this@LiveDialogComponent.uiController.detach()
             // UI detach之后再清理，保证安全
             this@LiveDialogComponent.onDialogDismiss(this@LiveDialogComponent.context)
             dialogInstance = null
@@ -52,7 +52,7 @@ abstract class LiveDialogComponent<S : State> : BaseComponent<S>(true) {
      * @param stateCompare ChangedState
      */
     private fun onDataChangedCB(stateCompare: ChangedState<S>) {
-        if (uiController.canNotUpdateUI() || environment == null) {
+        if (environment == null) {
             return
         }
 
@@ -122,7 +122,7 @@ abstract class LiveDialogComponent<S : State> : BaseComponent<S>(true) {
         closeDialog()
 
         dialogInstance = dialog
-        attach()
+        this@LiveDialogComponent.uiController.attach()
 
         dialogInterface?.let { dialogInstance?.setIDialog(it) }
 

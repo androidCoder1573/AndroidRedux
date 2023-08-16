@@ -2,7 +2,7 @@ package com.cyworks.redux.ui
 
 import android.view.View
 import com.cyworks.redux.ReduxContext
-import com.cyworks.redux.atom.PropsWatcher
+import com.cyworks.redux.atom.UIPropsWatcher
 import com.cyworks.redux.state.State
 
 /**
@@ -21,5 +21,5 @@ interface ViewModule<S : State> {
      * 返回一个Map，映射数据跟UI之间的关联
      * @param state 当前组件的State
      */
-    fun subscribeProps(state: S, watcher: PropsWatcher<S>?)
+    fun subscribeProps(state: S, watcher: UIPropsWatcher<S>?)
 }
