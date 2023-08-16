@@ -27,7 +27,7 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
     /**
      * 组件是否bind到父组件上
      */
-    internal var isBind: Boolean = false
+    internal var installed: Boolean = false
 
     /**
      * 当前组件的UI界面是否显示
@@ -93,16 +93,6 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
     }
 
     /**
-     * 重置View Holder
-     */
-    internal fun resetViewHolder() {
-        if (viewHolder != null) {
-            viewHolder?.dispose()
-        }
-        viewHolder = currentView?.let { ComponentViewHolder(it) }
-    }
-
-    /**
      * 组件UI展示
      *
      * @param needVisible 只有调用过程中的第一个View才需要显示
@@ -132,10 +122,10 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
     }
 
     private fun showChildren() {
-        attachAdapter()
+        // attachAdapter()
 
         // 处理子组件
-        val map: HashMap<String, Dependant<out State, State>>? = component.childrenDependant
+        val map: HashMap<String, Dependant<out State, State>>? = component.childrenDepMap
         if (map.isNullOrEmpty()) {
             return
         }
@@ -146,7 +136,9 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
             }
 
             // 如果绑定了，则走show的逻辑
-            dependant.show()
+            if (dependant.logic is BaseComponent<*>) {
+                dependant.logic.show()
+            }
         }
     }
 
@@ -170,13 +162,15 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
     }
 
     private fun hideChildren() {
-        detachAdapter()
+        // detachAdapter()
 
         // 处理子组件
-        val map: HashMap<String, Dependant<out State, State>>? = component.childrenDependant
+        val map: HashMap<String, Dependant<out State, State>>? = component.childrenDepMap
         if (!map.isNullOrEmpty()) {
             for (dependant in map.values) {
-                dependant.hide()
+                if (dependant.logic is BaseComponent<*>) {
+                    dependant.logic.hide()
+                }
             }
         }
     }
@@ -197,10 +191,10 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
     }
 
     private fun attachChildren() {
-        attachAdapter()
+        // attachAdapter()
 
         // 处理子组件
-        val map: HashMap<String, Dependant<out State, State>>? = component.childrenDependant
+        val map: HashMap<String, Dependant<out State, State>>? = component.childrenDepMap
         if (map.isNullOrEmpty()) {
             return
         }
@@ -213,7 +207,13 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
             }
 
             // 如果已经绑定了，走attach流程
-            dependant.attach()
+            if (dependant.logic is BaseComponent<*>) {
+                dependant.logic.attach()
+            } else {
+//        if (logic is RootAdapter) {
+//            (logic as RootAdapter<BaseComponentState?>).attach()
+//        }
+            }
         }
     }
 
@@ -243,13 +243,19 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
     }
 
     private fun detachChildren() {
-        detachAdapter()
+        // detachAdapter()
 
         // 处理子组件
-        val map: HashMap<String, Dependant<out State, State>>? = component.childrenDependant
+        val map: HashMap<String, Dependant<out State, State>>? = component.childrenDepMap
         if (!map.isNullOrEmpty()) {
             for (dependant in map.values) {
-                dependant.detach()
+                if (dependant.logic is BaseComponent<*>) {
+                    dependant.logic.detach()
+                } else {
+//        if (logic is RootAdapter) {
+//            (logic as RootAdapter<BaseComponentState?>).detach()
+//        }
+                }
             }
         }
     }
@@ -259,20 +265,20 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
         val env = Environment.copy(component.environment!!)
         env.setParentState(context.state)
         context.effectDispatch?.let { env.setParentDispatch(it) }
-        dependant.initComponent(env)
+        dependant.installComponent(env)
     }
 
-    private fun attachAdapter() {
-        // 子组件也包含adapter, Adapter要单独处理，adapter是否可复用
-        val adapter: Dependant<out State, State>? = component.adapterDependant
-        adapter?.attach()
-    }
-
-    private fun detachAdapter() {
-        // 子组件也包含adapter, Adapter要单独处理
-        val adapter: Dependant<out State, State>? = component.adapterDependant
-        adapter?.detach()
-    }
+//    private fun attachAdapter() {
+//        // 子组件也包含adapter, Adapter要单独处理，adapter是否可复用
+//        val adapter: Dependant<out State, State>? = component.adapterDependant
+//        adapter?.attach()
+//    }
+//
+//    private fun detachAdapter() {
+//        // 子组件也包含adapter, Adapter要单独处理
+//        val adapter: Dependant<out State, State>? = component.adapterDependant
+//        adapter?.detach()
+//    }
 
     /**
      * 初始化组件UI，主要是创建UI实例，初始化Adapter，发起发起首次UI更新动作
@@ -428,6 +434,16 @@ class ComponentUIController<S : State>(private val component: BaseComponent<S>, 
      */
     fun callUIUpdate(state: S, holder: ComponentViewHolder?) {
         propsWatcher?.update(state, holder)
+    }
+
+    /**
+     * 重置View Holder
+     */
+    internal fun resetViewHolder() {
+        if (viewHolder != null) {
+            viewHolder?.dispose()
+        }
+        viewHolder = currentView?.let { ComponentViewHolder(it) }
     }
 
     fun clear() {

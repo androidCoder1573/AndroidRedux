@@ -133,7 +133,7 @@ abstract class LiveComponent<S : State>(lazyBindUI: Boolean) : BaseComponent<S>(
         uiController.resetViewHolder()
 
         // 观察数据，界面创建完成之后再进行观察，以防出现异常
-        observe()
+        observeLifeCycle()
 
         // 重新设置UI状态
         context.runFullUpdate()

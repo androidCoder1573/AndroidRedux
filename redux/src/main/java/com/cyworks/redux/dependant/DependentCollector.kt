@@ -12,7 +12,7 @@ import com.cyworks.redux.state.State
  * 因此将Adapter变相设计成为一个LRLogic，让Adapter本身变成响应式，
  * 这样就能很好的融入整个框架，但是对Adapter做了限制：一个组件只能设置一个列表型UI，目的是让组件的粒度更加细致。
  */
-class DependentCollect<PS : State> {
+class DependentCollector<PS : State> {
     /**
      * 组件依赖器集合
      */

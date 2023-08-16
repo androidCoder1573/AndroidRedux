@@ -62,7 +62,7 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
     }
 
     fun isInstalled(): Boolean {
-        return uiController.isBind
+        return uiController.installed
     }
 
     fun show() {
@@ -84,7 +84,7 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
     /**
      * 使用LiveData观察数据，触发UI更新
      */
-    fun observe() {
+    fun observeLifeCycle() {
         if (environment == null || observer == null) {
             return
         }
@@ -92,15 +92,16 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
     }
 
     override fun install(env: Environment?, connector: Connector<S, State>?) {
-        if (uiController.isBind) {
+        if (uiController.installed) {
             return
         }
-        uiController.isBind = true
+        uiController.installed = true
 
         this.connector = connector
         environment = env
 
         // 获取启动参数
+        // todo 都从统一的地方拿启动参数
         val lifeCycleProxy: LifeCycleProxy? = environment!!.lifeCycleProxy
         props = lifeCycleProxy?.props
 
@@ -165,11 +166,11 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
             uiController.initUI()
             uiController.firstUpdate()
             // 遍历依赖
-            initSubComponent()
+            installSubComponents()
         }
 
         // 3、观察数据
-        observe()
+        observeLifeCycle()
 
         // 4、发送onCreate Effect
         context.onLifecycle(Action(LifeCycleAction.ACTION_ON_CREATE, null))

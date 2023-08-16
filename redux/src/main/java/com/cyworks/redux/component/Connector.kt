@@ -25,7 +25,7 @@ abstract class Connector<CS : State, PS : State> {
     /**
      * 当前组件关联的父组件的State
      */
-    var parentState: State? = null
+    var pState: State? = null
 
     /**
      * 通过此接口获取View的占坑id或者对话框这类的布局id
@@ -46,11 +46,11 @@ abstract class Connector<CS : State, PS : State> {
     private var interceptCollector: InterceptorCollector<CS>? = null
 
     fun setParentState(parentState: State) {
-        this.parentState = parentState
+        this.pState = parentState
     }
 
     internal fun getParentState(): State? {
-        return this.parentState
+        return this.pState
     }
 
     fun injectChildContextWrapper(wrapper: ComponentContextWrapper<CS>) {

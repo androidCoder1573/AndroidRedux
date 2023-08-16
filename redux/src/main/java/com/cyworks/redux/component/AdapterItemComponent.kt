@@ -22,10 +22,10 @@ abstract class AdapterItemComponent<S: State> : LiveComponent<S>(false) {
         createContext()
 
         // 不可懒加载
-        initSubComponent()
+        installSubComponents()
 
         // 2、观察数据
-        observe()
+        observeLifeCycle()
 
         // 3、发送onCreate Effect
         context.onLifecycle(Action(LifeCycleAction.ACTION_ON_CREATE, null))

@@ -53,7 +53,7 @@ class GlobalStoreSubscribe<CS : State> internal constructor(callback: IPropsChan
 
         for (store in globalStoreBinderMap.keys) {
             val iBind = globalStoreBinderMap[store] ?: continue
-            val globalStoreState = store.state
+            val globalStoreState = store.copyState()
             iBind.combine(state, store, globalStoreState)
             val token: String = state.javaClass.name
             if (globalStoreState.isDependGlobalState(token)) {

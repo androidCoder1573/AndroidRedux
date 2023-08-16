@@ -6,7 +6,7 @@ import com.cyworks.redux.BaseController
 import com.cyworks.redux.ReduxContextBuilder
 import com.cyworks.redux.action.InnerActionTypes
 import com.cyworks.redux.dependant.Dependant
-import com.cyworks.redux.dependant.DependentCollect
+import com.cyworks.redux.dependant.DependentCollector
 import com.cyworks.redux.interceptor.InterceptorCollector
 import com.cyworks.redux.interceptor.InterceptorManager
 import com.cyworks.redux.logic.EffectCollector
@@ -16,12 +16,9 @@ import com.cyworks.redux.types.IPropsChanged
 import com.cyworks.redux.types.IStateChange
 import com.cyworks.redux.util.Environment
 import com.cyworks.redux.util.IPlatform
-import java.util.concurrent.Future
 
 /**
- * Desc: Live-Redux框架是一个UI/逻辑完全分离的框架，LogicComponent内只针对状态管理，没有任何逻辑操作。
- *
- * 目的：实现逻辑层测试，剥离出UI之后更容易构建整个逻辑层测试。
+ * Live-Redux框架是一个UI/逻辑完全分离的框架，LogicComponent内只针对状态管理/组件逻辑操作，不包含UI。
  */
 abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
     /**
@@ -34,18 +31,8 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
      */
     private var globalStoreSubscribe: GlobalStoreSubscribe<S>? = null
 
-    /**
-     * 组件的依赖的子组件的集合
-     */
-    var dependencies: DependentCollect<State>? = null
-
 
     protected var stateChangedListener: IStateChange<S>? = null
-
-    /**
-     * 用于取消异步任务
-     */
-    private var future: Future<*>? = null
 
     /**
      * 当前组件的与页面的连接器
@@ -55,35 +42,40 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
     // protected var adapterDispose: Dispose? = null
 
     /**
-     * 用于注入拦截器
+     * 获取依赖的列表组件的Adapter
+     *
+     * @return Dependant Adapter依赖
      */
-    private var interceptorManager: InterceptorManager? = null
+//    val adapterDependant: Dependant<out State, State>?
+//        get() = if (dependencies == null) {
+//            null
+//        } else null // dependencies.getAdapterDependant()
 
-    protected var controller: BaseController<S>? = null
+    /**
+     * 组件的依赖的子组件的集合
+     */
+    var dependencies: DependentCollector<State>? = null
 
     /**
      * 获取依赖的子组件集合
      *
      * @return Map 子组件集合
      */
-    val childrenDependant: HashMap<String, Dependant<out State, State>>?
+    val childrenDepMap: HashMap<String, Dependant<out State, State>>?
         get() = if (dependencies == null) {
             null
         } else dependencies!!.dependantMap
 
     /**
-     * 获取依赖的列表组件的Adapter
-     *
-     * @return Dependant Adapter依赖
+     * 用于注入拦截器
      */
-    val adapterDependant: Dependant<out State, State>?
-        get() = if (dependencies == null) {
-            null
-        } else null // dependencies.getAdapterDependant()
+    private var interceptorManager: InterceptorManager? = null
+
+    protected var controller: BaseController<S>? = null
 
     init {
         if (dependencies == null) {
-            dependencies = DependentCollect()
+            dependencies = DependentCollector()
         }
         addDependencies(dependencies)
     }
@@ -92,7 +84,7 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
      * 增加组件的依赖，子类如果有子组件，需要实现此方法
      * @param collect DependentCollect
      */
-    protected fun addDependencies(collect: DependentCollect<State>?) {
+    protected fun addDependencies(collect: DependentCollector<State>?) {
         // sub class impl
     }
 
@@ -104,7 +96,7 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
      * @param state 当前组件的State
      */
     private fun mergeState(state: S, cb: IPropsChanged) {
-        val parentState = connector?.parentState
+        val parentState = connector?.pState
         if (parentState == null) {
             return
         }
@@ -201,28 +193,6 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
     protected open fun onStateMerged(componentState: S) {}
 
     /**
-     * 每个组件下可能也会挂子组件，通过此方法初始化组件下挂载的子组件
-     */
-    fun initSubComponent() {
-        if (dependencies == null) {
-            return
-        }
-
-        val map: HashMap<String, Dependant<out State, State>>? = dependencies?.dependantMap
-        if (map.isNullOrEmpty()) {
-            return
-        }
-
-        val env = Environment.copy(environment!!)
-        env.setParentState(context.state)
-        context.effectDispatch?.let { env.setParentDispatch(it) }
-
-        for (dependant in map.values) {
-            dependant.initComponent(env)
-        }
-    }
-
-    /**
      * 如果组件有列表型的UI，通过绑定框架提供的Adapter，这样列表型组件也可以纳入状态管理数据流中；
      * 通过此方法初始化Adapter，每个组件只可绑定一个Adapter，以保证组件的粒度可控。
      */
@@ -245,7 +215,7 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
 
     /**
      * 对组件来说，不需要关注这些内部action，防止用户错误的注册框架的action
-     * @param effectCollector EffectCollect
+     * @param effectCollector
      */
     override fun checkEffect(effectCollector: EffectCollector<S>?) {
         effectCollector?.remove(InnerActionTypes.INTERCEPT_ACTION_TYPE)
@@ -254,24 +224,41 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
 
     /**
      * 创建当前组件对应的State
-     *
-     * @return PureState
      */
     abstract fun onCreateState(bundle: Bundle?): S
 
     /**
-     * 用于父组件安装子组件接口，并注入环境和连接器
+     * 用于父组件安装子组件接口，主要是给子组件注入环境和连接器
      *
      * @param env 组件需要的环境
      * @param connector 父组件的连接器
      */
     abstract fun install(env: Environment?, connector: Connector<S, State>?)
 
+    /**
+     * 每个组件下可能也会挂子组件，通过此方法初始化组件下挂载的子组件
+     */
+    fun installSubComponents() {
+        if (dependencies == null) {
+            return
+        }
+
+        val map: HashMap<String, Dependant<out State, State>>? = dependencies?.dependantMap
+        if (map.isNullOrEmpty()) {
+            return
+        }
+
+        val env = Environment.copy(environment!!)
+        env.setParentState(context.state)
+        context.effectDispatch?.let { env.setParentDispatch(it) }
+
+        for (dependant in map.values) {
+            dependant.installComponent(env)
+        }
+    }
+
     @CallSuper
     override fun clear() {
-        if (future != null && !future!!.isDone) {
-            future!!.cancel(true)
-        }
         globalStoreSubscribe!!.clear()
         if (dependencies != null) {
             dependencies?.clear()

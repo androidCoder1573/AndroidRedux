@@ -52,7 +52,7 @@ open class Store<S : State>  {
     /**
      * 获取state，为了防止外部缓存state，控制访问权限，外部只能通过监听的方式观察属性值
      */
-    lateinit var state: S
+    protected lateinit var state: S
 
     /**
      * 注册的观察者列表，用于分发store的变化
@@ -77,7 +77,7 @@ open class Store<S : State>  {
         state = s
     }
 
-    fun getState() : S {
+    fun copyState() : S {
         return State.copyState(state)
     }
 

@@ -128,6 +128,7 @@ abstract class State {
     internal fun endMergeState() {
         isMergingState = false
         stateHasMerged = true
+        depState = null
     }
 
     /**
@@ -231,8 +232,8 @@ abstract class State {
                 curProp.depUpperComponentProp(parentReactiveProp)
             }
         } else {
-            logger?.w("", "can not dep prop, because can not find the prop,"
-                    + " please check is use the whole prop to dep")
+            logger.w("State", "can not find the prop from parent,"
+                    + " please check to dep global prop")
         }
     }
 

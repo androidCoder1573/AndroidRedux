@@ -104,7 +104,7 @@ class Dependant<CS : State, PS : State> {
     }
 
     internal fun install(env: Environment) {
-        initComponent(env)
+        installComponent(env)
         // initAdapter(env)
     }
 
@@ -112,11 +112,11 @@ class Dependant<CS : State, PS : State> {
      * 对当前组件的子组件进行初始化操作
      * @param env 父组件的一些信息
      */
-    internal fun initComponent(env: Environment) {
+    internal fun installComponent(env: Environment) {
         if (logic !is BaseComponent<*>) { //  || logic is LogicTestComponent
             return
         }
-        connector!!.parentState = env.parentState
+        connector!!.pState = env.parentState
         (logic as LogicComponent<CS>).install(env, connector as Connector<CS, State>)
     }
 
@@ -131,48 +131,4 @@ class Dependant<CS : State, PS : State> {
 //        connector!!.parentState = env.parentState
 //        (mLogic as RootAdapter<CS?>).install(env, mConnector)
 //    }
-
-    /**
-     * 显示组件UI
-     */
-    internal fun show() {
-        if (logic is BaseComponent<*>) {
-            (logic as BaseComponent<*>).show()
-        }
-    }
-
-    /**
-     * 隐藏组件UI
-     */
-    internal fun hide() {
-        if (logic is BaseComponent<*>) {
-            (logic as BaseComponent<*>).hide()
-        }
-    }
-
-    /**
-     * 绑定组件UI
-     */
-    internal fun attach() {
-        if (logic is BaseComponent<*>) {
-            (logic as BaseComponent<*>).attach()
-            return
-        }
-//        if (logic is RootAdapter) {
-//            (logic as RootAdapter<BaseComponentState?>).attach()
-//        }
-    }
-
-    /**
-     * 卸载组件UI
-     */
-    internal fun detach() {
-        if (logic is BaseComponent<*>) {
-            (logic as BaseComponent<*>).detach()
-            return
-        }
-//        if (logic is RootAdapter) {
-//            (logic as RootAdapter<BaseComponentState?>).detach()
-//        }
-    }
 }

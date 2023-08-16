@@ -11,7 +11,7 @@ import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.action.InnerActionTypes
 import com.cyworks.redux.dependant.Dependant
-import com.cyworks.redux.dependant.DependentCollect
+import com.cyworks.redux.dependant.DependentCollector
 import com.cyworks.redux.dependant.ExtraDependants
 import com.cyworks.redux.interceptor.InterceptorManager
 import com.cyworks.redux.interceptor.InterceptorPayload
@@ -41,7 +41,7 @@ abstract class LogicPage<S : State>(proxy: LifeCycleProxy) : Logic<S>(proxy.prop
     /**
      * 页面依赖的Feature集合
      */
-    protected var dependencies: DependentCollect<S>? = null
+    protected var dependencies: DependentCollector<S>? = null
 
     /**
      * Effect拦截器，用于实现子组件与子组件间的通信
@@ -73,7 +73,7 @@ abstract class LogicPage<S : State>(proxy: LifeCycleProxy) : Logic<S>(proxy.prop
     private fun initDependencies() {
         // 获取Page对应的依赖集合
         if (dependencies == null) {
-            dependencies = DependentCollect()
+            dependencies = DependentCollector()
         }
         addDependencies(dependencies)
     }
@@ -159,7 +159,7 @@ abstract class LogicPage<S : State>(proxy: LifeCycleProxy) : Logic<S>(proxy.prop
         // 子组件需要从父组件那边继承一些信息
         val env = environment?.let { Environment.copy(it) }
         env?.setParentDispatch(env.dispatchBus!!.pageDispatch!!)
-        env?.setParentState(environment!!.store!!.state)
+        env?.setParentState(environment!!.store!!.copyState())
 
         // 安装子组件
         for (dependant in map.values) {
@@ -226,7 +226,7 @@ abstract class LogicPage<S : State>(proxy: LifeCycleProxy) : Logic<S>(proxy.prop
         // 子组件需要从父组件继承一些信息
         val env = environment?.let { Environment.copy(it) }
         env?.setParentDispatch(env.dispatchBus!!.pageDispatch!!)
-        env?.setParentState(environment!!.store!!.state)
+        env?.setParentState(environment!!.store!!.copyState())
 
         for (key in extraDependants.keys) {
             if (map?.containsKey(key) == true) {
@@ -276,7 +276,7 @@ abstract class LogicPage<S : State>(proxy: LifeCycleProxy) : Logic<S>(proxy.prop
     /**
      * 配置当前页面的Feature(依赖)集合PageDependantCollect，需要外部设置
      */
-    abstract fun addDependencies(collect: DependentCollect<S>?)// sub class can impl
+    abstract fun addDependencies(collect: DependentCollector<S>?)// sub class can impl
 
     @CallSuper
     protected open fun destroy() {}

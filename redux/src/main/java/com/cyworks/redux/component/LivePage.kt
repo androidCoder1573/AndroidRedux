@@ -15,6 +15,7 @@ import com.cyworks.redux.lifecycle.LifeCycleAction
 import com.cyworks.redux.lifecycle.LifeCycleProxy
 import com.cyworks.redux.state.State
 import com.cyworks.redux.store.PageStore
+import com.cyworks.redux.types.Reducer
 import com.cyworks.redux.util.ILogger
 import com.cyworks.redux.util.IPlatform
 import com.cyworks.redux.util.Platform
@@ -110,7 +111,10 @@ abstract class LivePage<S : State> : LogicPage<S> {
         }
 
         lastOrientation = newConfig.orientation
-        environment?.store?.state?.currentOrientation = lastOrientation;
+        context.updateState { state ->
+            state.currentOrientation = lastOrientation
+            state
+        }
     }
 
     /**

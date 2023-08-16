@@ -367,7 +367,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
 
     private fun dispatchToSubComponent(component: LogicComponent<State>?, action: Action<Any>) {
         // 发给组件依赖的子组件
-        val maps: HashMap<String, Dependant<out State, State>>? = component!!.childrenDependant
+        val maps: HashMap<String, Dependant<out State, State>>? = component!!.childrenDepMap
         if (maps != null) {
             for (dependant in maps.values) {
                 val logic: Logic<out State> = dependant.logic
