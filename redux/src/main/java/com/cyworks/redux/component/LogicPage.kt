@@ -40,6 +40,13 @@ abstract class LogicPage<S : State>(proxy: LifeCycleProxy) : Logic<S>(proxy.prop
     private val appBus: DispatchBus = ReduxManager.instance.appBus
 
     /**
+     * 拦截器，用于实现子组件与子组件间的通信
+     */
+    protected var interceptor: Interceptor<S>? = null
+
+    private val interceptorManager: InterceptorManager = InterceptorManager()
+
+    /**
      * 页面依赖的Feature集合
      */
     private var dependencies: DependentCollector<S>? = null
@@ -49,24 +56,12 @@ abstract class LogicPage<S : State>(proxy: LifeCycleProxy) : Logic<S>(proxy.prop
             null
         } else dependencies!!.dependantMap as HashMap<String, Dependant<out State, State>>
 
-    /**
-     * Effect拦截器，用于实现子组件与子组件间的通信
-     */
-    protected var interceptor: Interceptor<S>? = null
-
-    private val interceptorManager: InterceptorManager = InterceptorManager()
-
-    /**
-     * 添加拦截 reducer 的 Middleware，开发这如果需要增加一些中间件拦截Action，可以通过此方法注入
-     */
-    protected val reducerMiddleware: List<Any>?
-        protected get() = null
-
     protected val controller: BaseController<S>?
         protected get() = null
 
     init {
-        environment = Environment.of().setLifeCycleProxy(proxy)
+        environment = Environment.of()
+        environment.lifeCycleProxy  = proxy
         initDependencies()
 
         // 开始添加拦截器
@@ -98,14 +93,14 @@ abstract class LogicPage<S : State>(proxy: LifeCycleProxy) : Logic<S>(proxy.prop
      */
     @CallSuper
     protected open fun onCreate() {
-        // 1、创建Page bus，用于页面内Effect交互
+        // 创建Page bus，用于页面内Effect交互
         createPageBus()
 
-        // 2、初始化Page的Context
+        // 初始化Page的Context
         createContext()
 
-        // 3、安装子组件
-        installDependant()
+        // 安装子组件
+        installSubComponents()
     }
 
     /**
@@ -114,7 +109,7 @@ abstract class LogicPage<S : State>(proxy: LifeCycleProxy) : Logic<S>(proxy.prop
     private fun createPageBus() {
         val bus = DispatchBus()
         bus.attach(appBus)
-        environment!!.setDispatchBus(bus)
+        environment.dispatchBus= bus
     }
 
     /**
@@ -151,28 +146,24 @@ abstract class LogicPage<S : State>(proxy: LifeCycleProxy) : Logic<S>(proxy.prop
      */
     private fun createStore(state: S) {
         val store: PageStore<State> = PageStore(state)
-        environment!!.setStore(store)
+        environment.store = store
     }
 
     /**
      * 安装子组件
      */
-    private fun installDependant() {
+    private fun installSubComponents() {
         val map: HashMap<String, Dependant<out State, S>>? = dependencies?.dependantMap
         if (map.isNullOrEmpty()) {
             return
         }
 
         // 子组件需要从父组件那边继承一些信息
-        val env = environment?.let { Environment.copy(it) }
-        env?.setParentDispatch(env.dispatchBus!!.pageDispatch!!)
-        env?.setParentState(environment!!.store!!.copyState())
+        val env = copyEnvToChild()
 
         // 安装子组件
         for (dependant in map.values) {
-            if (env != null) {
-                dependant.install(env)
-            }
+            dependant.install(env)
         }
     }
 
@@ -206,7 +197,8 @@ abstract class LogicPage<S : State>(proxy: LifeCycleProxy) : Logic<S>(proxy.prop
                     return
                 }
 
-                val extraFeatures: HashMap<String, Dependant<out State, S>>? = (action.payload as ExtraDependants<S>).extra
+                val extraFeatures: HashMap<String, Dependant<out State, S>>? =
+                    (action.payload as ExtraDependants<S>).extra
                 if (extraFeatures.isNullOrEmpty()) {
                     return
                 }
@@ -231,9 +223,7 @@ abstract class LogicPage<S : State>(proxy: LifeCycleProxy) : Logic<S>(proxy.prop
         val map: HashMap<String, Dependant<out State, S>>? = dependencies?.dependantMap
 
         // 子组件需要从父组件继承一些信息
-        val env = environment?.let { Environment.copy(it) }
-        env?.setParentDispatch(env.dispatchBus!!.pageDispatch!!)
-        env?.setParentState(environment!!.store!!.copyState())
+        val env = copyEnvToChild()
 
         for (key in extraDependants.keys) {
             if (map?.containsKey(key) == true) {
@@ -244,10 +234,8 @@ abstract class LogicPage<S : State>(proxy: LifeCycleProxy) : Logic<S>(proxy.prop
             val dependant: Dependant<out State, S>? = extraDependants[key]
             if (dependant != null) {
                 map?.set(key, dependant)
-                if (env != null) {
-                    // 安装子组件
-                    dependant.install(env)
-                }
+                // 安装子组件
+                dependant.install(env)
             }
         }
 

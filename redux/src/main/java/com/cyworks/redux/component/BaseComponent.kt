@@ -21,7 +21,7 @@ import com.cyworks.redux.util.Platform
 
 data class ComponentProxy<S : State>(
     val childrenDepMap: HashMap<String, Dependant<out State, State>>?,
-    val environment: Environment?,
+    val environment: Environment,
     val token: String,
     val lazyBindUI: Boolean,
     val viewModule: ViewModule<S>,
@@ -77,13 +77,14 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
      * 使用LiveData观察数据，触发UI更新
      */
     fun observeUIData() {
-        if (environment == null || observer == null) {
+        if (observer == null || environment.lifeCycleProxy == null) {
             return
         }
-        environment!!.lifeCycleProxy!!.lifecycleOwner?.let { liveData?.observe(it, observer!!) }
+
+        environment.lifeCycleProxy!!.lifecycleOwner?.let { liveData?.observe(it, observer!!) }
     }
 
-    override fun install(env: Environment?, connector: Connector<S, State>?) {
+    override fun install(env: Environment, connector: Connector<S, State>?) {
         if (uiController.installed) {
             return
         }
@@ -104,13 +105,17 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
 
     @SuppressLint("ResourceType")
     override fun createPlatform(): IPlatform? {
-        val lifeCycleProxy: LifeCycleProxy? = environment?.lifeCycleProxy
-        val platform = lifeCycleProxy?.let { environment!!.rootView?.let { it1 ->
-            Platform(it, it1)
-        } }
-        if (connector != null) {
-            platform?.setStubId(connector!!.viewContainerIdForV, connector!!.viewContainerIdForH)
+        val lifeCycleProxy: LifeCycleProxy? = environment.lifeCycleProxy
+        if (lifeCycleProxy == null || environment.parentView == null) {
+            return null
         }
+
+        val platform = Platform(lifeCycleProxy, environment.parentView!!)
+
+        if (connector != null) {
+            platform.setStubId(connector!!.viewContainerIdForV, connector!!.viewContainerIdForH)
+        }
+
         return platform
     }
 
@@ -127,7 +132,7 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
         observer?.let { liveData?.removeObserver(it) }
         context.destroy()
         uiController.clear()
-        environment = null
+        environment.clear()
     }
 
     override fun onStateMerged(componentState: S) {
@@ -146,17 +151,17 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
     protected open fun onCreate() {
         val time = System.currentTimeMillis()
 
-        // 1、创建Context
+        // 创建Context
         createContext()
         uiController.setReduxContext(context)
 
-        // 2、加载界面
+        // 加载界面
         uiController.createUI()
 
-        // 3、观察数据
+        // 观察数据
         observeUIData()
 
-        // 4、发送onCreate Effect
+        // 发送onCreate Effect
         context.onLifecycle(Action(LifeCycleAction.ACTION_ON_CREATE, null))
 
         // 打印初始化的耗时

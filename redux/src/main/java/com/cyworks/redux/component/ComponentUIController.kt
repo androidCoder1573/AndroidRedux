@@ -234,7 +234,7 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
 
     private fun installComponent(dependant: Dependant<out State, State>) {
         val env = copyEnvironment()
-        dependant.installComponent(env!!)
+        dependant.installComponent(env)
     }
 
     /**
@@ -295,7 +295,7 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
     /**
      * 初始化组件UI，主要是创建UI实例，初始化Adapter，发起发起首次UI更新动作
      */
-    internal fun initUI() {
+    private fun initUI() {
         // Adapter 要先于View初始化，因为创建View的过程中会初始化RecyclerView
         // component.initAdapter()
 
@@ -316,7 +316,7 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
     /**
      * 首次渲染时，对UI更新一次数据
      */
-    internal fun firstUpdate() {
+    private fun firstUpdate() {
         if (currentView == null || isRunFirstUpdate) {
             return
         }
@@ -329,7 +329,7 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
     /**
      * 触发一次全量更新
      */
-    internal fun fullUpdate() {
+    private fun fullUpdate() {
         context.runFullUpdate()
     }
 
@@ -401,7 +401,7 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
      */
     private fun callViewBuilder(): View? {
         try {
-            return innerViewModule.getView(context, proxy.environment?.rootView!!)
+            return innerViewModule.getView(context, proxy.environment.parentView!!)
         } catch (e: Exception) {
             // 这里可能会产生多种异常，比如空指针，重复添加等
             logger.printStackTrace(ILogger.ERROR_TAG, "call view builder fail: ", e)
@@ -453,7 +453,7 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
     /**
      * 每个组件下可能也会挂子组件，通过此方法初始化组件下挂载的子组件
      */
-    fun installSubComponents() {
+    private fun installSubComponents() {
         val map: HashMap<String, Dependant<out State, State>>? = proxy.childrenDepMap
         if (map.isNullOrEmpty()) {
             return
@@ -462,18 +462,15 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
         val env = copyEnvironment()
 
         for (dependant in map.values) {
-            dependant.installComponent(env!!)
+            dependant.installComponent(env)
         }
     }
 
-    private fun copyEnvironment(): Environment? {
-        if (proxy.environment == null) {
-            return null
-        }
-
+    private fun copyEnvironment(): Environment {
         val env = Environment.copy(proxy.environment)
-        env.setParentState(context.state)
-        context.effectDispatch?.let { env.setParentDispatch(it) }
+        env.parentState = context.state
+        env.parentView = currentView
+        env.parentDispatch = context.effectDispatch
         return env
     }
 

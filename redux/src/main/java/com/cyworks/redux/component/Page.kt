@@ -8,10 +8,7 @@ import android.view.View
 import androidx.annotation.CallSuper
 import androidx.annotation.LayoutRes
 import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.OnLifecycleEvent
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.lifecycle.LifeCycleAction
 import com.cyworks.redux.lifecycle.LifeCycleProxy
@@ -30,7 +27,7 @@ import com.cyworks.redux.util.Platform
  * 在横竖屏切换的时候隐藏显示这两块区域即可。
  *
  * 这样需要开发者重写onConfigurationChanged来实现横竖屏切换。
- * todo：目前没有提供基于ViewModel的Store
+ * todo：没有提供基于ViewModel的Store
  *
  * 如何进行切换？
  * [Page.requestOrientationChange] 此方法需要在收到onConfigurationChanged时调用
@@ -45,11 +42,9 @@ abstract class Page<S : State> : LogicPage<S> {
      * 为什么要获取根View？
      * Android的界面要比前端复杂很多，fragment不像Activity可以调用setContentView来添加View，
      * 必须通过onCreateView返回，为了统一体验，做了这个妥协的操作。
-     *
-     * @return Page root view
      */
     val pageRootView: View?
-        get() = if (environment == null) null else environment!!.rootView
+        get() = environment.parentView
 
     /**
      * 构造器，初始化Page，依赖外部传入的Lifecycle代理
@@ -59,7 +54,7 @@ abstract class Page<S : State> : LogicPage<S> {
     constructor(@LayoutRes rootId: Int, proxy: LifeCycleProxy) : super(proxy) {
         val view = proxy.context?.let { bindView(it, rootId) }
         if (view != null) {
-            environment!!.setRootView(view)
+            environment.parentView = view
         }
         init(proxy)
     }
@@ -69,13 +64,14 @@ abstract class Page<S : State> : LogicPage<S> {
      * @param proxy LifeCycleProxy
      */
     constructor(rootView: View?, proxy: LifeCycleProxy) : super(proxy) {
-        environment!!.setRootView(rootView!!)
+        environment.parentView = rootView
         init(proxy)
     }
 
     private fun init(proxy: LifeCycleProxy) {
         if (proxy.context != null) {
-            lastOrientation =proxy.context?.getResources()?.getConfiguration()?.orientation!!
+            val r = (proxy.context)!!.resources
+            lastOrientation = r.configuration.orientation
         }
 
         // 注册生命周期
@@ -88,8 +84,11 @@ abstract class Page<S : State> : LogicPage<S> {
     }
 
     override fun createPlatform(): IPlatform? {
-        val lifeCycleProxy: LifeCycleProxy? = environment?.lifeCycleProxy
-        return lifeCycleProxy?.let { environment?.rootView?.let { it1 -> Platform(it, it1) } }
+        val lifeCycleProxy: LifeCycleProxy? = environment.lifeCycleProxy
+        if (lifeCycleProxy != null && environment.parentView != null) {
+            return Platform(lifeCycleProxy, environment.parentView!!)
+        }
+        return null
     }
 
     override fun onStateDetected(state: S) {
@@ -107,7 +106,7 @@ abstract class Page<S : State> : LogicPage<S> {
      * 外部调用，用于横竖屏切换的时候的一些改变
      */
     fun requestOrientationChange(newConfig: Configuration) {
-        if (newConfig.orientation == lastOrientation || environment == null) {
+        if (newConfig.orientation == lastOrientation) {
             return
         }
 
@@ -125,10 +124,7 @@ abstract class Page<S : State> : LogicPage<S> {
     override fun destroy() {
         super.destroy()
         context.destroy()
-        if (environment != null) {
-            environment!!.clear()
-            environment = null
-        }
+        environment.clear()
     }
 
     public override fun onCreate() {
@@ -139,11 +135,11 @@ abstract class Page<S : State> : LogicPage<S> {
     }
 
     private fun stopUIUpdate() {
-        (environment!!.store as PageStore<S>?)!!.onPageHidden()
+        (environment.store as PageStore<S>?)!!.onPageHidden()
     }
 
     private fun startUIUpdate() {
-        (environment!!.store as PageStore<S>?)!!.onPageVisible()
+        (environment.store as PageStore<S>?)!!.onPageVisible()
     }
 
     /**

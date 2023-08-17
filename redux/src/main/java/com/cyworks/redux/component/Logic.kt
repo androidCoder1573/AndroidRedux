@@ -40,8 +40,7 @@ abstract class Logic<S : State>(b: Bundle?) {
     /**
      * 用于保存从父组件继承下来的属性
      */
-    var environment: Environment? = null
-        protected set
+    internal lateinit var environment: Environment
 
     /**
      * 创建页面时，携带的Bundle参数
@@ -101,10 +100,10 @@ abstract class Logic<S : State>(b: Bundle?) {
         effect = effectCollector.effect
     }
 
-    fun copyEnvironmentToChild(): Environment? {
-        val env = this.environment?.let { Environment.copy(it) }
-        env?.setParentState(context.state)
-        context.effectDispatch?.let { env?.setParentDispatch(it) }
+    fun copyEnvToChild(): Environment {
+        val env = Environment.copy(environment)
+        env.parentState = context.state
+        env.parentDispatch = context.effectDispatch
         return env
     }
 

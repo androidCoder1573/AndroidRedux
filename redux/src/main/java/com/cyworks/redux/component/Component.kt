@@ -29,10 +29,6 @@ abstract class Component<S : State>(lazyBindUI: Boolean) : BaseComponent<S>(lazy
      * @param stateCompare ChangedState 本次变化的state集合
      */
     private fun onDataChangedCB(stateCompare: ChangedState<S>) {
-        if (environment == null) {
-            return
-        }
-
         val props: List<ReactiveProp<Any>> = stateCompare.changedProps
         // 检查属性是否合法
         if (props.isEmpty()) {

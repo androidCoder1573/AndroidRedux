@@ -57,7 +57,7 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
      */
     private var dependencies: DependentCollector<State>? = null
 
-    override val childrenDepMap: HashMap<String, Dependant<out State, State>>?
+    final override val childrenDepMap: HashMap<String, Dependant<out State, State>>?
         get() = if (dependencies == null) {
             null
         } else dependencies!!.dependantMap
@@ -208,7 +208,7 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
      * @param env 组件需要的环境
      * @param connector 父组件的连接器
      */
-    abstract fun install(env: Environment?, connector: Connector<S, State>?)
+    abstract fun install(env: Environment, connector: Connector<S, State>?)
 
     @CallSuper
     override fun clear() {
