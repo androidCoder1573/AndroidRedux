@@ -11,6 +11,7 @@ import com.cyworks.redux.interceptor.InterceptorCollector
 import com.cyworks.redux.interceptor.InterceptorManager
 import com.cyworks.redux.logic.EffectCollector
 import com.cyworks.redux.state.State
+import com.cyworks.redux.state.StateType
 import com.cyworks.redux.store.GlobalStoreSubscribe
 import com.cyworks.redux.types.IPropsChanged
 import com.cyworks.redux.types.IStateChange
@@ -152,25 +153,26 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
     @CallSuper
     protected fun createContext() {
         // 生成初始State
-        val componentState = onCreateState(props)
+        val state = onCreateState(props)
+        state.setStateType(StateType.COMPONENT_TYPE)
 
         // 生成内部的Key映射表
-        componentState.detectField()
+        state.detectField()
 
         // 合并page State以及global State
-        mergeState(componentState) { props ->
+        mergeState(state) { props ->
             if (props != null) {
                 context.onStateChange(props)
             }
         }
 
         // 负责处理额外的事情
-        onStateMerged(componentState)
+        onStateMerged(state)
 
         // 创建Context
         context = ReduxContextBuilder<S>()
             .setLogic(this)
-            .setState(componentState)
+            .setState(state)
             .setOnStateChangeListener(makeStateChangeCB())
             .setPlatform(createPlatform()!!)
             .build()

@@ -27,7 +27,7 @@ class DialogConnector : Connector<DialogState, DemoPageState>() {
         collect.addInterceptor(
             DemoPageActions.sOpenDemoDialog,
             Interceptor<DialogState> { action, ctx ->
-                ctx?.dispatchEffect(Action(DialogActions.sOpenSelf, null))
+                ctx?.dispatcher?.dispatch(Action(DialogActions.sOpenSelf, null))
             })
     }
 }

@@ -3,11 +3,9 @@ package com.cyworks.redux
 import android.os.Looper
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.action.InnerActionTypes
-import com.cyworks.redux.component.LiveDialogComponent
+import com.cyworks.redux.component.DialogComponent
 import com.cyworks.redux.component.Logic
-import com.cyworks.redux.component.LogicComponent
 import com.cyworks.redux.component.LogicPage
-import com.cyworks.redux.dependant.Dependant
 import com.cyworks.redux.dialog.ILRDialog
 import com.cyworks.redux.interceptor.InterceptorPayload
 import com.cyworks.redux.lifecycle.LifeCycleAction
@@ -17,6 +15,7 @@ import com.cyworks.redux.state.StateProxy
 import com.cyworks.redux.store.PageStore
 import com.cyworks.redux.store.StoreObserver
 import com.cyworks.redux.types.Dispatch
+import com.cyworks.redux.types.Dispatcher
 import com.cyworks.redux.types.Dispose
 import com.cyworks.redux.types.IPropsChanged
 import com.cyworks.redux.types.IStateChange
@@ -31,19 +30,18 @@ import com.cyworks.redux.util.IPlatform
  *
  * 为什么将对store的操作封装成context对象？
  * context里主要做了这几件事情：
- * 1、创建Dispatch：包括Effect以及Reducer。
+ * 1、创建Dispatch
  * 2、初始化store观察者，并注入到Store中
  * 3、初始化属性观察者，方便开发者观察组件内某些属性的变化
  * 4、维护一个本组件State的副本，方便进行界面更新
- * 5、维护了平台相关的一些操作，比如权限控制，启动activity等。
  *
- * 通过Context封装的方式，让组件对store的操作更加内聚。
+ * 通过Context封装的方式，让组件对store的操作更加内聚
  */
 class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<S>) {
     /**
      * ReduxContext对应的组件实例
      */
-    private var logic: Logic<S>
+    private var logic: Logic<S>? = null
 
     /**
      * 组件对应的State
@@ -125,13 +123,63 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
                 field = BaseController()
             }
             field!!.setReduxContext(this)
-            initDispatch()
+            initPageDispatch()
         }
+
+    val dispatcher: Dispatcher = object : Dispatcher {
+        override fun dispatch(action: Action<out Any>) {
+            if (isDestroy) {
+                return
+            }
+
+            if (logic != null) {
+                logger.i("Dispatcher", "<${logic!!.javaClass.name}> send effect action, <${action.type}>")
+                val effect = logic?.effect
+                effect?.doAction(action, this@ReduxContext)
+            }
+        }
+
+        override fun dispatchToInterceptor(action: Action<out Any>) {
+            if (isDestroy || environment == null) {
+                return
+            }
+
+            val innerAction = Action(InnerActionTypes.INTERCEPT_ACTION_TYPE,  InterceptorPayload(action))
+            val bus = environment?.dispatchBus
+            bus?.pageDispatch?.dispatch(innerAction)
+            logger.i("Dispatcher","<${logic?.javaClass?.name}> send interceptor action, <${action.type}>")
+        }
+
+        override fun dispatchToParent(action: Action<out Any>) {
+            if (isDestroy) {
+                return
+            }
+
+            logger.i("Dispatcher", "<${logic?.javaClass?.name}> send parent effect action, <${action.type}>")
+            val parentDispatch = environment?.parentDispatch
+            parentDispatch?.dispatch(action)
+        }
+
+        override fun dispatchToAdapterItemComponents(action: Action<out Any>) {}
+
+        override fun dispatchToSubComponents(action: Action<out Any>) {
+            dispatch(action)
+            // 发给组件依赖的子组件
+            if (logic != null) {
+                val maps = logic?.childrenDepMap
+                if (maps != null) {
+                    for (dependant in maps.values) {
+                        val logic = dependant.logic
+                        val ctx = logic.context
+                        ctx.dispatcher.dispatchToSubComponents(action)
+                    }
+                }
+            }
+        }
+    }
 
     /**
      * 如果当前组件存在列表型UI，则可以通过组件实例获取到当前组件列表对应的Adapter
-     *
-     * @return 组件列表对应的实际的Adapter
      */
 //    val rootAdapter: RecyclerView.Adapter<RecyclerView.ViewHolder>?
 //        get() {
@@ -146,11 +194,11 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
 
     init {
         logic = builder.logic
-        environment = logic.environment
+        environment = logic?.environment
         platform = builder.platform
 
         // 初始化Dispatch
-        initDispatch()
+        initPageDispatch()
 
         // 获取组件的初始state
         state = builder.state
@@ -174,26 +222,30 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         injectUIUpdater()
     }
 
-    private fun initDispatch() {
+    private fun initPageDispatch() {
+        if (logic !is LogicPage<*>) {
+            return
+        }
+
+        val bus = this.environment?.dispatchBus
         // 创建负责分发Effect Action的Dispatch
-        effectDispatch = Dispatch { action ->
-            logger.d(ILogger.ACTION_TAG, "effect action is <" + action.type.name + ">,"
-                        + " in <" + logger.javaClass.simpleName.toString() + ">")
-
-            logic.effect?.doAction(action, this)
-            // Interceptor只能由Page来拦截, 拦截时排除自己
-            dispatchToPage(Action(InnerActionTypes.INTERCEPT_ACTION_TYPE,
-                InterceptorPayload(action, effectDispatch)))
+        val pageEffectDispatch = Dispatch { action ->
+            if (action.type == InnerActionTypes.INTERCEPT_ACTION_TYPE) {
+                val realAction = (action.payload as InterceptorPayload).realAction
+                logger.i("redux context",
+                    " <${logic?.javaClass?.name}> send interceptor action, real acton type <${realAction.type}>");
+            }
+            dispatcher.dispatch(action)
         }
 
-        val bus = environment!!.dispatchBus
         // 注册effect dispatch, 用于组件间交互
-        dispatchDispose = bus!!.register(effectDispatch)
-        if (logic is LogicPage<*>) {
-            // 为了防止组件发广播时，其他组件也可以接收此广播，导致组件间通信通过广播来进行。
-            // 规定只有page才能接收广播，因此在此设置整个page的Effect分发状态。
-            bus.setPageEffectDispatch(effectDispatch)
+        if (bus != null) {
+            this.dispatchDispose = bus.register(pageEffectDispatch)
         }
+
+        // 为了防止组件发广播时，其他组件也可以接收此广播，导致组件间通信通过广播来进行。
+        // 规定只有page才能接收广播，因此在此设置整个page的Effect分发状态。
+        bus?.setPageEffectDispatch(pageEffectDispatch);
     }
 
     private fun injectStateGetter() {
@@ -254,14 +306,14 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
             val key = prop.getKey()
             putChangedProp(key, prop)
             logger.d(ILogger.ACTION_TAG, "current changed prop is <" + key + ">"
-                    + "in <" + logic.javaClass.simpleName + ">"
+                    + "in <" + logic?.javaClass?.simpleName + ">"
             )
         }
 
         markNeedUpdate()
 
         // 通知属性订阅者，状态发生了变化
-        logic.propsWatcher.update(state, this)
+        logic?.propsWatcher?.update(state, this)
     }
 
     /**
@@ -312,73 +364,6 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     }
 
     /**
-     * 分发 Effect Action
-     */
-    fun dispatchEffect(action: Action<out Any>) {
-        if (isDestroy || !isStateReady) {
-            return
-        }
-
-        effectDispatch?.dispatch(action)
-    }
-
-    /**
-     * 子组件直接给Page发送action, 只能Effect来接收
-     */
-    fun dispatchToPage(action: Action<Any>) {
-        if (isDestroy || !isStateReady || environment == null) {
-            return
-        }
-        val bus = environment!!.dispatchBus
-        bus!!.pageDispatch!!.dispatch(action)
-    }
-
-    /**
-     * 子组件发action给父组件，只能使用Effect来接收
-     */
-    fun dispatchToParent(action: Action<Any>) {
-        if (isDestroy || !isStateReady || environment == null) {
-            return
-        }
-
-        // 交给父组件的dispatch
-        val parentDispatch: Dispatch? = environment!!.parentDispatch
-        parentDispatch?.dispatch(action)
-    }
-
-    /**
-     * 父组件发action给子组件，只能使用Effect来接收
-     */
-    fun dispatchToChildren(action: Action<Any>) {
-        if (isDestroy || !isStateReady || environment == null) {
-            return
-        }
-
-        val component: LogicComponent<State>? = logic as LogicComponent<State>?
-        dispatchToSubComponent(component, action)
-        // dispatchToAdapter(component, action, payload)
-    }
-
-    private fun dispatchToSubComponent(component: LogicComponent<State>?, action: Action<Any>) {
-        // 发给组件依赖的子组件
-        val maps: HashMap<String, Dependant<out State, State>>? = component!!.childrenDepMap
-        if (maps != null) {
-            for (dependant in maps.values) {
-                val logic: Logic<out State> = dependant.logic
-                logic.context.effectDispatch?.dispatch(action)
-            }
-        }
-    }
-
-//    private fun dispatchToAdapter(component: LogicComponent<State>?, action: Action<Any>) {
-//        val dependant: Dependant<out State, State>? = component!!.adapterDependant
-//        if (dependant != null) {
-//            val logic: Logic<out State> = dependant.logic
-//            logic.context.effectDispatch?.dispatch(action)
-//        }
-//    }
-
-    /**
      * 发送全局广播，本方法在App级别是全局的, 只有page下的Effect才可以处理
      */
     fun broadcast(action: Action<Any>) {
@@ -389,19 +374,9 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     }
 
     /**
-     * 发送页面内广播，仅Page可以发送页面内广播
-     */
-    fun broadcastInPage(action: Action<Any>) {
-        if (environment == null || !stateReady() || logic !is LogicPage<*>) {
-            return
-        }
-        environment!!.dispatchBus!!.dispatch(action)
-    }
-
-    /**
      * 用于组件生命周期响应的方法
      */
-    fun onLifecycle(action: Action<Any>) {
+    internal fun onLifecycle(action: Action<Any>) {
         if (isDestroy || !LifeCycleAction.isLifeCycle(action)) {
             return
         }
@@ -413,7 +388,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
             pendingLifeCycleActionList!!.add(action)
             return
         }
-        dispatchEffect(action)
+        dispatcher.dispatch(action)
     }
 
     /**
@@ -445,8 +420,8 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      * 展示一个对话框组件
      */
     fun showComponentDialog(dialog: ILRDialog?) {
-        if (dialog is LiveDialogComponent<*>) {
-            (dialog as LiveDialogComponent<out State>).showDialog(dialog)
+        if (dialog is DialogComponent<*>) {
+            (dialog as DialogComponent<out State>).showDialog(dialog)
         }
     }
 
@@ -460,7 +435,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         storeObserverDispose?.let { it() }
         uiUpdaterDispose?.let { it() }
         stateGetterDispose?.let { it() }
-        // logic = null
+        logic = null
         environment = null
     }
 }

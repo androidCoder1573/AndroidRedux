@@ -199,6 +199,36 @@ interface IBus : Dispatch {
 }
 
 /**
+ * Action分发器
+ */
+interface Dispatcher {
+    /**
+     * 发送私有action
+     */
+    fun dispatch(action: Action<out Any>)
+
+    /**
+     * 发送全局Action，任意组件都可以拦截此action
+     */
+    fun dispatchToInterceptor(action: Action<out Any>)
+
+    /**
+     * 发送action给自己的父组件
+     */
+    fun dispatchToParent(action: Action<out Any>)
+
+    /**
+     * 发送action给处在Adapter中的item的所有孩子，adapter的顶层item的任意组件都可以发送
+     */
+    fun dispatchToAdapterItemComponents(action: Action<out Any>)
+
+    /**
+     * 发送action给当前组件的子组件，当然也包括自己, 仅限adapter 中的顶层item发送
+     */
+    fun dispatchToSubComponents(action: Action<out Any>)
+}
+
+/**
  * Adapter 统一接口，方便进行类型转换
  */
 interface IAdapter {

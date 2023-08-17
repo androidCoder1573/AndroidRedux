@@ -2,12 +2,10 @@ package com.cyworks.redux.component
 
 import android.annotation.SuppressLint
 import androidx.annotation.CallSuper
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleObserver
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
-import androidx.lifecycle.OnLifecycleEvent
-import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.dependant.Dependant
 import com.cyworks.redux.lifecycle.LifeCycleAction
@@ -27,7 +25,6 @@ data class ComponentProxy<S : State>(
     val token: String,
     val lazyBindUI: Boolean,
     val viewModule: ViewModule<S>,
-    val ctx: ReduxContext<S>
 )
 
 /**
@@ -67,8 +64,7 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
             environment,
             this.javaClass.name,
             lazyBindUI,
-            createViewModule(),
-            context
+            createViewModule()
         )
         uiController = ComponentUIController(componentProxy)
     }
@@ -152,6 +148,7 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
 
         // 1、创建Context
         createContext()
+        uiController.setReduxContext(context)
 
         // 2、加载界面
         uiController.createUI()
@@ -170,43 +167,32 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
     /**
      * Activity生命周期监听，通过这种方式实现组件的生命周期自治
      */
-    private class ComponentLifeCycleObserver(component: BaseComponent<out State>) : LifecycleObserver {
-        /**
-         * 内部持有组件实例
-         */
-        private val component: BaseComponent<out State>
+    private class ComponentLifeCycleObserver(c: BaseComponent<out State>) :
+        DefaultLifecycleObserver {
 
-        init {
-            this.component = component
-        }
+        private val component: BaseComponent<out State> = c
 
-        @OnLifecycleEvent(Lifecycle.Event.ON_CREATE)
-        fun onCreate() {
+        override fun onCreate(owner: LifecycleOwner) {
             component.onCreate()
         }
 
-        @OnLifecycleEvent(Lifecycle.Event.ON_START)
-        fun onStart() {
+        override fun onStart(owner: LifecycleOwner) {
             component.context.onLifecycle(Action(LifeCycleAction.ACTION_ON_START, null))
         }
 
-        @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
-        fun onResume() {
+        override fun onResume(owner: LifecycleOwner) {
             component.context.onLifecycle(Action(LifeCycleAction.ACTION_ON_RESUME, null))
         }
 
-        @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
-        fun onPause() {
+        override fun onPause(owner: LifecycleOwner) {
             component.context.onLifecycle(Action(LifeCycleAction.ACTION_ON_PAUSE, null))
         }
 
-        @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
-        fun onStop() {
+        override fun onStop(owner: LifecycleOwner) {
             component.context.onLifecycle(Action(LifeCycleAction.ACTION_ON_STOP, null))
         }
 
-        @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-        fun onDestroy() {
+        override fun onDestroy(owner: LifecycleOwner) {
             // 这里的调用顺序不能乱
             component.context.onLifecycle(Action(LifeCycleAction.ACTION_ON_DESTROY, null))
             component.clear()

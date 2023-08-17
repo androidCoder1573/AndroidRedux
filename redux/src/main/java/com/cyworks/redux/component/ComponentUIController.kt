@@ -70,6 +70,8 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
 
     private var isRunFirstUpdate = false
 
+    private lateinit var context: ReduxContext<S>
+
     init {
         innerViewModule = object : ViewModule<S> {
             override fun getView(context: ReduxContext<S>, parent: View): View? {
@@ -91,6 +93,10 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
 
         // 运行首次UI更新
         firstUpdate()
+    }
+
+    internal fun setReduxContext(context: ReduxContext<S>) {
+        this.context = context
     }
 
     /**
@@ -314,7 +320,6 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
         if (currentView == null || isRunFirstUpdate) {
             return
         }
-        val context = proxy.ctx
         if (context.stateReady()) {
             isRunFirstUpdate = true
             context.runFirstUpdate()
@@ -325,20 +330,16 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
      * 触发一次全量更新
      */
     internal fun fullUpdate() {
-        val context = proxy.ctx
         context.runFullUpdate()
     }
 
     private fun setShow(show: Boolean) {
         isShow = show
-        val context = proxy.ctx
         context.state.innerSetProp("isShowUI", isShow)
     }
 
     /**
      * 当UI发生可见性/方向变化的时候，发送Action告知用户，进行一些清理操作
-     *
-     * @param type UI变化的类型
      */
     internal fun sendUIChangedAction(type: UIChangedType) {
         val uiChangedBean = UIChangedBean()
@@ -347,8 +348,7 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
         uiChangedBean.partialView = portraitView
         uiChangedBean.landscapeView = landscapeView
         uiChangedBean.uiChangeType = type
-        val context = proxy.ctx
-        context.dispatchEffect(Action(LifeCycleAction.ACTION_ON_UI_CHANGED, uiChangedBean))
+        context.dispatcher.dispatch(Action(LifeCycleAction.ACTION_ON_UI_CHANGED, uiChangedBean))
     }
 
     /**
@@ -400,8 +400,6 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
      * 获取UI组件的View实例
      */
     private fun callViewBuilder(): View? {
-        val context = proxy.ctx
-
         try {
             return innerViewModule.getView(context, proxy.environment?.rootView!!)
         } catch (e: Exception) {
@@ -474,8 +472,8 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
         }
 
         val env = Environment.copy(proxy.environment)
-        env.setParentState(proxy.ctx.state)
-        proxy.ctx.effectDispatch?.let { env.setParentDispatch(it) }
+        env.setParentState(context.state)
+        context.effectDispatch?.let { env.setParentDispatch(it) }
         return env
     }
 

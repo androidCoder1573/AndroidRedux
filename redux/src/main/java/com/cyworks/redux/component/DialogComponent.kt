@@ -17,7 +17,7 @@ import com.cyworks.redux.util.IPlatform
  *
  * @note: 如果对话框本身功能比较复杂，还是建议使用Page来实现, 防止单一组件功能过多。
  */
-abstract class LiveDialogComponent<S : State> : BaseComponent<S>(true) {
+abstract class DialogComponent<S : State> : BaseComponent<S>(true) {
     /**
      * 当前展示的对话框实例,
      * 通过这种方式，框架不需要关心对话框的具体形式(Dialog 或者 FragmentDialog，androidX等)
@@ -33,9 +33,9 @@ abstract class LiveDialogComponent<S : State> : BaseComponent<S>(true) {
         }
 
         override fun onDialogDismiss() {
-            this@LiveDialogComponent.uiController.detach()
+            this@DialogComponent.uiController.detach()
             // UI detach之后再清理，保证安全
-            this@LiveDialogComponent.onDialogDismiss(this@LiveDialogComponent.context)
+            this@DialogComponent.onDialogDismiss(this@DialogComponent.context)
             dialogInstance = null
         }
     }
@@ -122,7 +122,7 @@ abstract class LiveDialogComponent<S : State> : BaseComponent<S>(true) {
         closeDialog()
 
         dialogInstance = dialog
-        this@LiveDialogComponent.uiController.attach()
+        this@DialogComponent.uiController.attach()
 
         dialogInterface?.let { dialogInstance?.setIDialog(it) }
 

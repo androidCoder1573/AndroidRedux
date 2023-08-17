@@ -129,7 +129,7 @@ class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, state: State) {
         // 防止开发者在非Reducer中更新UI属性
         if (stateProxy == null) {
             ReduxManager.instance.logger.e("ReactiveProp",
-                "${this.key} can not use = operate set prop when not in updateState function")
+                "${this.key} can not use = operator set prop when not call updateState function, state is ${state?.javaClass?.name}")
             return false
         }
 

@@ -1,6 +1,5 @@
 package com.cyworks.redux.adapter
 
-import com.cyworks.redux.component.LiveComponent
 import com.cyworks.redux.dependant.Dependant
 import com.cyworks.redux.interceptor.InterceptorManager
 import com.cyworks.redux.state.State

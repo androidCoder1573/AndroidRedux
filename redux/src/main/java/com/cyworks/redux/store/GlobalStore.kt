@@ -4,6 +4,7 @@ import com.cyworks.redux.action.Action
 import com.cyworks.redux.logic.EffectCollector
 import com.cyworks.redux.state.State
 import com.cyworks.redux.state.StateProxy
+import com.cyworks.redux.state.StateType
 import com.cyworks.redux.types.CreateGlobalState
 import com.cyworks.redux.types.Effect
 import com.cyworks.redux.types.Reducer
@@ -24,11 +25,12 @@ abstract class GlobalStore<S : State> : Store<S> {
 
     constructor()
 
-    public constructor(creator: CreateGlobalState<S>) : this() {
+    constructor(creator: CreateGlobalState<S>) : this() {
         val effectCollector: EffectCollector<S> = EffectCollector()
         addEffects(effectCollector)
         effect = effectCollector.effect
         state = creator.create()
+        state.setStateType(StateType.GLOBAL_TYPE)
         state.detectField()
     }
 

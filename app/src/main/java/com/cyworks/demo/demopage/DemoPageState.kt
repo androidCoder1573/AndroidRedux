@@ -3,9 +3,9 @@ package com.cyworks.demo.demopage
 import com.cyworks.redux.state.State
 
 class DemoPageState : State() {
-    var num: Int by this.ReactUIData<Int>(1)
+    var num: Int by this.ReactUIData(1)
 
-    var goodInfo: GoodInfo? by this.ReactUIData<GoodInfo?>(null)
+    var goodInfo: GoodInfo? by this.ReactUIData(null)
 }
 
 fun demoPageStateInit(): DemoPageState {

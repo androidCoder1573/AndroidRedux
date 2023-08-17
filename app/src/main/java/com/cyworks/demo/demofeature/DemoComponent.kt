@@ -1,11 +1,11 @@
 package com.cyworks.demo.demofeature
 
 import android.os.Bundle
-import com.cyworks.redux.component.LiveComponent
+import com.cyworks.redux.component.Component
 import com.cyworks.redux.logic.LogicModule
 import com.cyworks.redux.ui.ViewModule
 
-class DemoComponent(lazyBindUI: Boolean) : LiveComponent<DemoFeatureState>(lazyBindUI) {
+class DemoComponent(lazyBindUI: Boolean) : Component<DemoFeatureState>(lazyBindUI) {
     override fun createViewModule(): ViewModule<DemoFeatureState> {
         return DemoViewModule()
     }

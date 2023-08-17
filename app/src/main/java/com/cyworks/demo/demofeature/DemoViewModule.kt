@@ -44,7 +44,7 @@ class DemoViewModule : ViewModule<DemoFeatureState> {
 
     private fun initView(view: View?, context: ReduxContext<DemoFeatureState>) {
         view?.findViewById<View>(R.id.demo_launcher_dialog)?.setOnClickListener { v: View? ->
-            context.dispatchEffect(DemoPageActions.createOpenDemoDialogAction(true))
+            context.dispatcher.dispatch(DemoPageActions.createOpenDemoDialogAction(true))
         }
 
         view?.findViewById<View>(R.id.component_bt)?.setOnClickListener { v: View? ->

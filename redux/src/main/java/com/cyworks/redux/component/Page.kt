@@ -7,8 +7,10 @@ import android.view.LayoutInflater
 import android.view.View
 import androidx.annotation.CallSuper
 import androidx.annotation.LayoutRes
+import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.OnLifecycleEvent
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.lifecycle.LifeCycleAction
@@ -31,9 +33,9 @@ import com.cyworks.redux.util.Platform
  * todo：目前没有提供基于ViewModel的Store
  *
  * 如何进行切换？
- * [LivePage.requestOrientationChange] 此方法需要在收到onConfigurationChanged时调用
+ * [Page.requestOrientationChange] 此方法需要在收到onConfigurationChanged时调用
  */
-abstract class LivePage<S : State> : LogicPage<S> {
+abstract class Page<S : State> : LogicPage<S> {
     /**
      * 保存当前屏幕配置，旋转屏幕专用
      */
@@ -147,46 +149,33 @@ abstract class LivePage<S : State> : LogicPage<S> {
     /**
      * 生命周期观察者
      */
-    private class PageLifecycleObserver constructor(p: LivePage<out State>) : LifecycleObserver {
-        /**
-         * 关联页面实例
-         */
-        private val page: LivePage<out State>
+    private class PageLifecycleObserver constructor(p: Page<out State>) : DefaultLifecycleObserver {
+        private val page: Page<out State> = p
 
-        init {
-            page = p
-        }
-
-        @OnLifecycleEvent(Lifecycle.Event.ON_CREATE)
-        fun onCreate() {
+        override fun onCreate(owner: LifecycleOwner) {
             page.onCreate()
             page.context.onLifecycle(Action(LifeCycleAction.ACTION_ON_CREATE, null))
         }
 
-        @OnLifecycleEvent(Lifecycle.Event.ON_START)
-        fun onStart() {
+        override fun onStart(owner: LifecycleOwner) {
             page.context.onLifecycle(Action(LifeCycleAction.ACTION_ON_START, null))
         }
 
-        @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
-        fun onResume() {
+        override fun onResume(owner: LifecycleOwner) {
             page.startUIUpdate()
             page.context.onLifecycle(Action(LifeCycleAction.ACTION_ON_RESUME, null))
         }
 
-        @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
-        fun onPause() {
+        override fun onPause(owner: LifecycleOwner) {
             page.context.onLifecycle(Action(LifeCycleAction.ACTION_ON_PAUSE, null))
         }
 
-        @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
-        fun onStop() {
+        override fun onStop(owner: LifecycleOwner) {
             page.stopUIUpdate()
             page.context.onLifecycle(Action(LifeCycleAction.ACTION_ON_STOP, null))
         }
 
-        @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-        fun onDestroy() {
+        override fun onDestroy(owner: LifecycleOwner) {
             page.context.onLifecycle(Action(LifeCycleAction.ACTION_ON_DESTROY, null))
             page.destroy()
         }

@@ -1,11 +1,11 @@
 package com.cyworks.demo.dialogfeature
 
 import android.os.Bundle
-import com.cyworks.redux.component.LiveDialogComponent
+import com.cyworks.redux.component.DialogComponent
 import com.cyworks.redux.logic.LogicModule
 import com.cyworks.redux.ui.ViewModule
 
-class DemoDialogComponent : LiveDialogComponent<DialogState>() {
+class DemoDialogComponent : DialogComponent<DialogState>() {
     override fun createViewModule(): ViewModule<DialogState> {
         return DialogViewModule()
     }

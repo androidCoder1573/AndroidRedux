@@ -18,6 +18,7 @@ import com.cyworks.redux.interceptor.InterceptorPayload
 import com.cyworks.redux.lifecycle.LifeCycleProxy
 import com.cyworks.redux.logic.EffectCollector
 import com.cyworks.redux.state.State
+import com.cyworks.redux.state.StateType
 import com.cyworks.redux.store.PageStore
 import com.cyworks.redux.types.Effect
 import com.cyworks.redux.types.Interceptor
@@ -122,6 +123,7 @@ abstract class LogicPage<S : State>(proxy: LifeCycleProxy) : Logic<S>(proxy.prop
     private fun createContext() {
         // 1、生成state
         val state = onCreateState(props)
+        state.setStateType(StateType.PAGE_TYPE)
 
         // 生成Key映射表
         state.detectField()

@@ -86,6 +86,16 @@ abstract class State {
     var isShowUI: Boolean by ReactUIData(true)
 
     /**
+     * 是否调用了detect函数进行key-value映射
+     */
+    private var calledDetect: Boolean = false
+
+    /**
+     * 标记哪些属性需要排除
+     */
+    private val excludePropMap = HashMap<String, Int>()
+
+    /**
      * 获取组件私有数据变化的情况, 在子组件的reducer执行完成后调用，仅限框架内部使用。
      */
     internal val privatePropChanged: List<ReactiveProp<Any>>?
@@ -112,6 +122,24 @@ abstract class State {
         get() = if (stateProxy != null) {
             stateProxy!!.isChanged
         } else false
+
+    init {
+        excludePropMap["excludePropMap"] = 1
+        excludePropMap["dataMap"] = 1
+        excludePropMap["propertyMap"] = 1
+        excludePropMap["depGlobalStateMap"] = 1
+        excludePropMap["stateProxy"] = 1
+        excludePropMap["stateHasMerged"] = 1
+        excludePropMap["isMergingState"] = 1
+        excludePropMap["depState"] = 1
+        excludePropMap["curDepPropKey"] = 1
+        excludePropMap["stateType"] = 1
+        excludePropMap["logger"] = 1
+        excludePropMap["calledDetect"] = 1
+        excludePropMap["privatePropChanged"] = 1
+        excludePropMap["publicPropChanged"] = 1
+        excludePropMap["isChanged"] = 1
+    }
 
     /**
      * 当子组件依赖父组件的属性时，通过此方法设置父组件的state，方便自组件进行属性依赖
@@ -158,8 +186,20 @@ abstract class State {
     }
 
     internal fun detectField() {
-        this::class.memberProperties.forEach {
-            it.getter.call()
+        if (calledDetect) {
+            return
+        }
+        calledDetect = true
+
+        val kClass = this.javaClass.kotlin
+        kClass.memberProperties.forEach {
+            if (!excludePropMap.containsKey(it.name)) {
+                try {
+                    it.getter.call(this@State)
+                } catch (e: Throwable) {
+                    logger.e("state detect", "${e.cause}")
+                }
+            }
         }
     }
 
@@ -269,12 +309,12 @@ abstract class State {
     open inner class ReactLogicData<V : Any?>(initialValue: V) : ReadWriteProperty<Any?, V> {
         protected var value = initialValue
 
-        private fun checkDataMap(key: String, value: Any, set: PropertySet<V>) {
+        private fun checkDataMap(key: String, value: V, set: PropertySet<V>) {
             if (dataMap[key] == null) {
                 propertyMap[key] = set as PropertySet<Any>
                 val prop = ReactiveProp(value, false, this@State)
                 prop.setKey(key)
-                dataMap[key] = prop
+                dataMap[key] = prop as ReactiveProp<Any>
             }
         }
 
@@ -284,7 +324,7 @@ abstract class State {
         override fun getValue(thisRef: Any?, property: KProperty<*>): V {
             val key = property.name
             curDepPropKey = key
-            checkDataMap(key, value as Any) {
+            checkDataMap(key, value) {
                 value = it
             }
             return value
@@ -295,7 +335,7 @@ abstract class State {
          */
         override fun setValue(thisRef: Any?, property: KProperty<*>, value: V) {
             val name = property.name
-            checkDataMap(name, this.value as Any) {
+            checkDataMap(name, this.value) {
                 this.value = it
             }
 
@@ -309,7 +349,7 @@ abstract class State {
                 return
             }
 
-            if (prop?.canSet(value as Any, stateProxy) == true) {
+            if (!calledDetect || prop?.canSet(value as Any, stateProxy) == true) {
                 this.value = value
             }
         }
