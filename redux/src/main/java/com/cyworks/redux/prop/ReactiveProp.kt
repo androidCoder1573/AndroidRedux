@@ -125,23 +125,24 @@ class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, state: State) {
         this.value = value
     }
 
-    internal fun canSet(value: T, stateProxy: StateProxy?): Boolean {
+    internal fun canSet(value: T): Boolean {
         // 防止开发者在非Reducer中更新UI属性
         if (stateProxy == null) {
             ReduxManager.instance.logger.e("ReactiveProp",
-                "${this.key} can not use = operator set prop when not call updateState function, state is ${state?.javaClass?.name}")
+                "${this.key} can not use = operator set prop" +
+                        " when not call updateState function, state is ${state?.javaClass?.name}")
             return false
         }
 
         // 组件在修改state prop过程中, 不能改全局store的属性
-        if (parent!!.fromType == PropFromType.FROM_GLOBAL_STORE) {
+        if (parent != null && parent!!.fromType == PropFromType.FROM_GLOBAL_STORE) {
             ReduxManager.instance.logger.e("ReactiveProp",
                 "component can not change global state prop!")
             return false
         }
 
         // 记录哪些数据变更了
-        stateProxy.recordChangedProp(this as ReactiveProp<Any>)
+        stateProxy?.recordChangedProp(this as ReactiveProp<Any>)
         this.value = value
 
         return true

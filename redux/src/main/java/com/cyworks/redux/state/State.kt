@@ -16,7 +16,7 @@ enum class StateType {
 }
 
 /**
- * 状态基类，state中只有用[Reactive]委托的属性才有响应式
+ * 状态基类，state中只有委托的属性才有响应式
  */
 abstract class State {
     /**
@@ -176,12 +176,12 @@ abstract class State {
      * 在reducer中，state具有更新能力，可以修改属性，
      * 而在其他场景，应该只能读取state中的属性，不能再对其进行修改了。
      *
-     * @param stateProxy [StateProxy]
+     * @param proxy [StateProxy]
      */
-    internal fun setStateProxy(stateProxy: StateProxy?) {
-        this.stateProxy = stateProxy
+    internal fun setStateProxy(proxy: StateProxy?) {
+        stateProxy = proxy
         for (prop in dataMap.values) {
-            prop.setStateProxy(stateProxy)
+            prop.setStateProxy(proxy)
         }
     }
 
@@ -193,11 +193,11 @@ abstract class State {
 
         val kClass = this.javaClass.kotlin
         kClass.memberProperties.forEach {
-            if (!excludePropMap.containsKey(it.name)) {
+            if (!excludePropMap.containsKey(it.name) && !dataMap.containsKey(it.name)) {
                 try {
                     it.getter.call(this@State)
                 } catch (e: Throwable) {
-                    logger.e("state detect", "${e.cause}")
+                    logger.w("state detect", "${e.cause}")
                 }
             }
         }
@@ -349,7 +349,7 @@ abstract class State {
                 return
             }
 
-            if (!calledDetect || prop?.canSet(value as Any, stateProxy) == true) {
+            if (!calledDetect || prop?.canSet(value as Any) == true) {
                 this.value = value
             }
         }

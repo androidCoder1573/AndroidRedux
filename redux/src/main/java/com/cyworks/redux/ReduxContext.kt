@@ -47,7 +47,13 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      * 组件对应的State
      */
     var state: S
-        get() = State.copyState(field) // 返回的State不具备修改通知能力
+        get() {
+            if (isModifyState) {
+                return field
+            }
+            // 返回的State不具备修改通知能力
+            return State.copyState(field)
+        }
         private set
 
     /**
@@ -98,15 +104,14 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
 
     private val logger: ILogger = ReduxManager.instance.logger
 
-    /**
-     * 是否销毁了
-     */
     private var isDestroy = false
 
     /**
      * 是否检测状态完成
      */
     @Volatile private var isStateReady = false
+
+    private var isModifyState = false
 
     /**
      * 存放因为异步操作而被挂起的action
@@ -276,9 +281,6 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         }
     }
 
-    /**
-     * 当开发者不使用action的时候，本方法用于更新State
-     */
     fun updateState(reducer: Reducer<S>) {
         if (Looper.getMainLooper() == Looper.myLooper()) {
             innerUpdateState(reducer)
@@ -288,13 +290,19 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     }
 
     private fun innerUpdateState(reducer: Reducer<S>) {
+        isModifyState = true
         state.setStateProxy(StateProxy())
-        val newState: S = reducer.update(state) ?: return
+
+        val newState: S = reducer.update(state)
 
         // 获取私有属性变化，并本地更新
         val privateProps = newState.privatePropChanged
         privateProps?.let { onStateChange(it) }
+        // 公共属性
         environment!!.store!!.onStateChanged(newState)
+
+        state.setStateProxy(null)
+        isModifyState = false
     }
 
     /**
