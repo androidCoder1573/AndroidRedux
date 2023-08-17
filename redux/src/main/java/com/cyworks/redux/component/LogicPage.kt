@@ -167,6 +167,8 @@ abstract class LogicPage<S : State>(proxy: LifeCycleProxy) : Logic<S>(proxy.prop
         }
     }
 
+    protected abstract fun copyEnvToChild(): Environment
+
     final override fun checkEffect(effectCollector: EffectCollector<S>?) {
         effectCollector?.remove(InnerActionTypes.INTERCEPT_ACTION_TYPE)
         effectCollector?.remove(InnerActionTypes.INSTALL_EXTRA_FEATURE_ACTION_TYPE)

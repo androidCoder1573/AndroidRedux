@@ -21,7 +21,6 @@ import com.cyworks.redux.util.Platform
 
 data class ComponentProxy<S : State>(
     val childrenDepMap: HashMap<String, Dependant<out State, State>>?,
-    val environment: Environment,
     val token: String,
     val lazyBindUI: Boolean,
     val viewModule: ViewModule<S>,
@@ -44,6 +43,11 @@ data class ComponentProxy<S : State>(
  */
 abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>(null) {
     /**
+     * 组件是否bind到父组件上
+     */
+    protected var installed: Boolean = false
+
+    /**
      * 使用LiveData包裹变更的状态数据，防止因为生命周期导致界面异常
      */
     var liveData: MutableLiveData<ChangedState<S>>? = null
@@ -61,7 +65,6 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
     init {
         val componentProxy = ComponentProxy(
             childrenDepMap,
-            environment,
             this.javaClass.name,
             lazyBindUI,
             createViewModule()
@@ -70,7 +73,7 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
     }
 
     fun isInstalled(): Boolean {
-        return uiController.installed
+        return installed
     }
 
     /**
@@ -85,17 +88,17 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
     }
 
     override fun install(env: Environment, connector: Connector<S, State>?) {
-        if (uiController.installed) {
+        if (installed) {
             return
         }
-        uiController.installed = true
+        installed = true
 
         this.connector = connector
         environment = env
+        uiController.setReduxEnv(environment)
 
-        // 获取启动参数
         // todo 都从统一的地方拿启动参数是否合理
-        val lifeCycleProxy: LifeCycleProxy? = environment!!.lifeCycleProxy
+        val lifeCycleProxy: LifeCycleProxy? = environment.lifeCycleProxy
         props = lifeCycleProxy?.props
 
         // 添加生命周期观察
@@ -106,11 +109,12 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
     @SuppressLint("ResourceType")
     override fun createPlatform(): IPlatform? {
         val lifeCycleProxy: LifeCycleProxy? = environment.lifeCycleProxy
-        if (lifeCycleProxy == null || environment.parentView == null) {
+        if (lifeCycleProxy == null) {
+            logger.e("base component", "createPlatform: lifeCycleProxy is null")
             return null
         }
 
-        val platform = Platform(lifeCycleProxy, environment.parentView!!)
+        val platform = Platform(lifeCycleProxy, environment.parentView)
 
         if (connector != null) {
             platform.setStubId(connector!!.viewContainerIdForV, connector!!.viewContainerIdForH)

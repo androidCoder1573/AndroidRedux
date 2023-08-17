@@ -44,7 +44,7 @@ class ReduxAdapter<PS: State> {
      */
     fun buildItem(index: Int, type: String, data: Any): View {
         val depend = dependantList.buildDependant<State>(index, type, data)
-        this.copyEnvironmentToSub()?.let { depend.install(it) }
+        this.copyEnvToSub()?.let { depend.install(it) }
         val component = depend.logic
 //        if (component !is AdapterItemComponent) {
 //            throw RuntimeException("list item must be a AdapterItemComponent")
@@ -63,10 +63,10 @@ class ReduxAdapter<PS: State> {
         return this.dependantList.getListItemType(index)
     }
 
-    fun copyEnvironmentToSub(): Environment? {
+    fun copyEnvToSub(): Environment? {
         val env = this.env?.let { Environment.copy(it) }
-        context?.state?.let { env?.setParentState(it) }
-        context?.effectDispatch?.let { env?.setParentDispatch(it) }
+        context?.state?.let { env?.parentState = it }
+        context?.effectDispatch?.let { env?.parentDispatch = it }
         // 代表当前组件运行在列表中
         // env.setIsInAdapter(true)
         return env

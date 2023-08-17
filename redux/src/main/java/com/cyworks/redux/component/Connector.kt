@@ -11,8 +11,6 @@ import com.cyworks.redux.types.StateGetter
  * 1、负责依赖PageState中的数据
  * 2、负责将子组件的Reducer生成SubReducer
  *
- *
- *
  * S：当前组件的State类型；
  * PS：父组件的State类型；
  */
@@ -41,7 +39,7 @@ abstract class Connector<CS : State, PS : State> {
      */
     abstract val viewContainerIdForH: Int
 
-    private var interceptCollector: InterceptorCollector<CS>? = null
+    private var collector: InterceptorCollector<CS>? = null
 
     fun setParentState(parentState: State) {
         this.pState = parentState
@@ -52,14 +50,12 @@ abstract class Connector<CS : State, PS : State> {
     }
 
     fun injectChildContextWrapper(wrapper: ComponentContextWrapper<CS>) {
-        interceptCollector = InterceptorCollector(wrapper)
-        if (interceptCollector != null) {
-            interceptorCollector(interceptCollector!!)
-        }
+        collector = InterceptorCollector(wrapper)
+        interceptorCollector(collector!!)
     }
 
     fun getInterceptorCollector(): InterceptorCollector<CS>? {
-        return interceptCollector
+        return collector
     }
 
     /**

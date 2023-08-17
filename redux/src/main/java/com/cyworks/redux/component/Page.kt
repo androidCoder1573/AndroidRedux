@@ -14,6 +14,7 @@ import com.cyworks.redux.lifecycle.LifeCycleAction
 import com.cyworks.redux.lifecycle.LifeCycleProxy
 import com.cyworks.redux.state.State
 import com.cyworks.redux.store.PageStore
+import com.cyworks.redux.util.Environment
 import com.cyworks.redux.util.ILogger
 import com.cyworks.redux.util.IPlatform
 import com.cyworks.redux.util.Platform
@@ -54,6 +55,7 @@ abstract class Page<S : State> : LogicPage<S> {
     constructor(@LayoutRes rootId: Int, proxy: LifeCycleProxy) : super(proxy) {
         val view = proxy.context?.let { bindView(it, rootId) }
         if (view != null) {
+            logger.i("Page", "page create view success")
             environment.parentView = view
         }
         init(proxy)
@@ -83,10 +85,18 @@ abstract class Page<S : State> : LogicPage<S> {
         proxy.lifecycle?.addObserver(PageLifecycleObserver(this))
     }
 
-    override fun createPlatform(): IPlatform? {
+    final override fun copyEnvToChild(): Environment {
+        val env = Environment.copy(environment)
+        env.parentState = context.state
+        env.parentDispatch = context.effectDispatch
+        env.parentView = environment.parentView
+        return env
+    }
+
+    final override fun createPlatform(): IPlatform? {
         val lifeCycleProxy: LifeCycleProxy? = environment.lifeCycleProxy
-        if (lifeCycleProxy != null && environment.parentView != null) {
-            return Platform(lifeCycleProxy, environment.parentView!!)
+        if (lifeCycleProxy != null) {
+            return Platform(lifeCycleProxy, environment.parentView)
         }
         return null
     }

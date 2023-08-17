@@ -17,7 +17,7 @@ import com.cyworks.redux.util.ILogger
 
 
 /**
- * Desc: Page以及Component的基类，封装组件和页面的公共逻辑，一个组件可能会有多个子组件。
+ * Page以及Component的基类，封装组件和页面的公共逻辑，一个组件可能会有多个子组件。
  *
  * 关于一些逻辑对象的初始化问题：
  * 如果需要一些跟view相关的对象，比如：滚动事件监听等，我们可以在ViewBuilder中初始化View，然后
@@ -47,9 +47,6 @@ abstract class Logic<S : State>(b: Bundle?) {
      */
     protected var props: Bundle? = b
 
-    /**
-     * Log 组件，组件内共享
-     */
     protected val logger: ILogger = ReduxManager.instance.logger
 
     /**
@@ -98,13 +95,6 @@ abstract class Logic<S : State>(b: Bundle?) {
         // 检查Effect的注册, 并注入一些框架内部的Action
         checkEffect(effectCollector)
         effect = effectCollector.effect
-    }
-
-    fun copyEnvToChild(): Environment {
-        val env = Environment.copy(environment)
-        env.parentState = context.state
-        env.parentDispatch = context.effectDispatch
-        return env
     }
 
     fun addPendingInterceptor(bean: InterceptorBean<S>) {

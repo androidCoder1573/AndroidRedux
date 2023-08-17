@@ -13,7 +13,7 @@ import com.cyworks.redux.lifecycle.LifeCycleProxy
 /**
  * 框架内部实现的IPlatform，借助ReduxContext实现
  */
-class Platform(proxy: LifeCycleProxy, root: View) : IPlatform {
+class Platform(proxy: LifeCycleProxy, root: View?) : IPlatform {
     /**
      * 生命周期代理
      */
@@ -21,10 +21,10 @@ class Platform(proxy: LifeCycleProxy, root: View) : IPlatform {
 
     private val root: View?
 
-    override var viewContainerIdForV = 0
+    override var viewContainerIdForV = -1
         private set
 
-    override var viewContainerIdForH = 0
+    override var viewContainerIdForH = -1
         private set
 
     override val context: Context?

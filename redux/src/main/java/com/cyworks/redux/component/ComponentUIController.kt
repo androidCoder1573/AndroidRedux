@@ -24,11 +24,6 @@ import com.cyworks.redux.util.ILogger
  */
 class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
     /**
-     * 组件是否bind到父组件上
-     */
-    internal var installed: Boolean = false
-
-    /**
      * 当前组件的UI界面是否显示
      * 如果是延迟加载，表明初始状态时不加载UI, 后续由开发者自己控制加载时机
      */
@@ -71,6 +66,7 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
     private var isRunFirstUpdate = false
 
     private lateinit var context: ReduxContext<S>
+    private lateinit var environment: Environment
 
     init {
         innerViewModule = object : ViewModule<S> {
@@ -97,6 +93,10 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
 
     internal fun setReduxContext(context: ReduxContext<S>) {
         this.context = context
+    }
+
+    internal fun setReduxEnv(env: Environment) {
+        this.environment = env
     }
 
     /**
@@ -401,7 +401,7 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
      */
     private fun callViewBuilder(): View? {
         try {
-            return innerViewModule.getView(context, proxy.environment.parentView!!)
+            return innerViewModule.getView(context, environment.parentView!!)
         } catch (e: Exception) {
             // 这里可能会产生多种异常，比如空指针，重复添加等
             logger.printStackTrace(ILogger.ERROR_TAG, "call view builder fail: ", e)
@@ -467,7 +467,7 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
     }
 
     private fun copyEnvironment(): Environment {
-        val env = Environment.copy(proxy.environment)
+        val env = Environment.copy(environment)
         env.parentState = context.state
         env.parentView = currentView
         env.parentDispatch = context.effectDispatch

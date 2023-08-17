@@ -48,14 +48,9 @@ abstract class DialogComponent<S : State> : BaseComponent<S>(true) {
 
     /**
      * UI 数据变化时的回调
-     *
      * @param stateCompare ChangedState
      */
     private fun onDataChangedCB(stateCompare: ChangedState<S>) {
-        if (environment == null) {
-            return
-        }
-
         val props: List<ReactiveProp<Any>> = stateCompare.changedProps
         // 检查属性是否合法
         if (props.isEmpty()) {

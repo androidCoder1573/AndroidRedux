@@ -16,19 +16,16 @@ import com.cyworks.redux.permission.PermissionCallback
 interface IPlatform {
     /**
      * 获取运行的Context，对应的是Application Context
-     * @return Context
      */
     val context: Context?
 
     /**
      * 返回宿主Activity
-     * @return Activity实例
      */
     val activity: Activity?
 
     /**
      * 获取竖直状态下的View的占坑或者布局id
-     * @return id int
      */
     val viewContainerIdForV: Int
 
