@@ -67,7 +67,7 @@ abstract class Component<S : State>(lazyBindUI: Boolean) : BaseComponent<S>(lazy
      */
     private fun visibilityChanged(propKeys: ArrayList<String>): Boolean {
         val show: Boolean = context.state.isShowUI
-        if (!propKeys.contains("show_ui")) {
+        if (!propKeys.contains("isShowUI")) {
             // 当前变化的属性不包含可见性变化的属性
             return false
         }

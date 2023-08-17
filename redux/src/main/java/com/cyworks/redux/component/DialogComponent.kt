@@ -117,7 +117,7 @@ abstract class DialogComponent<S : State> : BaseComponent<S>(true) {
         closeDialog()
 
         dialogInstance = dialog
-        this@DialogComponent.uiController.attach()
+        uiController.attach()
 
         dialogInterface?.let { dialogInstance?.setIDialog(it) }
 
