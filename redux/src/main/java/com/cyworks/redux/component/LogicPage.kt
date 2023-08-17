@@ -199,7 +199,7 @@ abstract class LogicPage<S : State>(proxy: LifeCycleProxy) : Logic<S>(proxy.prop
     private fun makeInstallExtraFeatureEffect(): Effect<S> {
         // 安装额外的子组件的Effect
         val effect: Effect<S> = object : Effect<S> {
-            override fun doAction(action: Action<Any>, ctx: ReduxContext<S>?) {
+            override fun doAction(action: Action<out Any>, ctx: ReduxContext<S>?) {
                 if (action.payload !is ExtraDependants<*>) {
                     return
                 }

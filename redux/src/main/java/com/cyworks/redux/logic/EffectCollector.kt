@@ -23,7 +23,7 @@ class EffectCollector<S : State> {
     private val functions = HashMap<ActionType, Effect<S>>()
 
     private val innerEffect = Effect { action, ctx ->
-        doAction(action, ctx)
+        doAction(action as Action<Any>, ctx)
     }
 
     /**

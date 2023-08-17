@@ -56,7 +56,7 @@ fun interface Effect<S: State> {
      * @param action Action
      * @param ctx 当前Feature的context
      */
-    fun doAction(action: Action<Any>, ctx: ReduxContext<S>?)
+    fun doAction(action: Action<out Any>, ctx: ReduxContext<S>?)
 }
 
 /**
@@ -165,7 +165,7 @@ typealias IPrivatePropsChanged = (props: List<ReactiveProp<Any>>) -> Unit
  * Action 分发器接口
  */
 fun interface Dispatch {
-    fun dispatch(action: Action<Any>)
+    fun dispatch(action: Action<out Any>)
 }
 
 /**

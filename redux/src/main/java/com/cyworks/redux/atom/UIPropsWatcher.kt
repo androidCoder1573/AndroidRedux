@@ -26,7 +26,7 @@ class UIPropsWatcher<S : State> {
      *
      * @param state 当前最新的State
      */
-    fun update(state: S, holder: ComponentViewHolder?) {
+    internal fun update(state: S, holder: ComponentViewHolder?) {
         for (atom in atomList) {
             atom.doAtomChange(state, holder)
         }

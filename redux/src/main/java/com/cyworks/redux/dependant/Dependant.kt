@@ -96,6 +96,12 @@ class Dependant<CS : State, PS : State> {
             override fun interceptorCollector(collect: InterceptorCollector<CS>) {
                 // do nothing
             }
+
+            override val viewContainerIdForV: Int
+                get() = -1
+
+            override val viewContainerIdForH: Int
+                get() = -1
         }
     }
 

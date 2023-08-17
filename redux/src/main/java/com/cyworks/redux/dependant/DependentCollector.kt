@@ -30,7 +30,7 @@ class DependentCollector<PS : State> {
 //            rootAdapterDependant = dependant
 //        }
 
-    val dependantMap: HashMap<String, Dependant<out State, PS>>?
+    internal val dependantMap: HashMap<String, Dependant<out State, PS>>?
         get() = dependants
 
     /**

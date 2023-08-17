@@ -78,12 +78,12 @@ abstract class State {
     /**
      * 页面内部默认的属性，表示当前的横竖屏状态
      */
-    var currentOrientation: Int by ReactUIProp(Configuration.ORIENTATION_PORTRAIT)
+    var currentOrientation: Int by ReactUIData(Configuration.ORIENTATION_PORTRAIT)
 
     /**
      * 组件内部默认的属性，表示当前是否需要懒加载，此属性定位为私有属性
      */
-    var isShowUI: Boolean by ReactUIProp(true)
+    var isShowUI: Boolean by ReactUIData(true)
 
     /**
      * 获取组件私有数据变化的情况, 在子组件的reducer执行完成后调用，仅限框架内部使用。
@@ -243,7 +243,7 @@ abstract class State {
         return dataMap[key]
     }
 
-    inner class ReactUIProp<V : Any?>(initialValue: V) : ReactLogicProp<V>(initialValue) {
+    inner class ReactUIData<V : Any?>(initialValue: V) : ReactLogicData<V>(initialValue) {
         private fun checkDataMap(key: String, value: Any, set: PropertySet<V>) {
             if (dataMap[key] == null) {
                 propertyMap[key] = set as PropertySet<Any>
@@ -266,7 +266,7 @@ abstract class State {
     /**
      * 内部类，用于实现响应式属性的委托
      */
-    open inner class ReactLogicProp<V : Any?>(initialValue: V) : ReadWriteProperty<Any?, V> {
+    open inner class ReactLogicData<V : Any?>(initialValue: V) : ReadWriteProperty<Any?, V> {
         protected var value = initialValue
 
         private fun checkDataMap(key: String, value: Any, set: PropertySet<V>) {

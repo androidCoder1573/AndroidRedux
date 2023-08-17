@@ -314,14 +314,12 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     /**
      * 分发 Effect Action
      */
-    fun dispatchEffect(action: Action<Any>?) {
+    fun dispatchEffect(action: Action<out Any>) {
         if (isDestroy || !isStateReady) {
             return
         }
 
-        if (action != null) {
-            effectDispatch?.dispatch(action)
-        }
+        effectDispatch?.dispatch(action)
     }
 
     /**

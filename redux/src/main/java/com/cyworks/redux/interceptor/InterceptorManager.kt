@@ -17,7 +17,7 @@ class InterceptorManager {
     val adapters = ArrayList<ReduxAdapter<State>>()
 
     private val interceptor: Interceptor<State> = Interceptor { action, ctx ->
-        doActionInner(action)
+        doActionInner(action as Action<Any>)
     }
 
     fun addInterceptorEx(collector: InterceptorCollector<State>): ArrayList<Dispose>? {
@@ -27,13 +27,13 @@ class InterceptorManager {
         }
 
         val disposeList = ArrayList<Dispose>()
-        for (action in map.keys) {
-            val bean = map[action] ?: continue
+        for (type in map.keys) {
+            val bean = map[type] ?: continue
 
-            var list = this.funcMap[action.type]
+            var list = this.funcMap[type]
             if (list == null) {
                 list = ArrayList()
-                this.funcMap[action.type] = list
+                this.funcMap[type] = list
             }
 
             list.add(bean)

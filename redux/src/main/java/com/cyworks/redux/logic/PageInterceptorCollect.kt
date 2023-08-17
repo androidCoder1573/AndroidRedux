@@ -9,8 +9,8 @@ import com.cyworks.redux.types.Interceptor
 class PageInterceptorCollect<S : State> {
     private val functions: HashMap<ActionType, Interceptor<S>> = HashMap()
 
-    private val pageInterceptor: Interceptor<S> = Interceptor<S> { action, ctx ->
-        this.doAction(action, ctx)
+    private val pageInterceptor: Interceptor<S> = Interceptor { action, ctx ->
+        this.doAction(action as Action<Any>, ctx)
     }
 
     /**

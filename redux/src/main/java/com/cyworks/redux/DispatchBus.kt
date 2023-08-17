@@ -104,8 +104,8 @@ class DispatchBus internal constructor() : IBus {
         }
     }
 
-    override fun dispatch(action: Action<Any>) {
-        dispatch(action, null)
+    override fun dispatch(action: Action<out Any>) {
+        dispatch(action as Action<Any>, null)
     }
 
     internal fun dispatch(action: Action<Any>, exclude: Dispatch?) {

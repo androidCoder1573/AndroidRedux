@@ -32,16 +32,14 @@ abstract class Connector<CS : State, PS : State> {
      *
      * @return int
      */
-    val viewContainerIdForV: Int
-        get() = -1
+    abstract val viewContainerIdForV: Int
 
     /**
      * 通过此接口获取View的占坑id或者对话框这类的布局id
      *
      * @return int
      */
-    val viewContainerIdForH: Int
-        get() = -1
+    abstract val viewContainerIdForH: Int
 
     private var interceptCollector: InterceptorCollector<CS>? = null
 
