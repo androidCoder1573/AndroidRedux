@@ -1,6 +1,7 @@
 package com.cyworks.redux.state
 
 import android.content.res.Configuration
+import android.util.Log
 import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.prop.ReactiveProp
 import com.cyworks.redux.types.PropertySet
@@ -261,6 +262,7 @@ abstract class State {
 
     private fun depProp(curProp: ReactiveProp<Any>) {
         if (!isMergingState || stateHasMerged || depState == null) {
+            logger.e("State", "this step can not dep the prop from parent")
             return
         }
 
@@ -268,8 +270,10 @@ abstract class State {
         if (parentReactiveProp != null) {
             // 执行依赖
             if (parentReactiveProp.myStateIsGlobalState()) {
+                logger.i("State", "dep global prop")
                 curProp.depGlobalProp(parentReactiveProp)
             } else {
+                logger.i("State", "dep upper prop")
                 curProp.depUpperComponentProp(parentReactiveProp)
             }
         } else {
@@ -279,27 +283,54 @@ abstract class State {
     }
 
      private fun findProp(): ReactiveProp<Any>? {
-        val key = curDepPropKey
-        return dataMap[key]
+        return dataMap[curDepPropKey]
     }
 
-    inner class ReactUIData<V : Any?>(initialValue: V) : ReactLogicData<V>(initialValue) {
-        private fun checkDataMap(key: String, value: Any, set: PropertySet<V>) {
+    inner class ReactUIData<V : Any?>(initialValue: V) : ReadWriteProperty<Any?, V> {
+        private var value = initialValue
+
+        private fun checkDataMap(key: String, value: V, set: PropertySet<V>) {
             if (dataMap[key] == null) {
                 propertyMap[key] = set as PropertySet<Any>
+                logger.w("State", "create ui ReactiveProp ${key}")
                 val prop = ReactiveProp(value, true, this@State)
                 prop.setKey(key)
-                dataMap[key] = prop
+                dataMap[key] = prop as ReactiveProp<Any>
             }
         }
 
         override fun getValue(thisRef: Any?, property: KProperty<*>): V {
             val key = property.name
             curDepPropKey = key
-            checkDataMap(key, value as Any) {
+            checkDataMap(key, value) {
                 value = it
             }
             return value
+        }
+
+        /**
+         * 设置属性的值，，首次设置的时候要设置依赖关系
+         */
+        override fun setValue(thisRef: Any?, property: KProperty<*>, value: V) {
+            val name = property.name
+            checkDataMap(name, this.value) {
+                this.value = it
+            }
+
+            val prop = dataMap[name]
+            if ((stateType == StateType.COMPONENT_TYPE) && isMergingState && !stateHasMerged) {
+                if (prop != null) {
+                    Log.e("state", "start dep prop: $name")
+                    depProp(prop)
+                }
+
+                this.value = value
+                return
+            }
+
+            if (!calledDetect || prop?.canSet(value as Any) == true) {
+                this.value = value
+            }
         }
     }
 
@@ -307,7 +338,7 @@ abstract class State {
      * 内部类，用于实现响应式属性的委托
      */
     open inner class ReactLogicData<V : Any?>(initialValue: V) : ReadWriteProperty<Any?, V> {
-        protected var value = initialValue
+        private var value = initialValue
 
         private fun checkDataMap(key: String, value: V, set: PropertySet<V>) {
             if (dataMap[key] == null) {
@@ -342,6 +373,7 @@ abstract class State {
             val prop = dataMap[name]
             if ((stateType == StateType.COMPONENT_TYPE) && isMergingState && !stateHasMerged) {
                 if (prop != null) {
+                    Log.e("state", "start dep prop: $name")
                     depProp(prop)
                 }
 

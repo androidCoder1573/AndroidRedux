@@ -86,7 +86,6 @@ open class Store<S : State>  {
      * 为了防止外部随意监听store变化，控制了仅限框架内部调用
      *
      * @param observer [StoreObserver] 监听器
-     * @return IDispose 返回一个解除器，方便组件detach的时候进行删除
      */
     @MainThread
     internal fun observe(observer: StoreObserver?): Dispose? {
@@ -145,7 +144,7 @@ open class Store<S : State>  {
      * @return 组件变化的属性列表
      */
     private fun checkChangeList(changeList: List<ReactiveProp<Any>>, token: String): List<ReactiveProp<Any>> {
-        val tempList: MutableList<ReactiveProp<Any>> = ArrayList()
+        val tempList: ArrayList<ReactiveProp<Any>> = ArrayList()
         changeList.forEach {
             // 如果组件的属性就在当前变化的列表里，直接加入
             if (it.token == token) {

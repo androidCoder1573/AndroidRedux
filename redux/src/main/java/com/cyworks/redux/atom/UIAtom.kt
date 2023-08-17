@@ -20,7 +20,7 @@ class UIAtom<S : State> : Atom<S>() {
             return
         }
 
-        val isChanged = isEqual(changedProps, watchedProps)
+        val isChanged = !isEqual(changedProps, watchedProps)
         if (isChanged) {
             val oldDeps = watchedProps
             watchedProps = changedProps

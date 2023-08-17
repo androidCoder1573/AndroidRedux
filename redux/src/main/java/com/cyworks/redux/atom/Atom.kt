@@ -22,9 +22,9 @@ abstract class Atom<S : State> {
         this.dep = dep
     }
 
-    fun isEqual(first: Array<Any>?, second: Array<Any>?): Boolean {
+    protected fun isEqual(first: Array<Any>?, second: Array<Any>?): Boolean {
         if (first == null || second == null) {
-            return false;
+            return false
         }
 
         if (first.size != second.size) {

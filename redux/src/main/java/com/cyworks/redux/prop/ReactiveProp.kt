@@ -1,5 +1,6 @@
 package com.cyworks.redux.prop
 
+import android.util.Log
 import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.state.State
 import com.cyworks.redux.state.StateProxy
@@ -24,8 +25,8 @@ enum class PropFromType {
  * 如果更新的公开数据，则通过store在全局更新。
  *
  * 为什么不直接在ReactiveProp中通知每个关联属性更新?
- * 如果类似LiveData的方式更新，将导致UI频繁刷新，因为一个数据对应一块UI，假设一次Reducer更新了10个数据，
- * 将会调用UI更新callback 10次，性能上会有一定的损耗。
+ * 如果类似LiveData的方式更新，将导致UI频繁刷新，
+ * 假设一次Reducer更新了10个数据，将会调用UI更新callback 10次，性能上会有一定的损耗。
  */
 class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, state: State) {
     /**
@@ -154,7 +155,7 @@ class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, state: State) {
      * @param prop 要依赖的属性
      */
     internal fun depUpperComponentProp(prop: ReactiveProp<T>) {
-        if (this.parent !== null) {
+        if (this.parent != null) {
             return
         }
 
@@ -168,7 +169,7 @@ class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, state: State) {
         }
 
         // 这里直接使用最终的parent，中间parent就不需要管了
-        this.setParent(rootParent, PropFromType.FROM_UPPER_COMPONENT)
+        setParent(rootParent, PropFromType.FROM_UPPER_COMPONENT)
     }
 
     /**
@@ -261,11 +262,13 @@ class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, state: State) {
     }
 
     private fun setParent(prop: ReactiveProp<T>, type: PropFromType) {
+        Log.i("react prop", "setParent")
         dispose = prop.addChild(this)
 
         // 如果当前依赖的是全局store，则将当前state的token写入全局store中，方便后续快速查找
         if (type == PropFromType.FROM_GLOBAL_STORE) {
-            prop.state?.addDepGlobalState(token)
+            Log.i("react prop", "setParent FROM_GLOBAL_STORE ${prop.state?.hashCode()?.toString() ?: ""}")
+            prop.state?.addDepGlobalState(prop.state?.hashCode()?.toString() ?: "")
         }
 
         parent = ReactivePropParent(prop)

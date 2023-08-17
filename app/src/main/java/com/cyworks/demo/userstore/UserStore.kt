@@ -1,5 +1,7 @@
 package com.cyworks.demo.userstore
 
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import com.cyworks.redux.store.GlobalStore
 import com.cyworks.redux.types.CreateGlobalState
@@ -37,7 +39,8 @@ class UserStore private constructor() {
                     Log.e("InterruptedException: ", ie.message!!)
                     currentThread().interrupt()
                 }
-                modifyUserName(name)
+
+                Handler(Looper.getMainLooper()).post { modifyUserName(name) }
             }
         }.start()
     }

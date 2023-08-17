@@ -1,11 +1,13 @@
 package com.cyworks.redux.store
 
+import android.util.Log
 import com.cyworks.redux.state.State
 import com.cyworks.redux.types.Dispose
 import com.cyworks.redux.types.IPropsChanged
 
 /**
  * 全局Store观察器，会在初始化时收集全局store中的数据并绑定观察者。
+ * todo 当单个组件移除的时候，要主动删除listener
  */
 class GlobalStoreSubscribe<CS : State> internal constructor(callback: IPropsChanged, s: CS) {
     /**
@@ -49,9 +51,12 @@ class GlobalStoreSubscribe<CS : State> internal constructor(callback: IPropsChan
         for (store in globalStoreBinderMap.keys) {
             val iBind = globalStoreBinderMap[store] ?: continue
             val globalStoreState = store.copyState()
+            state.setParentState(globalStoreState)
             iBind.combine(state, globalStoreState)
-            val token: String = state.javaClass.name
+            val token: String = globalStoreState.hashCode().toString()
+            Log.e("aaaaaa", "1 dep global store, $token")
             if (globalStoreState.isDependGlobalState(token)) {
+                Log.e("aaaaaa", "2 dep global store, $token")
                 batchStoreObserver(store, token)
             }
         }
@@ -66,6 +71,7 @@ class GlobalStoreSubscribe<CS : State> internal constructor(callback: IPropsChan
         if (store == null || token == null) {
             return
         }
+        Log.e("aaaaaa", "set observer to global store, $token")
         val dispose: Dispose? = store.observe(StoreObserver(token, cb))
         if (dispose != null) {
             disposeList.add(dispose)

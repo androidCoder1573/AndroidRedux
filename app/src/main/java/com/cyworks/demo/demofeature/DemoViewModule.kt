@@ -4,10 +4,10 @@ import android.content.res.Configuration
 import android.view.View
 import android.widget.TextView
 import com.cyworks.R
-import com.cyworks.redux.ReduxContext
-import com.cyworks.redux.atom.UIPropsWatcher
 import com.cyworks.demo.publicactions.DemoPageActions
 import com.cyworks.demo.userstore.UserStore
+import com.cyworks.redux.ReduxContext
+import com.cyworks.redux.atom.UIPropsWatcher
 import com.cyworks.redux.types.DepProps
 import com.cyworks.redux.types.OnUIAtomChanged
 import com.cyworks.redux.ui.ViewModule
@@ -49,9 +49,8 @@ class DemoViewModule : ViewModule<DemoFeatureState> {
 
         view?.findViewById<View>(R.id.component_bt)?.setOnClickListener { v: View? ->
             context.updateState { state ->
-                val control = AddControl()
-                control.increase = true
-                state.controll = control
+                val before = state.num
+                state.num = before + 1
                 state
             }
         }

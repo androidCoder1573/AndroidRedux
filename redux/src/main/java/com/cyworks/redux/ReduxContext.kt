@@ -272,6 +272,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         // 接收Vsync信号，优化刷新性能
         uiUpdaterDispose = (store as PageStore<State>).addUIUpdater {
             if (pendingChangedProps != null && pendingChangedProps!!.isNotEmpty()) {
+                // todo 可优化
                 val props: List<ReactiveProp<Any>> = ArrayList(
                     pendingChangedProps!!.values
                 )
