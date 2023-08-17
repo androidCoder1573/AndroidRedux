@@ -74,6 +74,11 @@ abstract class Logic<S : State>(b: Bundle?) {
     }
 
     /**
+     * 获取依赖的子组件集合
+     */
+    internal abstract val childrenDepMap: HashMap<String, Dependant<out State, State>>?
+
+    /**
      * 初始Effect以及一些依赖
      */
     init {
@@ -139,14 +144,6 @@ abstract class Logic<S : State>(b: Bundle?) {
 
     /**
      * LogicModule，用户主动设置
-     * @return LogicModule
      */
     abstract fun createLogicModule(): LogicModule<S>?
-
-    /**
-     * 获取依赖的子组件集合
-     *
-     * @return Map 子组件集合
-     */
-    abstract fun getChildrenDependant(): Map<String, Dependant<State, S>>?
 }

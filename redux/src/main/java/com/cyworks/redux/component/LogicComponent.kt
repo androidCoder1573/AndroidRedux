@@ -54,14 +54,9 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
     /**
      * 组件的依赖的子组件的集合
      */
-    var dependencies: DependentCollector<State>? = null
+    private var dependencies: DependentCollector<State>? = null
 
-    /**
-     * 获取依赖的子组件集合
-     *
-     * @return Map 子组件集合
-     */
-    val childrenDepMap: HashMap<String, Dependant<out State, State>>?
+    override val childrenDepMap: HashMap<String, Dependant<out State, State>>?
         get() = if (dependencies == null) {
             null
         } else dependencies!!.dependantMap
@@ -96,10 +91,7 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
      * @param state 当前组件的State
      */
     private fun mergeState(state: S, cb: IPropsChanged) {
-        val parentState = connector?.pState
-        if (parentState == null) {
-            return
-        }
+        val parentState = connector?.pState ?: return
 
         // 标记开始merge
         state.startMergeState()
@@ -134,7 +126,7 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
 //            this.adapterDispose = manager.addAdapter(this.adapter as ReduxAdapter<State>)
 //        }
 
-        val map = this.dependencies?.dependantMap
+        val map = dependencies?.dependantMap
         if (map != null) {
             for (d in map.values) {
                 d.mergeInterceptor(manager)

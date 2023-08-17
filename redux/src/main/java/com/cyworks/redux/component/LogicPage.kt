@@ -36,24 +36,27 @@ abstract class LogicPage<S : State>(proxy: LifeCycleProxy) : Logic<S>(proxy.prop
     /**
      * 当前App级别的Effect Bus
      */
-    protected val appBus: DispatchBus = ReduxManager.instance.appBus
+    private val appBus: DispatchBus = ReduxManager.instance.appBus
 
     /**
      * 页面依赖的Feature集合
      */
-    protected var dependencies: DependentCollector<S>? = null
+    private var dependencies: DependentCollector<S>? = null
+
+    override val childrenDepMap: HashMap<String, Dependant<out State, State>>?
+        get() = if (dependencies == null) {
+            null
+        } else dependencies!!.dependantMap as HashMap<String, Dependant<out State, State>>
 
     /**
      * Effect拦截器，用于实现子组件与子组件间的通信
      */
     protected var interceptor: Interceptor<S>? = null
 
-    protected val interceptorManager: InterceptorManager = InterceptorManager()
+    private val interceptorManager: InterceptorManager = InterceptorManager()
 
     /**
      * 添加拦截 reducer 的 Middleware，开发这如果需要增加一些中间件拦截Action，可以通过此方法注入
-     *
-     * @return 中间件列表
      */
     protected val reducerMiddleware: List<Any>?
         protected get() = null
