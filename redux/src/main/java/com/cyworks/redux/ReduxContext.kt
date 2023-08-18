@@ -322,7 +322,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
             )
         }
 
-        markNeedUpdate()
+        requestVsync()
 
         // 通知属性订阅者，状态发生了变化
         logic?.propsWatcher?.update(state, this)
@@ -339,7 +339,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
                 putChangedProp(key, reactiveProp)
             }
         }
-        markNeedUpdate()
+        requestVsync()
     }
 
     /**
@@ -351,7 +351,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
             val prop = map[key]
             prop?.let { putChangedProp(key, it) }
         }
-        markNeedUpdate()
+        requestVsync()
     }
 
     private fun putChangedProp(key: String?, reactiveProp: ReactiveProp<Any>) {
@@ -364,10 +364,13 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         }
     }
 
-    private fun markNeedUpdate() {
+    /**
+     * 当私有属性变化时/全局store属性变化时/本地局部刷新时，需要主动请求vsync
+     */
+    private fun requestVsync() {
         val need = pendingChangedProps != null && pendingChangedProps!!.isNotEmpty()
         if (environment?.store is PageStore<*> && need) {
-            (environment!!.store as PageStore<*>).markNeedUpdate()
+            (environment!!.store as PageStore<*>).requestVsync()
         }
     }
 

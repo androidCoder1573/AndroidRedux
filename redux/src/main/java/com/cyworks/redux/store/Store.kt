@@ -12,7 +12,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.reflect.jvm.internal.impl.load.kotlin.JvmType
 
 /**
- * Desc: 定义一个android-redux Store，本质上是一个状态容器（有限状态，无限状态 [...items]）
+ * 定义一个android-redux Store，本质上是一个状态容器（有限状态，无限状态 [...items]）
  *
  * Redux三原则：
  * 1、单一数据源 --- 一个页面对应一个Store；
@@ -29,7 +29,8 @@ import kotlin.reflect.jvm.internal.impl.load.kotlin.JvmType
  * 2、无法知道哪些状态发生了更新；
  *
  * Android-Redux如何解决这两个问题呢？
- * 1、针对state过大，Android-redux通过状态分治将状态分散在各个组件中，而且提供了组件级别的私有状态(没有被以来的属性默认是私有的，不会影响其他组件)
+ * 1、针对state过大，Android-redux通过状态分治将状态分散在各个组件中，
+ * 而且提供了组件级别的私有状态(没有被以来的属性默认是私有的，不会影响其他组件)
  * 2、针对状态更新时无法确知哪些状态发生变化，live-redux提供了状态精准更新的能力；
  *
  * 为什么终端上的Redux需要精准更新界面？

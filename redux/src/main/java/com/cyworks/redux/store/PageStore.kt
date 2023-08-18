@@ -1,7 +1,5 @@
 package com.cyworks.redux.store
 
-import android.view.Choreographer
-import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.prop.ReactiveProp
 import com.cyworks.redux.state.State
 import com.cyworks.redux.types.Dispose
@@ -20,11 +18,6 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
      * 保存UI更新listener
      */
     private val uiUpdaterListeners = CopyOnWriteArrayList<UIFrameUpdater>()
-
-    /**
-     * 是否正在修改State，用于规定刷新时机
-     */
-    private var isModifyState = false
 
     /**
      * 注册的观察者列表，用于分发store的变化
@@ -49,33 +42,18 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
      */
     @Volatile private var isThreadRun = true
 
-    /**
-     * 是否需要运行UI更新，在Vsync回调中判断
-     */
-    private var isNeedUpdate = false
-
     private val uiFresher: UIFresher
 
     private val onDraw: UIFresher.DrawCallback = object : UIFresher.DrawCallback {
-        override fun onDraw() {
+        override fun onDraw():  Boolean {
             // 没有UI监听器，或者UI未展示，或者处于销毁状态，则不进行Ui更新
             if (isDestroy || !isPageVisible || uiUpdaterListeners.isEmpty()) {
-                return
-            }
-
-            // 如果当前正在修改state
-            if (isModifyState) {
-                // 通知再一次刷新
-                return
-            }
-
-            if (!isNeedUpdate) {
-                return
+                return false
             }
 
             isUIUpdateRun = true
             semaphore.release()
-            fireUpdateUI()
+            return fireUpdateUI()
         }
     }
 
@@ -132,7 +110,6 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
             }
             uiUpdater.onNewFrameCome()
         }
-        isNeedUpdate = false
         return false
     }
 
@@ -162,12 +139,8 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
         return { uiUpdaterListeners.remove(uiUpdater) }
     }
 
-    internal fun markNeedUpdate() {
-        if (isNeedUpdate) {
-            // 解决vsync到来时时，isNeedUpdate被设置成true导致部分界面无法及时更新
-            ReduxManager.instance.submitInMainThread { isNeedUpdate = true }
-        }
-        isNeedUpdate = true
+    internal fun requestVsync() {
+        uiFresher.requestNextDraw()
     }
 
     /**
@@ -208,9 +181,9 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
 
         // 通知更新
         if (finalList.isNotEmpty()) {
-            uiFresher.requestNextDraw()
             // 通知组件进行状态更新
             notifySubs(finalList)
+            uiFresher.requestNextDraw()
         }
 
         logger.d(ILogger.PERF_TAG,
