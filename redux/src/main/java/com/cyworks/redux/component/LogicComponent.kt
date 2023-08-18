@@ -115,6 +115,7 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
         state.endMergeState()
     }
 
+    @Suppress("UNCHECKED_CAST")
     override fun mergeInterceptor(manager: InterceptorManager, selfDep: Dependant<S, State>) {
         interceptorManager = manager
 
@@ -154,7 +155,7 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
     protected fun createContext() {
         // 生成初始State
         val state = onCreateState(props)
-        state.setStateType(StateType.COMPONENT_TYPE)
+        state.stateType = StateType.COMPONENT_TYPE
 
         // 生成内部的Key映射表
         state.detectField()

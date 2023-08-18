@@ -1,6 +1,7 @@
 package com.cyworks.demo.demofeature
 
 import android.content.res.Configuration
+import android.util.Log
 import android.view.View
 import android.widget.TextView
 import com.cyworks.R
@@ -48,6 +49,7 @@ class DemoViewModule : ViewModule<DemoFeatureState> {
         }
 
         view?.findViewById<View>(R.id.component_bt)?.setOnClickListener { v: View? ->
+            Log.d("demo feature: ", "call updateState modify num")
             context.updateState { state ->
                 val before = state.num
                 state.num = before + 1

@@ -30,7 +30,7 @@ abstract class GlobalStore<S : State> : Store<S> {
         addEffects(effectCollector)
         effect = effectCollector.effect
         state = creator.create()
-        state.setStateType(StateType.GLOBAL_TYPE)
+        state.stateType = StateType.GLOBAL_TYPE
         state.detectField()
     }
 

@@ -1,5 +1,6 @@
 package com.cyworks.demo.dialogfeature
 
+import android.util.Log
 import android.view.View
 import android.widget.TextView
 import com.cyworks.R
@@ -26,12 +27,11 @@ class DialogViewModule : ViewModule<DialogState> {
         val v = View.inflate(context.platform.activity, R.layout.dialog_component_layout, null)
         v.findViewById<View>(R.id.dialog_set_local_text).setOnClickListener { v1: View? ->
             val next: Int = context.state.localNum + 1
-            context.updateState(object : Reducer<DialogState> {
-                override fun update(state: DialogState): DialogState {
-                    state.localNum = next
-                    return state
-                }
-            })
+            Log.d("demo dialog: ", "call updateState modify localNum")
+            context.updateState { state ->
+                state.localNum = next
+                state
+            }
         }
         return v
     }

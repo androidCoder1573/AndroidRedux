@@ -32,7 +32,7 @@ class DispatchBus internal constructor() : IBus {
      * 初始化依赖列表，为了防止事件关系混乱，这个创建过程由框架来维护
      */
     init {
-        childList = ArrayList<Dispatch>()
+        childList = ArrayList()
     }
 
     override fun register(dispatch: Dispatch?): Dispose? {
@@ -104,6 +104,7 @@ class DispatchBus internal constructor() : IBus {
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
     override fun dispatch(action: Action<out Any>) {
         dispatch(action as Action<Any>, null)
     }

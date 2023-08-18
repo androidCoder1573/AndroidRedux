@@ -17,6 +17,8 @@ class DemoFeatureLogic : LogicModule<DemoFeatureState> {
                         Log.e("InterruptedException: ", ie.message!!)
                         currentThread().interrupt()
                     }
+
+                    Log.d("demo feature: ", "call updateState modify isShowUI")
                     ctx?.updateState { state ->
                         state.isShowUI = true
                         state

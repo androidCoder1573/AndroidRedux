@@ -22,10 +22,10 @@ class DemoComponentConnector : Connector<DemoFeatureState, DemoPageState>() {
     }
 
     override fun dependGlobalState(watcher: GlobalStoreSubscribe<DemoFeatureState>) {
-        watcher.subscribe(UserStore.instance.store, object : GlobalStoreSubscribe.ICombineGlobalState<DemoFeatureState> {
+        watcher.subscribe(UserStore.instance.store, object : GlobalStoreSubscribe.ICombineGlobalState<DemoFeatureState, UserState> {
             override fun combine(
                 childState: DemoFeatureState,
-                globalState: State
+                globalState: UserState
             ) {
                 val gState = globalState as UserState
                 childState.age = gState.age

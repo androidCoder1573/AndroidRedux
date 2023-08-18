@@ -9,6 +9,9 @@ import com.cyworks.redux.interceptor.InterceptorBean
 import com.cyworks.redux.prop.ReactiveProp
 import com.cyworks.redux.ui.ComponentViewHolder
 
+/**
+ * 使用这个赋值函数不会造成变化收集
+ */
 typealias PropertySet<T> = (value: T) -> Unit
 
 /**

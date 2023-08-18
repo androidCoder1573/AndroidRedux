@@ -6,7 +6,7 @@ import com.cyworks.redux.logic.LogicModule
 
 class DialogLogicModule : LogicModule<DialogState> {
     override fun addLocalEffects(collect: EffectCollector<DialogState>) {
-        collect.add(DialogActions.sOpenSelf) { action, ctx -> ctx?.showComponentDialog(ComponentDialogFragment()) }
+        collect.add(DialogActions.sOpenSelf) { action, ctx -> ctx?.platform?.showComponentDialog(ComponentDialogFragment()) }
     }
 
     override fun subscribeProps(state: DialogState, watcher: StatePropsWatcher<DialogState>) {}

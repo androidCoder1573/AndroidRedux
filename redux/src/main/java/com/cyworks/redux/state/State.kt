@@ -9,6 +9,7 @@ import com.cyworks.redux.util.ILogger
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 import kotlin.reflect.full.memberProperties
+import kotlin.reflect.jvm.internal.impl.load.kotlin.JvmType
 
 enum class StateType {
     PAGE_TYPE,
@@ -39,7 +40,7 @@ abstract class State {
      * key: 依赖状态对应的类名；
      * value: 如果有则写入1；
      */
-    private val depGlobalStateMap = HashMap<String, Int>()
+    private val depGlobalStateMap = HashMap<JvmType.Object, Int>()
 
     /**
      * state代理，主要用于当State中某些属性变化时记录这些属性的变化，方便后续处理
@@ -69,7 +70,7 @@ abstract class State {
     /**
      * 当前state的类型，用于后续属性依赖的来源
      */
-    private var stateType: StateType? = null
+    internal var stateType: StateType? = null
 
     /**
      * Log 组件，组件内共享
@@ -95,6 +96,11 @@ abstract class State {
      * 标记哪些属性需要排除
      */
     private val excludePropMap = HashMap<String, Int>()
+
+    /**
+     * 当前state的token，用于标记一个state
+     */
+    internal val token: JvmType.Object = JvmType.Object("${System.currentTimeMillis()}")
 
     /**
      * 获取组件私有数据变化的情况, 在子组件的reducer执行完成后调用，仅限框架内部使用。
@@ -140,6 +146,7 @@ abstract class State {
         excludePropMap["privatePropChanged"] = 1
         excludePropMap["publicPropChanged"] = 1
         excludePropMap["isChanged"] = 1
+        excludePropMap["token"] = 1
     }
 
     /**
@@ -157,17 +164,6 @@ abstract class State {
         isMergingState = false
         stateHasMerged = true
         depState = null
-    }
-
-    /**
-     * 设置当前State的类型，会在组件的onCreateState之后设置，框架内调用
-     */
-    internal fun setStateType(type: StateType) {
-        stateType = type
-    }
-
-    internal fun getStateType(): StateType? {
-        return stateType
     }
 
     /**
@@ -194,37 +190,40 @@ abstract class State {
 
         val kClass = this.javaClass.kotlin
         kClass.memberProperties.forEach {
-            if (!excludePropMap.containsKey(it.name) && !dataMap.containsKey(it.name)) {
+            if (!excludePropMap.containsKey(it.name) && !dataMap.containsKey(it.name) && !it.isAbstract) {
+                // it.isAccessible = true
                 try {
                     it.getter.call(this@State)
                 } catch (e: Throwable) {
                     logger.w("state detect", "${e.cause}")
                 }
+                // it.isAccessible = true
             }
         }
+        excludePropMap.clear()
     }
 
     /**
      * 当某个属性对外有依赖时，依赖的父属性发生更新时，此时需要更新当前属性，但是此时不能触发更新收集
      */
     internal fun innerSetProp(key: String, value: Any) {
+        logger.i("State", "innerSetProp: key: $key, value: $value")
         propertyMap[key]?.let { it(value) }
     }
 
-    internal fun addDepGlobalState(token: String) {
+    internal fun addTheStateToGlobalState(token: JvmType.Object) {
         depGlobalStateMap[token] = DEPENDANT_STATE_FLAG
     }
 
-    internal fun removeDepGlobalState(token: String) {
+    internal fun removeDTheStateFromGlobalState(token: JvmType.Object) {
         depGlobalStateMap.remove(token)
     }
 
     /**
      * 是否依赖了某个state，主要优化对全局store的依赖过程
-     * @param token 全局store对应的类名
-     * @return 是否依赖
+     * @param token 全局store对应的token
      */
-    internal fun isDependGlobalState(token: String): Boolean {
+    internal fun isTheStateDependGlobalState(token: JvmType.Object): Boolean {
         val result = depGlobalStateMap[token] ?: return false
         return result == DEPENDANT_STATE_FLAG
     }
@@ -250,16 +249,6 @@ abstract class State {
         }
     }
 
-    /**
-     * 由于目前是主动依赖属性，所以退出时，需要将依赖删除
-     */
-    open fun clear() {
-        detach()
-        dataMap.clear()
-        propertyMap.clear()
-        depGlobalStateMap.clear()
-    }
-
     private fun depProp(curProp: ReactiveProp<Any>) {
         if (!isMergingState || stateHasMerged || depState == null) {
             logger.e("State", "this step can not dep the prop from parent")
@@ -273,7 +262,7 @@ abstract class State {
                 logger.i("State", "dep global prop")
                 curProp.depGlobalProp(parentReactiveProp)
             } else {
-                logger.i("State", "dep upper prop")
+                logger.i("State", "dep parent prop")
                 curProp.depUpperComponentProp(parentReactiveProp)
             }
         } else {
@@ -286,15 +275,28 @@ abstract class State {
         return dataMap[curDepPropKey]
     }
 
+    /**
+     * 由于目前是主动依赖属性，所以退出时，需要将依赖删除
+     */
+    open fun clear() {
+        detach()
+        dataMap.clear()
+        propertyMap.clear()
+        depGlobalStateMap.clear()
+    }
+
     inner class ReactUIData<V : Any?>(initialValue: V) : ReadWriteProperty<Any?, V> {
         private var value = initialValue
 
+        @Suppress("UNCHECKED_CAST")
         private fun checkDataMap(key: String, value: V, set: PropertySet<V>) {
-            if (dataMap[key] == null) {
+            if (propertyMap[key] == null) {
                 propertyMap[key] = set as PropertySet<Any>
-                logger.w("State", "create ui ReactiveProp ${key}")
+            }
+            if (dataMap[key] == null) {
+                logger.d("State", "create ui ReactiveProp $key, state: ${this@State.javaClass.name}")
                 val prop = ReactiveProp(value, true, this@State)
-                prop.setKey(key)
+                prop.key = key
                 dataMap[key] = prop as ReactiveProp<Any>
             }
         }
@@ -313,6 +315,8 @@ abstract class State {
          */
         override fun setValue(thisRef: Any?, property: KProperty<*>, value: V) {
             val name = property.name
+            Log.d("state", "call start prop setValue: $name, state: ${this@State.javaClass.name}")
+
             checkDataMap(name, this.value) {
                 this.value = it
             }
@@ -320,7 +324,7 @@ abstract class State {
             val prop = dataMap[name]
             if ((stateType == StateType.COMPONENT_TYPE) && isMergingState && !stateHasMerged) {
                 if (prop != null) {
-                    Log.e("state", "start dep prop: $name")
+                    Log.d("state", "start dep ui prop: $name")
                     depProp(prop)
                 }
 
@@ -340,11 +344,14 @@ abstract class State {
     open inner class ReactLogicData<V : Any?>(initialValue: V) : ReadWriteProperty<Any?, V> {
         private var value = initialValue
 
+        @Suppress("UNCHECKED_CAST")
         private fun checkDataMap(key: String, value: V, set: PropertySet<V>) {
-            if (dataMap[key] == null) {
+            if (propertyMap[key] == null) {
                 propertyMap[key] = set as PropertySet<Any>
+            }
+            if (dataMap[key] == null) {
                 val prop = ReactiveProp(value, false, this@State)
-                prop.setKey(key)
+                prop.key = key
                 dataMap[key] = prop as ReactiveProp<Any>
             }
         }
@@ -373,7 +380,6 @@ abstract class State {
             val prop = dataMap[name]
             if ((stateType == StateType.COMPONENT_TYPE) && isMergingState && !stateHasMerged) {
                 if (prop != null) {
-                    Log.e("state", "start dep prop: $name")
                     depProp(prop)
                 }
 

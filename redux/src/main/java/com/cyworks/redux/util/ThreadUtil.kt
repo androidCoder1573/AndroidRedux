@@ -3,9 +3,6 @@ package com.cyworks.redux.util
 import android.os.Looper
 import java.lang.RuntimeException
 
-/**
- * Desc: thread 辅助类
- */
 object ThreadUtil {
     /**
      * 检查操作是否在主线程执行

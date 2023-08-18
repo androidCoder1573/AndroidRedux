@@ -144,10 +144,12 @@ abstract class Page<S : State> : LogicPage<S> {
                     + " init consumer: " + (SystemClock.uptimeMillis() - time))
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun stopUIUpdate() {
         (environment.store as PageStore<S>?)!!.onPageHidden()
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun startUIUpdate() {
         (environment.store as PageStore<S>?)!!.onPageVisible()
     }

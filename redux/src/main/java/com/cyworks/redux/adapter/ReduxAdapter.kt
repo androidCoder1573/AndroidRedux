@@ -54,6 +54,7 @@ class ReduxAdapter<PS: State> {
         throw RuntimeException("list item must have a view")
     }
 
+    @Suppress("UNCHECKED_CAST")
     fun doInterceptorAction(action: Action<Any>) {
         val interceptor = dependantList.getInterceptor()
         interceptor.doAction(action, this.context as ReduxContext<State>)
@@ -63,7 +64,7 @@ class ReduxAdapter<PS: State> {
         return this.dependantList.getListItemType(index)
     }
 
-    fun copyEnvToSub(): Environment? {
+    private fun copyEnvToSub(): Environment? {
         val env = this.env?.let { Environment.copy(it) }
         context?.state?.let { env?.parentState = it }
         context?.effectDispatch?.let { env?.parentDispatch = it }

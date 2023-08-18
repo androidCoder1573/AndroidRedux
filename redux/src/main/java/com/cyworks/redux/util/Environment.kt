@@ -24,7 +24,7 @@ class Environment private constructor() {
     /**
      * 页面的Dispatch总线，只负责在页面内发送Effect Action
      */
-    internal var dispatchBus: DispatchBus? = null
+    internal var pageDispatchBus: DispatchBus? = null
 
     /**
      * 当前组件对应的父组件的State
@@ -45,8 +45,8 @@ class Environment private constructor() {
      * 做一些清理操作
      */
     fun clear() {
-        if (dispatchBus != null) {
-            dispatchBus!!.detach()
+        if (pageDispatchBus != null) {
+            pageDispatchBus!!.detach()
         }
         if (store != null) {
             store!!.clear()
@@ -66,15 +66,14 @@ class Environment private constructor() {
         }
 
         /**
-         * 复制一些公用的信息
-         * @param env Environment
+         * 复制一些Env的公用信息
          */
         @JvmStatic
         fun copy(env: Environment): Environment {
             val copy = Environment()
             copy.lifeCycleProxy = env.lifeCycleProxy
             copy.store = env.store
-            copy.dispatchBus = env.dispatchBus
+            copy.pageDispatchBus = env.pageDispatchBus
             return copy
         }
     }

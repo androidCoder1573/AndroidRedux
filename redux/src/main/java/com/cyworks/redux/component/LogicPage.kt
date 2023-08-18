@@ -51,13 +51,14 @@ abstract class LogicPage<S : State>(proxy: LifeCycleProxy) : Logic<S>(proxy.prop
      */
     private var dependencies: DependentCollector<S>? = null
 
+    @Suppress("UNCHECKED_CAST")
     override val childrenDepMap: HashMap<String, Dependant<out State, State>>?
         get() = if (dependencies == null) {
             null
         } else dependencies!!.dependantMap as HashMap<String, Dependant<out State, State>>
 
     protected val controller: BaseController<S>?
-        protected get() = null
+        get() = null
 
     init {
         environment = Environment.of()
@@ -65,6 +66,7 @@ abstract class LogicPage<S : State>(proxy: LifeCycleProxy) : Logic<S>(proxy.prop
         initDependencies()
 
         // 开始添加拦截器
+        @Suppress("UNCHECKED_CAST")
         interceptor = interceptorManager.getInterceptor() as Interceptor<S>
         initInterceptor()
     }
@@ -109,7 +111,7 @@ abstract class LogicPage<S : State>(proxy: LifeCycleProxy) : Logic<S>(proxy.prop
     private fun createPageBus() {
         val bus = DispatchBus()
         bus.attach(appBus)
-        environment.dispatchBus= bus
+        environment.pageDispatchBus= bus
     }
 
     /**
@@ -118,7 +120,7 @@ abstract class LogicPage<S : State>(proxy: LifeCycleProxy) : Logic<S>(proxy.prop
     private fun createContext() {
         // 1、生成state
         val state = onCreateState(props)
-        state.setStateType(StateType.PAGE_TYPE)
+        state.stateType = StateType.PAGE_TYPE
 
         // 生成Key映射表
         state.detectField()
@@ -191,6 +193,7 @@ abstract class LogicPage<S : State>(proxy: LifeCycleProxy) : Logic<S>(proxy.prop
         return effect
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun makeInstallExtraFeatureEffect(): Effect<S> {
         // 安装额外的子组件的Effect
         val effect: Effect<S> = object : Effect<S> {

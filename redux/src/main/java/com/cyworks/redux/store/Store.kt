@@ -9,6 +9,7 @@ import com.cyworks.redux.types.Dispatch
 import com.cyworks.redux.types.Dispose
 import com.cyworks.redux.util.ILogger
 import java.util.concurrent.CopyOnWriteArrayList
+import kotlin.reflect.jvm.internal.impl.load.kotlin.JvmType
 
 /**
  * Desc: 定义一个android-redux Store，本质上是一个状态容器（有限状态，无限状态 [...items]）
@@ -143,11 +144,11 @@ open class Store<S : State>  {
      * @param token 组件state对应的类名
      * @return 组件变化的属性列表
      */
-    private fun checkChangeList(changeList: List<ReactiveProp<Any>>, token: String): List<ReactiveProp<Any>> {
+    private fun checkChangeList(changeList: List<ReactiveProp<Any>>, token: JvmType.Object): List<ReactiveProp<Any>> {
         val tempList: ArrayList<ReactiveProp<Any>> = ArrayList()
         changeList.forEach {
             // 如果组件的属性就在当前变化的列表里，直接加入
-            if (it.token == token) {
+            if (it.stateToken() == token) {
                 tempList.add(it)
             } else {
                 // 如果组件属性没在变化列表里，看当前属性的孩子是否具有此属性

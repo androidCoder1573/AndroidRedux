@@ -2,20 +2,21 @@ package com.cyworks.redux.store
 
 import com.cyworks.redux.prop.ReactiveProp
 import com.cyworks.redux.types.IPropsChanged
+import kotlin.reflect.jvm.internal.impl.load.kotlin.JvmType
 
 /**
  * 用于监听Store的变化, 通过ReduxContext注入到Store中, 框架内部负责创建StoreObserver，外部不可见。
  */
-internal class StoreObserver(token: String, cb: IPropsChanged) {
+internal class StoreObserver(token: JvmType.Object, cb: IPropsChanged) {
     /**
      * 通知属性变化的callback
      */
     private val callback: IPropsChanged
 
     /**
-     * 当前组件对应的State的类名
+     * 当前组件对应的State的token
      */
-    val token: String
+    val token: JvmType.Object
 
     init {
         callback = cb

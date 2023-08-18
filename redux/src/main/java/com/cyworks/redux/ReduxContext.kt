@@ -3,10 +3,8 @@ package com.cyworks.redux
 import android.os.Looper
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.action.InnerActionTypes
-import com.cyworks.redux.component.DialogComponent
 import com.cyworks.redux.component.Logic
 import com.cyworks.redux.component.LogicPage
-import com.cyworks.redux.dialog.ILRDialog
 import com.cyworks.redux.interceptor.InterceptorPayload
 import com.cyworks.redux.lifecycle.LifeCycleAction
 import com.cyworks.redux.prop.ReactiveProp
@@ -118,6 +116,8 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      */
     private var pendingLifeCycleActionList: ArrayList<Action<Any>>? = null
 
+    private val changedProps: ArrayList<ReactiveProp<Any>> = ArrayList()
+
     /**
      * 如果开发这不想使用Action驱动，可以通过传统的方式书写逻辑代码，需继承BaseController
      */
@@ -138,7 +138,8 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
             }
 
             if (logic != null) {
-                logger.i("Dispatcher", "<${logic!!.javaClass.name}> send effect action, <${action.type}>")
+                logger.i("Dispatcher", "<${logic!!.javaClass.name}>"
+                        + " send effect action, <${action.type}>")
                 val effect = logic?.effect
                 effect?.doAction(action, this@ReduxContext)
             }
@@ -150,9 +151,10 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
             }
 
             val innerAction = Action(InnerActionTypes.INTERCEPT_ACTION_TYPE,  InterceptorPayload(action))
-            val bus = environment?.dispatchBus
+            val bus = environment?.pageDispatchBus
             bus?.pageDispatch?.dispatch(innerAction)
-            logger.i("Dispatcher","<${logic?.javaClass?.name}> send interceptor action, <${action.type}>")
+            logger.i("Dispatcher","<${logic?.javaClass?.name}>"
+                    + " send interceptor action, <${action.type}>")
         }
 
         override fun dispatchToParent(action: Action<out Any>) {
@@ -160,7 +162,8 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
                 return
             }
 
-            logger.i("Dispatcher", "<${logic?.javaClass?.name}> send parent effect action, <${action.type}>")
+            logger.i("Dispatcher", "<${logic?.javaClass?.name}>"
+                    + " send parent effect action, <${action.type}>")
             val parentDispatch = environment?.parentDispatch
             parentDispatch?.dispatch(action)
         }
@@ -217,7 +220,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
                 onStateChange(props)
             }
         }
-        val observer = StoreObserver(state.hashCode().toString(), propsChanged)
+        val observer = StoreObserver(state.token, propsChanged)
         storeObserverDispose = environment?.store?.observe(observer)
 
         // 当state变化时，需要触发给具体的组件，由组件进行UI以及数据逻辑
@@ -232,13 +235,13 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
             return
         }
 
-        val bus = this.environment?.dispatchBus
+        val bus = this.environment?.pageDispatchBus
         // 创建负责分发Effect Action的Dispatch
         val pageEffectDispatch = Dispatch { action ->
             if (action.type == InnerActionTypes.INTERCEPT_ACTION_TYPE) {
                 val realAction = (action.payload as InterceptorPayload).realAction
-                logger.i("redux context",
-                    " <${logic?.javaClass?.name}> send interceptor action, real acton type <${realAction.type}>");
+                logger.i("redux context", " <${logic?.javaClass?.name}> "
+                        + "send interceptor action, real acton type <${realAction.type}>")
             }
             dispatcher.dispatch(action)
         }
@@ -253,6 +256,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         bus?.setPageEffectDispatch(pageEffectDispatch);
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun injectStateGetter() {
         // 给页面store用，用于获取当前组件的state
         val getter: StateGetter<S> = StateGetter { state }
@@ -270,19 +274,18 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         }
 
         // 接收Vsync信号，优化刷新性能
-        uiUpdaterDispose = (store as PageStore<State>).addUIUpdater {
+        uiUpdaterDispose = (store as PageStore<out State>).addUIUpdater {
             if (pendingChangedProps != null && pendingChangedProps!!.isNotEmpty()) {
-                // todo 可优化
-                val props: List<ReactiveProp<Any>> = ArrayList(
-                    pendingChangedProps!!.values
-                )
+                changedProps.clear()
+                changedProps.addAll(pendingChangedProps!!.values)
                 pendingChangedProps!!.clear()
-                componentStateChangeListener!!.onChange(state, props)
+                componentStateChangeListener!!.onChange(state, changedProps)
             }
         }
     }
 
     fun updateState(reducer: Reducer<S>) {
+        logger.d("redux context", "state: ${state.javaClass.name} will change prop")
         if (Looper.getMainLooper() == Looper.myLooper()) {
             innerUpdateState(reducer)
             return
@@ -312,10 +315,10 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      */
     fun onStateChange(props: List<ReactiveProp<Any>>) {
         for (prop in props) {
-            val key = prop.getKey()
+            val key = prop.key
             putChangedProp(key, prop)
-            logger.d(ILogger.ACTION_TAG, "current changed prop is <" + key + ">"
-                    + "in <" + logic?.javaClass?.simpleName + ">"
+            logger.d(ILogger.ACTION_TAG, "current changed prop is"
+                    + " <" + key + "> in <" + logic?.javaClass?.simpleName + ">"
             )
         }
 
@@ -362,9 +365,9 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     }
 
     private fun markNeedUpdate() {
-        val need = pendingChangedProps != null && !pendingChangedProps!!.isEmpty()
-        if (environment!!.store is PageStore<*> && need) {
-            (environment!!.store as PageStore<*>?)!!.markNeedUpdate()
+        val need = pendingChangedProps != null && pendingChangedProps!!.isNotEmpty()
+        if (environment?.store is PageStore<*> && need) {
+            (environment!!.store as PageStore<*>).markNeedUpdate()
         }
     }
 
@@ -376,10 +379,11 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      * 发送全局广播，本方法在App级别是全局的, 只有page下的Effect才可以处理
      */
     fun broadcast(action: Action<Any>) {
-        if (isDestroy || !isStateReady || environment == null) {
+        if (isDestroy || !isStateReady ||
+            environment == null || environment!!.pageDispatchBus == null) {
             return
         }
-        environment!!.dispatchBus!!.broadcast(action)
+        environment?.pageDispatchBus?.broadcast(action)
     }
 
     /**
@@ -418,20 +422,8 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         }
     }
 
-    /**
-     * 是否状态ready
-     */
     fun stateReady(): Boolean {
         return isStateReady
-    }
-
-    /**
-     * 展示一个对话框组件
-     */
-    fun showComponentDialog(dialog: ILRDialog?) {
-        if (dialog is DialogComponent<*>) {
-            (dialog as DialogComponent<out State>).showDialog(dialog)
-        }
     }
 
     /**

@@ -18,6 +18,7 @@ class ComponentViewHolder(private val rootView: View) {
      * @param id View对应的id
      * @return View实例
      */
+    @Suppress("UNCHECKED_CAST")
     fun <T : View> getView(@IdRes id: Int): T {
         var view: View? = mViewMap.get(id)
         if (view == null) {

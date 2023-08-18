@@ -4,6 +4,7 @@ import android.util.Log
 import com.cyworks.redux.state.State
 import com.cyworks.redux.types.Dispose
 import com.cyworks.redux.types.IPropsChanged
+import kotlin.reflect.jvm.internal.impl.load.kotlin.JvmType
 
 /**
  * 全局Store观察器，会在初始化时收集全局store中的数据并绑定观察者。
@@ -13,7 +14,7 @@ class GlobalStoreSubscribe<CS : State> internal constructor(callback: IPropsChan
     /**
      * 内部维护组件对全局store的依赖，减少开发者的工作量
      */
-    private val globalStoreBinderMap = HashMap<GlobalStore<out State>, ICombineGlobalState<CS>>()
+    private val globalStoreBinderMap = HashMap<GlobalStore<out State>, ICombineGlobalState<CS, Any>>()
 
     /**
      * 保存dispose，用于清理操作
@@ -36,8 +37,9 @@ class GlobalStoreSubscribe<CS : State> internal constructor(callback: IPropsChan
      * @param store 当前要关联的全局store
      * @param bind 传入具体的关联方法
      */
-    fun subscribe(store: GlobalStore<out State>, bind: ICombineGlobalState<CS>) {
-        globalStoreBinderMap[store] = bind
+    @Suppress("UNCHECKED_CAST")
+    fun subscribe(store: GlobalStore<out State>, bind: ICombineGlobalState<CS, out Any>) {
+        globalStoreBinderMap[store] = bind as ICombineGlobalState<CS, Any>
     }
 
     /**
@@ -50,12 +52,12 @@ class GlobalStoreSubscribe<CS : State> internal constructor(callback: IPropsChan
 
         for (store in globalStoreBinderMap.keys) {
             val iBind = globalStoreBinderMap[store] ?: continue
-            val globalStoreState = store.copyState()
+            val globalStoreState : State = store.copyState()
             state.setParentState(globalStoreState)
             iBind.combine(state, globalStoreState)
-            val token: String = globalStoreState.hashCode().toString()
+            val token: JvmType.Object = state.token
             Log.e("aaaaaa", "1 dep global store, $token")
-            if (globalStoreState.isDependGlobalState(token)) {
+            if (globalStoreState.isTheStateDependGlobalState(token)) {
                 Log.e("aaaaaa", "2 dep global store, $token")
                 batchStoreObserver(store, token)
             }
@@ -67,7 +69,7 @@ class GlobalStoreSubscribe<CS : State> internal constructor(callback: IPropsChan
      * @param store 全局store
      * @param token 依赖了此全局Store的组件的token
      */
-    private fun batchStoreObserver(store: GlobalStore<*>?, token: String?) {
+    private fun batchStoreObserver(store: GlobalStore<*>?, token: JvmType.Object?) {
         if (store == null || token == null) {
             return
         }
@@ -91,12 +93,12 @@ class GlobalStoreSubscribe<CS : State> internal constructor(callback: IPropsChan
     /**
      * 用于关联全局store属性的接口
      */
-    interface ICombineGlobalState<CS : State> {
+    interface ICombineGlobalState<C, G> {
         /**
          * 关联全局store属性
          * @param childState 当前组件对的state
          * @param globalState 全局store的state
          */
-        fun combine(childState: CS, globalState: State)
+        fun combine(childState: C, globalState: G)
     }
 }

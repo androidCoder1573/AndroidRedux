@@ -16,6 +16,7 @@ class InterceptorManager {
 
     val adapters = ArrayList<ReduxAdapter<State>>()
 
+    @Suppress("UNCHECKED_CAST")
     private val interceptor: Interceptor<State> = Interceptor { action, ctx ->
         doActionInner(action as Action<Any>)
     }

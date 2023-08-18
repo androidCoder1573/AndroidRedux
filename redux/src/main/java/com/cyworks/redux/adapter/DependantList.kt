@@ -47,6 +47,7 @@ class DependantList<PS : State> {
      * @param type
      * @param data
      */
+    @Suppress("UNCHECKED_CAST")
     fun <CS : State> buildDependant(index: Int, type: String, data: Any): Dependant<CS, PS> {
         var dep: Dependant<CS, PS>
         var listDep = this.depMap[index]

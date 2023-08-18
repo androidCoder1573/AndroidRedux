@@ -35,6 +35,7 @@ class InterceptorCollector<S: State>(private val contextWrapper: ComponentContex
         interceptorMap[action] = bean
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun doAction(action: Action<out Any>) {
         val bean = this.interceptorMap[action.type]
         val interceptor = bean?.interceptor

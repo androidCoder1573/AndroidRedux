@@ -6,6 +6,7 @@ import com.cyworks.redux.state.State
 import com.cyworks.redux.state.StateProxy
 import com.cyworks.redux.state.StateType
 import com.cyworks.redux.types.Dispose
+import kotlin.reflect.jvm.internal.impl.load.kotlin.JvmType
 
 enum class PropFromType {
     FROM_UPPER_COMPONENT, // 当前依赖的属性来自父组件
@@ -28,11 +29,11 @@ enum class PropFromType {
  * 如果类似LiveData的方式更新，将导致UI频繁刷新，
  * 假设一次Reducer更新了10个数据，将会调用UI更新callback 10次，性能上会有一定的损耗。
  */
-class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, state: State) {
+class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, s: State) {
     /**
      * 属性对应的Key，用于State中进行属性key-value关联
      */
-    private var key: String? = null
+    internal var key: String? = null
 
     /**
      * 当前属性的真实value
@@ -47,7 +48,7 @@ class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, state: State) {
     /**
      * 对当前属性的依赖集合
      */
-    private var depMap: HashMap<String, ReactiveProp<T>>? = null
+    private var depMap: HashMap<JvmType.Object, ReactiveProp<T>>? = null
 
     /**
      * 当前属性依赖的父属性
@@ -57,7 +58,7 @@ class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, state: State) {
     /**
      * 当前属性所在的State
      */
-    private var state: State? = state
+    private var state: State = s
 
     /**
      * 主要用于状态变化时记录状态的改变情况
@@ -66,11 +67,6 @@ class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, state: State) {
 
 
     private var dispose: Dispose? = null
-
-    /**
-     * 当前属性所在的State的类名
-     */
-    val token: String
 
     /**
      * 首次渲染组件时，是否通知UI更新
@@ -82,7 +78,6 @@ class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, state: State) {
      */
     init {
         isPrivate = true
-        token = state.hashCode().toString()
     }
 
     /**
@@ -124,21 +119,23 @@ class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, state: State) {
      */
     internal fun innerSetter(value: T?) {
         this.value = value
+        this.state.innerSetProp(key ?: "", value as Any)
     }
 
+    @Suppress("UNCHECKED_CAST")
     internal fun canSet(value: T): Boolean {
         // 防止开发者在非Reducer中更新UI属性
         if (stateProxy == null) {
             ReduxManager.instance.logger.e("ReactiveProp",
-                "${this.key} can not use = operator set prop" +
-                        " when not call updateState function, state is ${state?.javaClass?.name}")
+                "set prop: ${this.key} can not use = operator"
+                        + " when not call updateState func, state: ${state.javaClass.name}")
             return false
         }
 
         // 组件在修改state prop过程中, 不能改全局store的属性
         if (parent != null && parent!!.fromType == PropFromType.FROM_GLOBAL_STORE) {
             ReduxManager.instance.logger.e("ReactiveProp",
-                "component can not change global state prop!")
+                "component can not change global state prop!!!")
             return false
         }
 
@@ -182,33 +179,11 @@ class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, state: State) {
     }
 
     internal fun myStateIsGlobalState(): Boolean {
-        if (this.state != null) {
-            return this.state!!.getStateType() == StateType.GLOBAL_TYPE
-        }
-
-        return false
-    }
-
-    internal fun getChild(token: String): ReactiveProp<T>? {
-        return if (depMap == null) {
-            null
-        } else depMap!![token]
-    }
-
-    internal fun setKey(name: String) {
-        key  = name;
-    }
-
-    internal fun getKey(): String? {
-        return key
+        return this.state.stateType == StateType.GLOBAL_TYPE
     }
 
     internal fun value(): T? {
         return value
-    }
-
-    internal fun getStateToken(): String {
-        return token
     }
 
     /**
@@ -230,6 +205,7 @@ class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, state: State) {
      * @param value Object
      * @throws RuntimeException 当参数为空或者参数类型不一致时抛出异常
      */
+    @Suppress("UNCHECKED_CAST")
     internal fun set(value: T) {
         // 防止在非Reducer中更新UI属性
         if (stateProxy == null) {
@@ -267,8 +243,8 @@ class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, state: State) {
 
         // 如果当前依赖的是全局store，则将当前state的token写入全局store中，方便后续快速查找
         if (type == PropFromType.FROM_GLOBAL_STORE) {
-            Log.i("react prop", "setParent FROM_GLOBAL_STORE ${prop.state?.hashCode()?.toString() ?: ""}")
-            prop.state?.addDepGlobalState(prop.state?.hashCode()?.toString() ?: "")
+            Log.i("react prop", "setParent FROM_GLOBAL_STORE ${prop.stateToken()}")
+            prop.state.addTheStateToGlobalState(stateToken())
         }
 
         parent = ReactivePropParent(prop)
@@ -276,14 +252,24 @@ class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, state: State) {
         value = prop.value
     }
 
+    internal fun stateToken(): JvmType.Object {
+        return state.token
+    }
+
     private fun addChild(child: ReactiveProp<T>): Dispose {
         if (this.depMap == null) {
             this.depMap = HashMap()
         }
 
-        val key = child.token
+        val key = child.stateToken()
         this.depMap!![key] = child
         return { depMap!!.remove(key) }
+    }
+
+    internal fun getChild(token: JvmType.Object): ReactiveProp<T>? {
+        return if (depMap == null) {
+            null
+        } else depMap!![token]
     }
 
     /**

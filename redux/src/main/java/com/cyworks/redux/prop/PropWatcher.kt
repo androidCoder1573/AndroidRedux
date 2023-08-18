@@ -38,7 +38,7 @@ class PropWatcher<S : State> {
         }
 
         for (prop in props) {
-            val iPropChanged: IPropChanged<S, Any>? = listenerMap!![prop?.getKey()]
+            val iPropChanged: IPropChanged<S, Any>? = listenerMap!![prop?.key]
             if (prop != null) {
                 iPropChanged?.onPropChanged(prop, context)
             }

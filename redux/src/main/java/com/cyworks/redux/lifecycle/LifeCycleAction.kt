@@ -22,7 +22,7 @@ object LifeCycleAction {
      * @return 是否是生命周期的Action
      */
     fun isLifeCycle(action: Action<Any>): Boolean {
-        val type = action.type;
+        val type = action.type
         return type == ACTION_ON_CREATE
                 || type == ACTION_ON_START
                 || type == ACTION_ON_RESUME

@@ -38,7 +38,7 @@ abstract class Component<S : State>(lazyBindUI: Boolean) : BaseComponent<S>(lazy
         // 将变化的属性的key抽离到一个列表中
         changedPropKeys.clear()
         for (prop in props) {
-            val key = prop.getKey()
+            val key = prop.key
             if (key != null && prop.isUIProp) {
                 // 必须是UI属性
                 changedPropKeys.add(key)

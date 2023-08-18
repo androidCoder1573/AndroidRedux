@@ -60,7 +60,7 @@ abstract class DialogComponent<S : State> : BaseComponent<S>(true) {
         // 将变化的属性的key抽离到一个列表中
         val propKeys: MutableList<String?> = ArrayList()
         for (prop in props) {
-            propKeys.add(prop.getKey())
+            propKeys.add(prop.key)
         }
 
         // 如果组件UI不可见
