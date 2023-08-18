@@ -171,6 +171,10 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         override fun dispatchToAdapterItemComponents(action: Action<out Any>) {}
 
         override fun dispatchToSubComponents(action: Action<out Any>) {
+            if (isDestroy) {
+                return
+            }
+
             dispatch(action)
             // 发给组件依赖的子组件
             if (logic != null) {
@@ -285,6 +289,10 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     }
 
     fun updateState(reducer: Reducer<S>) {
+        if (isDestroy || environment == null) {
+            return
+        }
+
         logger.d("redux context", "state: ${state.javaClass.name} will change prop")
         if (Looper.getMainLooper() == Looper.myLooper()) {
             innerUpdateState(reducer)
