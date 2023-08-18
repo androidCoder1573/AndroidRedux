@@ -26,6 +26,7 @@ class DispatchBus internal constructor() : IBus {
      * 删除添加的某个DispatchBus
      */
     private var removeSelf: Dispose? = null
+
     private var isDetach = false
 
     /**
@@ -46,7 +47,6 @@ class DispatchBus internal constructor() : IBus {
 
     /**
      * 目前的通信方式是：组件只能发action给Page，但是Page可以发送Action给所有的组件，所以这里区分一下
-     *
      * @param dispatch Dispatch
      */
     fun setPageEffectDispatch(dispatch: Dispatch?) {

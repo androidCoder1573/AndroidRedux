@@ -119,17 +119,6 @@ abstract class State {
             stateProxy!!.changedPublicProps
         } else null
 
-    /**
-     * 如果状态内存在公共状态，且公共状态发生变化，则认为当前属性属性有变化，
-     * 此时框架需要通知关联了此数据的组件。
-     *
-     * @return 公共数据是否发生变化
-     */
-    internal val isChanged: Boolean
-        get() = if (stateProxy != null) {
-            stateProxy!!.isChanged
-        } else false
-
     init {
         excludePropMap["excludePropMap"] = 1
         excludePropMap["dataMap"] = 1
@@ -145,7 +134,6 @@ abstract class State {
         excludePropMap["calledDetect"] = 1
         excludePropMap["privatePropChanged"] = 1
         excludePropMap["publicPropChanged"] = 1
-        excludePropMap["isChanged"] = 1
         excludePropMap["token"] = 1
     }
 
@@ -215,7 +203,7 @@ abstract class State {
         depGlobalStateMap[token] = DEPENDANT_STATE_FLAG
     }
 
-    internal fun removeDTheStateFromGlobalState(token: JvmType.Object) {
+    internal fun removeTheStateFromGlobalState(token: JvmType.Object) {
         depGlobalStateMap.remove(token)
     }
 
@@ -285,7 +273,7 @@ abstract class State {
         depGlobalStateMap.clear()
     }
 
-    inner class ReactUIData<V : Any?>(initialValue: V) : ReadWriteProperty<Any?, V> {
+    inner class ReactUIData<V : Any?>(initialValue: V, private val updateValueByInit: Boolean = true) : ReadWriteProperty<Any?, V> {
         private var value = initialValue
 
         @Suppress("UNCHECKED_CAST")
@@ -295,7 +283,7 @@ abstract class State {
             }
             if (dataMap[key] == null) {
                 logger.d("State", "create ui ReactiveProp $key, state: ${this@State.javaClass.name}")
-                val prop = ReactiveProp(value, true, this@State)
+                val prop = ReactiveProp(value, this@State, true, updateValueByInit)
                 prop.key = key
                 dataMap[key] = prop as ReactiveProp<Any>
             }
@@ -341,7 +329,7 @@ abstract class State {
     /**
      * 内部类，用于实现响应式属性的委托
      */
-    open inner class ReactLogicData<V : Any?>(initialValue: V) : ReadWriteProperty<Any?, V> {
+    open inner class ReactLogicData<V : Any?>(initialValue: V, private val updateValueByInit: Boolean = true) : ReadWriteProperty<Any?, V> {
         private var value = initialValue
 
         @Suppress("UNCHECKED_CAST")
@@ -350,7 +338,7 @@ abstract class State {
                 propertyMap[key] = set as PropertySet<Any>
             }
             if (dataMap[key] == null) {
-                val prop = ReactiveProp(value, false, this@State)
+                val prop = ReactiveProp(value, this@State, false, updateValueByInit)
                 prop.key = key
                 dataMap[key] = prop as ReactiveProp<Any>
             }

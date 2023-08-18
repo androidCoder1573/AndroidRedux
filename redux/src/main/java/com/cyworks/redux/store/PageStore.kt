@@ -1,6 +1,5 @@
 package com.cyworks.redux.store
 
-import android.os.SystemClock
 import android.view.Choreographer
 import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.prop.ReactiveProp
@@ -23,11 +22,6 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
     private val uiUpdaterListeners = CopyOnWriteArrayList<UIFrameUpdater>()
 
     /**
-     * 上次刷新的时间，防止刷新过快
-     */
-    private var lastUpdateUITime: Long = 0L
-
-    /**
      * 是否正在修改State，用于规定刷新时机
      */
     private var isModifyState = false
@@ -48,30 +42,51 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
     /**
      * 用于标记是否在运行UI更新
      */
-    @Volatile
-    private var isUIUpdateRun = false
+    @Volatile private var isUIUpdateRun = false
 
     /**
      * 用于标记监控线程是否运行
      */
-    @Volatile
-    private var isThreadRun = true
+    @Volatile private var isThreadRun = true
 
     /**
      * 是否需要运行UI更新，在Vsync回调中判断
      */
     private var isNeedUpdate = false
 
-    /**
-     * 创建一个页面级别的store
-     */
+    private val uiFresher: UIFresher
+
+    private val onDraw: UIFresher.DrawCallback = object : UIFresher.DrawCallback {
+        override fun onDraw() {
+            // 没有UI监听器，或者UI未展示，或者处于销毁状态，则不进行Ui更新
+            if (isDestroy || !isPageVisible || uiUpdaterListeners.isEmpty()) {
+                return
+            }
+
+            // 如果当前正在修改state
+            if (isModifyState) {
+                // 通知再一次刷新
+                return
+            }
+
+            if (!isNeedUpdate) {
+                return
+            }
+
+            isUIUpdateRun = true
+            semaphore.release()
+            fireUpdateUI()
+        }
+    }
+
     init {
-        val guardThread: Thread = object : Thread("VsyncGuard") {
+        uiFresher = UIFresher(onDraw)
+        val guardThread: Thread = object : Thread("ReduxVsyncGuard") {
             override fun run() {
                 try {
                     semaphore.acquire()
                 } catch (e: InterruptedException) {
-                    logger.printStackTrace("VsyncGuard", e)
+                    logger.printStackTrace("ReduxVsyncGuard", e)
                 }
                 while (isThreadRun) {
                     synchronized(lock) {
@@ -82,7 +97,7 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
                                 semaphore.acquire()
                             }
                         } catch (e: InterruptedException) {
-                            logger.printStackTrace("VsyncGuard", e)
+                            logger.printStackTrace("ReduxVsyncGuard", e)
                         }
                     }
                 }
@@ -110,47 +125,15 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
             return stateMap
         }
 
-    /**
-     * 新一帧的callback
-     */
-    private val frameCallback: Choreographer.FrameCallback = object : Choreographer.FrameCallback {
-        override fun doFrame(frameTimeNanos: Long) {
-            // 没有UI监听器，或者UI未展示，或者处于销毁状态，则不进行Ui更新
-            if (isDestroy || !isPageVisible || uiUpdaterListeners.isEmpty()) {
-                return
-            }
-
-            // 如果当前正在修改state
-            if (isModifyState) {
-                Choreographer.getInstance().postFrameCallback(this)
-                return
-            }
-
-            // 单线程调用获取时间，性能可控
-            val time = SystemClock.uptimeMillis()
-            // 如果前后两次间隔时间过短或者当前不需要更新UI
-            if (time - lastUpdateUITime < NEXT_DRAW || !isNeedUpdate) {
-                Choreographer.getInstance().postFrameCallback(this)
-                return
-            }
-
-            // 记录本次UI更新的开始时间
-            lastUpdateUITime = time
-            isUIUpdateRun = true
-            semaphore.release()
-            fireUpdateUI()
-            Choreographer.getInstance().postFrameCallback(this)
-        }
-    }
-
-    private fun fireUpdateUI() {
+    private fun fireUpdateUI(): Boolean {
         for (uiUpdater in uiUpdaterListeners) {
             if (!isUIUpdateRun) {
-                break
+                return true
             }
             uiUpdater.onNewFrameCome()
         }
         isNeedUpdate = false
+        return false
     }
 
     /**
@@ -192,7 +175,7 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
      */
     internal fun onPageHidden() {
         isPageVisible = false
-        Choreographer.getInstance().removeFrameCallback(frameCallback)
+        uiFresher.stop()
     }
 
     /**
@@ -202,9 +185,9 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
         if (isPageVisible) {
             return
         }
-        Choreographer.getInstance().removeFrameCallback(frameCallback)
+
         isPageVisible = true
-        Choreographer.getInstance().postFrameCallback(frameCallback)
+        uiFresher.start()
     }
 
     override fun update(changedPropList: List<ReactiveProp<Any>>) {
@@ -225,6 +208,7 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
 
         // 通知更新
         if (finalList.isNotEmpty()) {
+            uiFresher.requestNextDraw()
             // 通知组件进行状态更新
             notifySubs(finalList)
         }

@@ -70,21 +70,4 @@ class StateProxy {
             changeQueue.clear()
             return if (list.isEmpty()) null else list
         }
-
-    /**
-     * 如果状态内存在公共状态，且公共状态发生变化，则认为当前属性属性有变化，需要通知关注的组件。
-     * @return 是否发生变化
-     */
-    val isChanged: Boolean
-        get() {
-            if (changeQueue.isEmpty()) {
-                return false
-            }
-            for (prop in changeQueue) {
-                if (!prop.isPrivateProp) {
-                    return true
-                }
-            }
-            return false
-        }
 }

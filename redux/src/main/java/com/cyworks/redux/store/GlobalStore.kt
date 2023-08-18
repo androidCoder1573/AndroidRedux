@@ -17,7 +17,7 @@ import com.cyworks.redux.util.ThreadUtil
  *
  * 给开发这一个选择，可以使用action来驱动全局store，也可以不使用，直接通过面向对象的方式操作
  */
-abstract class GlobalStore<S : State> : Store<S> {
+open class GlobalStore<S : State> : Store<S> {
     /**
      * 全局store扩展的内部effect
      */
@@ -44,7 +44,6 @@ abstract class GlobalStore<S : State> : Store<S> {
     /**
      * 扩展分发Effect Action的能力，全局Store本身可以通过单例获取
      * @param action Action
-     * @param payload 参数
      */
     fun dispatchEffect(action: Action<Any>) {
         effect?.doAction(action, null)

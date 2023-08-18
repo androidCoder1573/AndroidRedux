@@ -29,7 +29,12 @@ enum class PropFromType {
  * 如果类似LiveData的方式更新，将导致UI频繁刷新，
  * 假设一次Reducer更新了10个数据，将会调用UI更新callback 10次，性能上会有一定的损耗。
  */
-class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, s: State) {
+class ReactiveProp<T>(
+    propValue: T,
+    s: State,
+    val isUIProp: Boolean,
+    val isUpdateWithInitValue: Boolean = true, // 首次渲染组件时，是否通知UI更新
+) {
     /**
      * 属性对应的Key，用于State中进行属性key-value关联
      */
@@ -53,7 +58,7 @@ class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, s: State) {
     /**
      * 当前属性依赖的父属性
      */
-    private var parent: ReactivePropParent<T>? = null
+    private var parentProp: ReactivePropParent<T>? = null
 
     /**
      * 当前属性所在的State
@@ -65,20 +70,7 @@ class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, s: State) {
      */
     private var stateProxy: StateProxy? = null
 
-
     private var dispose: Dispose? = null
-
-    /**
-     * 首次渲染组件时，是否通知UI更新
-     */
-    internal val isUpdateWithInitValue = true
-
-    /**
-     * 创建一个ReactiveProp
-     */
-    init {
-        isPrivate = true
-    }
 
     /**
      * 用于检查当前属性是否是组件的私有属性:
@@ -88,22 +80,21 @@ class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, s: State) {
      * @return boolean 是否是私有属性
      */
     internal val isPrivateProp: Boolean
-        get() = isPrivate && parent == null && (depMap == null || depMap!!.isEmpty())
+        get() = isPrivate && parentProp == null && (depMap == null || depMap!!.isEmpty())
 
     internal val isDepGlobalState: Boolean
-        get() = parent?.fromType == PropFromType.FROM_GLOBAL_STORE
+        get() = parentProp?.fromType == PropFromType.FROM_GLOBAL_STORE
 
     /**
      * 其实每个属性上的parent目前都是直接赋值到root，目前写了一些兼容逻辑
-     *
      * @return 当前属性依赖的根属性
      */
     internal val rootProp: ReactiveProp<T>
         get() {
             var tempParent = this
-            var propParent = parent
+            var propParent = parentProp
             while (propParent != null) {
-                val temp = propParent.prop!!.parent ?: break
+                val temp = propParent.prop!!.parentProp ?: break
                 propParent = temp
             }
             if (propParent != null) {
@@ -114,7 +105,6 @@ class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, s: State) {
 
     /**
      * 框架内部设置value，不触发变更收集
-     *
      * @param value 待设置的属性的value
      */
     internal fun innerSetter(value: T?) {
@@ -133,7 +123,7 @@ class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, s: State) {
         }
 
         // 组件在修改state prop过程中, 不能改全局store的属性
-        if (parent != null && parent!!.fromType == PropFromType.FROM_GLOBAL_STORE) {
+        if (parentProp != null && parentProp!!.fromType == PropFromType.FROM_GLOBAL_STORE) {
             ReduxManager.instance.logger.e("ReactiveProp",
                 "component can not change global state prop!!!")
             return false
@@ -152,14 +142,14 @@ class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, s: State) {
      * @param prop 要依赖的属性
      */
     internal fun depUpperComponentProp(prop: ReactiveProp<T>) {
-        if (this.parent != null) {
+        if (this.parentProp != null) {
             return
         }
 
         val rootParent = prop.rootProp
 
         // 检查父属性是否是全局store
-        val propParent = prop.parent
+        val propParent = prop.parentProp
         if (propParent !== null && propParent.fromType == PropFromType.FROM_GLOBAL_STORE) {
             this.depGlobalProp(rootParent)
             return
@@ -209,23 +199,23 @@ class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, s: State) {
     internal fun set(value: T) {
         // 防止在非Reducer中更新UI属性
         if (stateProxy == null) {
-            throw RuntimeException("can't set prop value when StateProxy null!")
+            throw RuntimeException("can't set prop value when StateProxy null!!!")
         }
 
         // 组件在修改state prop过程中, 不能改全局store的属性
-        if (parent != null && parent!!.fromType == PropFromType.FROM_GLOBAL_STORE) {
-            throw RuntimeException("component can't change global state prop!")
+        if (parentProp != null && parentProp!!.fromType == PropFromType.FROM_GLOBAL_STORE) {
+            throw RuntimeException("component can't change global state prop!!!")
         }
-        innerSetter(value)
 
+        innerSetter(value)
         // 记录哪些数据变更了
         stateProxy!!.recordChangedProp(this as ReactiveProp<Any>)
     }
 
     internal fun attach() {
-        if (parent?.prop != null) {
-            dispose = parent!!.prop?.addChild(this)
-            parent!!.prop?.value?.let { innerSetter(it) }
+        if (parentProp?.prop != null) {
+            dispose = parentProp!!.prop?.addChild(this)
+            parentProp!!.prop?.value?.let { innerSetter(it) }
         }
     }
 
@@ -247,8 +237,8 @@ class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, s: State) {
             prop.state.addTheStateToGlobalState(stateToken())
         }
 
-        parent = ReactivePropParent(prop)
-        parent!!.fromType = type
+        parentProp = ReactivePropParent(prop)
+        parentProp!!.fromType = type
         value = prop.value
     }
 
@@ -273,7 +263,7 @@ class ReactiveProp<T>(propValue: T, val isUIProp: Boolean, s: State) {
     }
 
     /**
-     * Desc: 针对依赖的属性，这里使用此类来封装
+     * 针对依赖的属性，使用此类来封装
      */
     inner class ReactivePropParent<TP> constructor(prop: ReactiveProp<TP>) {
         /**
