@@ -15,6 +15,7 @@ import com.cyworks.redux.store.StoreObserver
 import com.cyworks.redux.types.Dispatch
 import com.cyworks.redux.types.Dispatcher
 import com.cyworks.redux.types.Dispose
+import com.cyworks.redux.types.Effect
 import com.cyworks.redux.types.IPropsChanged
 import com.cyworks.redux.types.IStateChange
 import com.cyworks.redux.types.Reducer
@@ -60,7 +61,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     private var componentStateChangeListener: IStateChange<S>? = null
 
     /**
-     * 保存对state provider的反注册器
+     * 保存注入的StateGetter的反注册器
      */
     private var stateGetterDispose: Dispose? = null
 
@@ -87,8 +88,20 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     /**
      * 可分发effect的dispatch
      */
-    var effectDispatch: Dispatch? = null
-        private set
+    internal val effectDispatch: Dispatch = object : Dispatch {
+        override fun dispatch(action: Action<out Any>) {
+            if (isDestroy) {
+                return
+            }
+
+            if (logic != null) {
+                logger.i("Dispatcher", "<${logic!!.javaClass.name}>"
+                        + " send effect action, <${action.type}>")
+                val effect = logic?.effect
+                effect?.doAction(action, this@ReduxContext)
+            }
+        }
+    }
 
     /**
      * 保存一些父组件相关的数据
@@ -130,21 +143,11 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
                 field = BaseController()
             }
             field!!.setReduxContext(this)
-            initPageDispatch()
         }
 
     val dispatcher: Dispatcher = object : Dispatcher {
         override fun dispatch(action: Action<out Any>) {
-            if (isDestroy) {
-                return
-            }
-
-            if (logic != null) {
-                logger.i("Dispatcher", "<${logic!!.javaClass.name}>"
-                        + " send effect action, <${action.type}>")
-                val effect = logic?.effect
-                effect?.doAction(action, this@ReduxContext)
-            }
+            effectDispatch.dispatch(action)
         }
 
         override fun dispatchToInterceptor(action: Action<out Any>) {
@@ -217,7 +220,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         // 获取组件的初始state
         state = builder.state
 
-        // 初始化State Getter，用注册到Store中，获取当前组件对应的State
+        // 往store中注入State Getter，用于外部获取当前组件对应的State
         injectStateGetter()
 
         // 监听Store抛出来的变化

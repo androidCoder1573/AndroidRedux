@@ -138,7 +138,6 @@ class ReactiveProp<T>(
 
     /**
      * 依赖父组件的prop
-     *
      * @param prop 要依赖的属性
      */
     internal fun depUpperComponentProp(prop: ReactiveProp<T>) {

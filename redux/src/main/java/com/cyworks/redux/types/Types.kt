@@ -15,6 +15,11 @@ import com.cyworks.redux.ui.ComponentViewHolder
 typealias PropertySet<T> = (value: T) -> Unit
 
 /**
+ * watch 属性时，通过此方法获取当前关注的属性list
+ */
+typealias DepProps = () -> Array<Any>
+
+/**
  * 此函数用于解注册
  */
 typealias Dispose = () -> Unit
@@ -92,18 +97,6 @@ interface ComponentContextWrapper<S: State> {
 }
 
 /**
- * 用于主动订阅组件内数据对的观察者
- */
-fun interface IPropChanged<S : State, T> {
-    /**
-     * 通知状态变化, 请不要在这里做一些耗时操作，防止出现阻塞UI线程的问题
-     *
-     * @param prop 当前变化的属性集合[ReactiveProp]
-     */
-    fun onPropChanged(prop: ReactiveProp<T>, ctx: ReduxContext<S>)
-}
-
-/**
  * 多个公开属性变化的回调
  */
 fun interface IPropsChanged {
@@ -148,21 +141,6 @@ fun interface OnLogicAtomChanged<S : State> {
 interface CreateGlobalState<S: State> {
     fun create(): S
 }
-
-/**
- * watch 属性时，通过此方法获取当前关注的属性list
- */
-typealias DepProps = () -> Array<Any>
-
-/**
- * 当前公共状态变化监听器
- */
-typealias IPublicPropsChanged = (props: List<ReactiveProp<Any>>) -> Unit
-
-/**
- * 组件私有属性发生变化时，通过此接口通知给当前变化的组件
- */
-typealias IPrivatePropsChanged = (props: List<ReactiveProp<Any>>) -> Unit
 
 /**
  * Action 分发器接口

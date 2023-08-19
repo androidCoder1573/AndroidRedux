@@ -4,8 +4,10 @@ import com.cyworks.redux.state.State
 import com.cyworks.redux.types.DepProps
 
 /**
- * 用于描述一个一组UI数据对应的唯一UI更新，也即：一个UI只能绑定到对应的一个Atom上。
- * 更新规则: 一块UI可能依赖一个或多个属性，当依赖的属性有任何一个变化，都会触发某块UI更新。
+ * 用于描述一个一组UI数据对应的唯一UI更新，也即：一个UI只能绑定到对应的一个Atom上
+ * 更新规则: 一块UI可能依赖一个或多个属性，当依赖的属性有任何一个变化，都会触发某块UI更新
+ *
+ * todo: 优化，每个DepProps 可以获取属性对应的key，通过比较变化的key更容易
  */
 abstract class Atom<S : State> {
     /**
