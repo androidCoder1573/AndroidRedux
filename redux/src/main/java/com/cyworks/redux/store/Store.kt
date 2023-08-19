@@ -101,7 +101,7 @@ open class Store<S : State>  {
         return { listeners!!.remove(observer) }
     }
 
-    internal open fun onStateChanged(state: State?) {
+    internal fun onStateChanged(state: State?) {
         if (state == null) {
             return
         }
@@ -115,14 +115,14 @@ open class Store<S : State>  {
      */
     protected open fun update(changedPropList: List<ReactiveProp<Any>>) {
         // sub class impl
-        notifySubs(changedPropList)
+        fire(changedPropList)
     }
 
     /**
      * 通知组件状态变化
      * @param changeList 当前store中变化的数据
      */
-    protected fun notifySubs(changeList: List<ReactiveProp<Any>>) {
+    protected fun fire(changeList: List<ReactiveProp<Any>>) {
         if (isDestroy || changeList.isEmpty() || listeners == null
             || listeners!!.isEmpty()) {
             return

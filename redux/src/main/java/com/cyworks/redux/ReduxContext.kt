@@ -118,6 +118,8 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
 
     private val changedProps: ArrayList<ReactiveProp<Any>> = ArrayList()
 
+    private val stateProxy = StateProxy()
+
     /**
      * 如果开发这不想使用Action驱动，可以通过传统的方式书写逻辑代码，需继承BaseController
      */
@@ -303,7 +305,9 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
 
     private fun innerUpdateState(reducer: Reducer<S>) {
         isModifyState = true
-        state.setStateProxy(StateProxy())
+
+        stateProxy.clear()
+        state.setStateProxy(stateProxy)
 
         val newState: S = reducer.update(state)
 

@@ -24,7 +24,6 @@ class StateProxy {
 
     /**
      * 记录变化的属性，用于store通知时进行判断。
-     *
      * @param prop 属性值 [ReactiveProp]
      */
     fun recordChangedProp(prop: ReactiveProp<Any>) {
@@ -70,4 +69,8 @@ class StateProxy {
             changeQueue.clear()
             return if (list.isEmpty()) null else list
         }
+
+    fun clear() {
+        changeQueue.clear()
+    }
 }

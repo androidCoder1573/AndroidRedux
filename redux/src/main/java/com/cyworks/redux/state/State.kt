@@ -22,28 +22,28 @@ enum class StateType {
  */
 abstract class State {
     /**
-     * 用于存放组件响应式数据的Map, 框架内部创建并使用，开发者无感知。
-     * key: 某个属性对应的key；
-     * value: PropValue, 某个属性对应的值；
+     * 用于存放组件响应式数据的Map, 框架内部创建并使用，开发者无感知
+     * key: 某个属性对应的key
+     * value: PropValue, 某个属性对应的值
      */
     internal val dataMap = HashMap<String, ReactiveProp<Any>>()
 
     /**
-     * 用于存放组件响应式数据的Map, 方便框架进行修改数据，开发者无感知。
-     * key: 某个属性对应的key；
-     * value: 修改属性的函数；
+     * 当框架内部修改响应式数据的时候，为了不触发依赖收集，将设置函数保存下来
+     * key: 某个属性对应的key
+     * value: 修改属性的函数
      */
     private val propertyMap = HashMap<String, PropertySet<Any>>()
 
     /**
      * 用于加快查询设置的map，主要用于绑定全局store上
-     * key: 依赖状态对应的类名；
-     * value: 如果有则写入1；
+     * key: 依赖状态对应的类名
+     * value: 如果有则写入1
      */
     private val depGlobalStateMap = HashMap<JvmType.Object, Int>()
 
     /**
-     * state代理，主要用于当State中某些属性变化时记录这些属性的变化，方便后续处理
+     * 当State中某些属性变化时记录这些属性的变化，方便后续处理
      */
     private var stateProxy: StateProxy? = null
 
@@ -68,26 +68,6 @@ abstract class State {
     private var curDepPropKey: String? = null
 
     /**
-     * 当前state的类型，用于后续属性依赖的来源
-     */
-    internal var stateType: StateType? = null
-
-    /**
-     * Log 组件，组件内共享
-     */
-    private val logger: ILogger = ReduxManager.instance.logger
-
-    /**
-     * 页面内部默认的属性，表示当前的横竖屏状态
-     */
-    var currentOrientation: Int by ReactUIData(Configuration.ORIENTATION_PORTRAIT)
-
-    /**
-     * 组件内部默认的属性，表示当前是否需要懒加载，此属性定位为私有属性
-     */
-    var isShowUI: Boolean by ReactUIData(true)
-
-    /**
      * 是否调用了detect函数进行key-value映射
      */
     private var calledDetect: Boolean = false
@@ -101,6 +81,23 @@ abstract class State {
      * 当前state的token，用于标记一个state
      */
     internal val token: JvmType.Object = JvmType.Object("${System.currentTimeMillis()}")
+
+    /**
+     * 页面内部默认的属性，表示当前的横竖屏状态
+     */
+    var currentOrientation: Int by ReactUIData(Configuration.ORIENTATION_PORTRAIT)
+
+    /**
+     * 组件内部默认的属性，表示当前是否需要懒加载，此属性定位为私有属性
+     */
+    var isShowUI: Boolean by ReactUIData(true)
+
+    /**
+     * 当前state的类型，用于后续属性依赖的来源
+     */
+    internal var stateType: StateType? = null
+
+    private val logger: ILogger = ReduxManager.instance.logger
 
     /**
      * 获取组件私有数据变化的情况, 在子组件的reducer执行完成后调用，仅限框架内部使用。
@@ -185,7 +182,7 @@ abstract class State {
                 } catch (e: Throwable) {
                     logger.w("state detect", "${e.cause}")
                 }
-                // it.isAccessible = true
+                // it.isAccessible = false
             }
         }
         excludePropMap.clear()

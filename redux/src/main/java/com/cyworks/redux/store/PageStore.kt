@@ -44,8 +44,8 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
 
     private val uiFresher: UIFresher
 
-    private val onDraw: UIFresher.DrawCallback = object : UIFresher.DrawCallback {
-        override fun onDraw():  Boolean {
+    private val onDraw: UIFresher.VsyncCallback = object : UIFresher.VsyncCallback {
+        override fun onVsync():  Boolean {
             // 没有UI监听器，或者UI未展示，或者处于销毁状态，则不进行Ui更新
             if (isDestroy || !isPageVisible || uiUpdaterListeners.isEmpty()) {
                 return false
@@ -182,7 +182,7 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
         // 通知更新
         if (finalList.isNotEmpty()) {
             // 通知组件进行状态更新
-            notifySubs(finalList)
+            fire(finalList)
             uiFresher.requestNextDraw()
         }
 

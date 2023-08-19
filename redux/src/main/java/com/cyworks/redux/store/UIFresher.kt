@@ -2,7 +2,10 @@ package com.cyworks.redux.store
 
 import android.view.Choreographer
 
-class UIFresher internal constructor(private val drawer: DrawCallback) {
+/**
+ * 按需刷新，不会一直请求vsync，防止不必要的性能损耗
+ */
+class UIFresher internal constructor(private val vsync: VsyncCallback) {
     // 是否已经请求了vsync
     private var hasRequestNextDraw: Boolean = false
 
@@ -16,7 +19,7 @@ class UIFresher internal constructor(private val drawer: DrawCallback) {
         override fun doFrame(frameTimeNanos: Long) {
             hasRequestNextDraw = false
             drawing = true
-            val needRequestNext = drawer.onDraw() || needRequestVsyncWhenDrawFinish
+            val needRequestNext = vsync.onVsync() || needRequestVsyncWhenDrawFinish
             drawing = false
             if (needRequestNext) {
                 requestNextDraw()
@@ -27,10 +30,12 @@ class UIFresher internal constructor(private val drawer: DrawCallback) {
 
     fun requestNextDraw() {
         if (hasRequestNextDraw) {
+            // 已经请求了vsync，则不继续请求
             return
         }
 
         if (drawing) {
+            // 如果当前正在绘制中，则设置请求下一次的标记，防止属性变化不会触发UI刷新的问题
             needRequestVsyncWhenDrawFinish = true
             return
         }
@@ -50,7 +55,7 @@ class UIFresher internal constructor(private val drawer: DrawCallback) {
         needRequestVsyncWhenDrawFinish = false
     }
 
-    interface DrawCallback {
-        fun onDraw(): Boolean
+    interface VsyncCallback {
+        fun onVsync(): Boolean
     }
 }
