@@ -3,8 +3,10 @@ package com.cyworks.redux
 import android.os.Looper
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.action.InnerActionTypes
+import com.cyworks.redux.component.DialogComponent
 import com.cyworks.redux.component.Logic
 import com.cyworks.redux.component.LogicPage
+import com.cyworks.redux.dialog.ILRDialog
 import com.cyworks.redux.interceptor.InterceptorPayload
 import com.cyworks.redux.lifecycle.LifeCycleAction
 import com.cyworks.redux.prop.ReactiveProp
@@ -448,6 +450,15 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
 
     fun stateReady(): Boolean {
         return isStateReady
+    }
+
+    /**
+     * 展示一个对话框组件
+     */
+    fun showDialog(dialog: ILRDialog?) {
+        if (logic is DialogComponent) {
+            (logic as DialogComponent<out State>).showDialog(dialog)
+        }
     }
 
     /**

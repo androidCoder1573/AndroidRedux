@@ -45,11 +45,10 @@ class DemoViewModule : ViewModule<DemoFeatureState> {
 
     private fun initView(view: View?, context: ReduxContext<DemoFeatureState>) {
         view?.findViewById<View>(R.id.demo_launcher_dialog)?.setOnClickListener { v: View? ->
-            context.dispatcher.dispatch(DemoPageActions.createOpenDemoDialogAction(true))
+            context.dispatcher.dispatchToInterceptor(DemoPageActions.createOpenDemoDialogAction(true))
         }
 
         view?.findViewById<View>(R.id.component_bt)?.setOnClickListener { v: View? ->
-            Log.d("demo feature: ", "call updateState modify num")
             context.updateState { state ->
                 val before = state.num
                 state.num = before + 1

@@ -1,6 +1,5 @@
 package com.cyworks.demo.demofeature
 
-import android.util.Log
 import com.cyworks.redux.atom.StatePropsWatcher
 import com.cyworks.redux.lifecycle.LifeCycleAction
 import com.cyworks.redux.logic.EffectCollector
@@ -14,11 +13,10 @@ class DemoFeatureLogic : LogicModule<DemoFeatureState> {
                     try {
                         sleep(2000L)
                     } catch (ie: InterruptedException) {
-                        Log.e("InterruptedException: ", ie.message!!)
+                        ie.printStackTrace()
                         currentThread().interrupt()
                     }
 
-                    Log.d("demo feature: ", "call updateState modify isShowUI")
                     ctx?.updateState { state ->
                         state.isShowUI = true
                         state

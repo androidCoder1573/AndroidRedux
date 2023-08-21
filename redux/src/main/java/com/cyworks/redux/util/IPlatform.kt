@@ -6,7 +6,6 @@ import android.view.View
 import androidx.annotation.IdRes
 import androidx.annotation.LayoutRes
 import androidx.lifecycle.LifecycleOwner
-import com.cyworks.redux.dialog.ILRDialog
 
 /**
  * Desc: 处理平台相关的操作，比如activity跳转, 请求权限，关闭容器
@@ -46,8 +45,6 @@ interface IPlatform {
      * @return View
      */
     fun inflateStub(@IdRes stubId: Int, @LayoutRes layoutId: Int): View?
-
-    fun showComponentDialog(dialog: ILRDialog?)
 
     /**
      * 关闭当前页面对应的容器，比如关闭Activity，关闭对话框等

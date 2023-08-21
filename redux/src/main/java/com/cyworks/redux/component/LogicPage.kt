@@ -185,8 +185,7 @@ abstract class LogicPage<S : State>(proxy: LifeCycleProxy) : Logic<S>(proxy.prop
         // 拦截Action的Effect
         val effect: Effect<S> = Effect { action, ctx ->
             if (action.payload is InterceptorPayload) {
-                val interceptorPayload: InterceptorPayload = action.payload as InterceptorPayload
-                interceptor?.doAction(interceptorPayload.realAction, ctx)
+                interceptor?.doAction(action, ctx)
             }
         }
 

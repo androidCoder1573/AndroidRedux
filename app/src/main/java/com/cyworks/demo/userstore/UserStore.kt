@@ -2,7 +2,6 @@ package com.cyworks.demo.userstore
 
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import com.cyworks.redux.store.GlobalStore
 import com.cyworks.redux.types.CreateGlobalState
 
@@ -36,7 +35,7 @@ class UserStore private constructor() {
                 try {
                     sleep(2000L)
                 } catch (ie: InterruptedException) {
-                    Log.e("InterruptedException: ", ie.message!!)
+                    ie.printStackTrace()
                     currentThread().interrupt()
                 }
 

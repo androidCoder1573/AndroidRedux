@@ -8,10 +8,7 @@ import android.view.ViewStub
 import androidx.annotation.IdRes
 import androidx.annotation.LayoutRes
 import androidx.lifecycle.LifecycleOwner
-import com.cyworks.redux.component.DialogComponent
-import com.cyworks.redux.dialog.ILRDialog
 import com.cyworks.redux.lifecycle.LifeCycleProxy
-import com.cyworks.redux.state.State
 
 /**
  * 框架内部实现的IPlatform，借助ReduxContext实现
@@ -64,15 +61,6 @@ class Platform(proxy: LifeCycleProxy, root: View?) : IPlatform {
             viewStubView.inflate()
         } catch (e: Exception) {
             null
-        }
-    }
-
-    /**
-     * 展示一个对话框组件
-     */
-    override fun showComponentDialog(dialog: ILRDialog?) {
-        if (dialog is DialogComponent<*>) {
-            (dialog as DialogComponent<out State>).showDialog(dialog)
         }
     }
 }
