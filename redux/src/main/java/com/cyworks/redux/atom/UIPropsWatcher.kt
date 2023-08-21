@@ -23,12 +23,22 @@ class UIPropsWatcher<S : State> {
 
     /**
      * 当数据有更新时，通过此方法触发每个Atom进行更新
-     *
      * @param state 当前最新的State
      */
-    internal fun update(state: S, holder: ComponentViewHolder?) {
+    internal fun update(state: S, changedKeys: List<String>?, holder: ComponentViewHolder?) {
         for (atom in atomList) {
-            atom.doAtomChange(state, holder)
+            atom.doAtomChange(state, changedKeys, holder)
+        }
+    }
+
+    internal fun generateKeyList(state: S) {
+        for (atom in atomList) {
+            val dep = atom.dep
+            state.startCollectAtomKey()
+            dep?.let { it() }
+            state.endCollectAtomKey()
+            val list: ArrayList<String> = state.atomKeyList()
+            atom.addKeyList(list)
         }
     }
 

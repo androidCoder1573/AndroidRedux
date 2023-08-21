@@ -23,9 +23,9 @@ class DemoViewModule : ViewModule<DemoFeatureState> {
 
     private val onNameChanged: OnUIAtomChanged<DemoFeatureState> =
         OnUIAtomChanged { state, oldDeps, holder ->
-        val textView: TextView? = holder?.getView(R.id.component_text_1)
-        textView?.text = state.name
-    }
+            val textView: TextView? = holder?.getView(R.id.component_text_1)
+            textView?.text = state.name
+        }
 
     private fun getVerticalView(context: ReduxContext<DemoFeatureState>): View? {
         val platform: IPlatform = context.platform

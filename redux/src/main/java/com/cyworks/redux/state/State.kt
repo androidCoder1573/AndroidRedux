@@ -1,14 +1,12 @@
 package com.cyworks.redux.state
 
 import android.content.res.Configuration
-import android.util.Log
 import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.prop.ReactiveProp
 import com.cyworks.redux.types.PropertySet
 import com.cyworks.redux.util.ILogger
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
-import kotlin.reflect.full.memberProperties
 import kotlin.reflect.jvm.internal.impl.load.kotlin.JvmType
 
 enum class StateType {
@@ -47,50 +45,12 @@ abstract class State {
      */
     private var stateProxy: StateProxy? = null
 
-    /**
-     * 是否已经进行了merge state操作，此操作每个对象仅能进行一次
-     */
-    private var stateHasMerged = false
-
-    /**
-     * 是否正在执行state merge操作
-     */
-    private var isMergingState = false
-
-    /**
-     * 在进行属性依赖期间，用于表示当前state要依赖的父state
-     */
-    private var depState: State? = null
-
-    /**
-     * 在进行属性依赖期间，用于表示当前state的属性要依赖的父属性的key
-     */
-    private var curDepPropKey: String? = null
-
-    /**
-     * 是否调用了detect函数进行key-value映射
-     */
-    private var calledDetect: Boolean = false
-
-    /**
-     * 标记哪些属性需要排除
-     */
-    private val excludePropMap = HashMap<String, Int>()
+    private val depHelper = DepHelper()
 
     /**
      * 当前state的token，用于标记一个state
      */
     internal val token: JvmType.Object = JvmType.Object("${System.currentTimeMillis()}")
-
-    /**
-     * 页面内部默认的属性，表示当前的横竖屏状态
-     */
-    var currentOrientation: Int by ReactUIData(Configuration.ORIENTATION_PORTRAIT)
-
-    /**
-     * 组件内部默认的属性，表示当前是否需要懒加载，此属性定位为私有属性
-     */
-    var isShowUI: Boolean by ReactUIData(true)
 
     /**
      * 当前state的类型，用于后续属性依赖的来源
@@ -116,39 +76,38 @@ abstract class State {
             stateProxy!!.changedPublicProps
         } else null
 
-    init {
-        excludePropMap["excludePropMap"] = 1
-        excludePropMap["dataMap"] = 1
-        excludePropMap["propertyMap"] = 1
-        excludePropMap["depGlobalStateMap"] = 1
-        excludePropMap["stateProxy"] = 1
-        excludePropMap["stateHasMerged"] = 1
-        excludePropMap["isMergingState"] = 1
-        excludePropMap["depState"] = 1
-        excludePropMap["curDepPropKey"] = 1
-        excludePropMap["stateType"] = 1
-        excludePropMap["logger"] = 1
-        excludePropMap["calledDetect"] = 1
-        excludePropMap["privatePropChanged"] = 1
-        excludePropMap["publicPropChanged"] = 1
-        excludePropMap["token"] = 1
-    }
+    /**
+     * 页面内部默认的属性，表示当前的横竖屏状态
+     */
+    var currentOrientation: Int by ReactUIData(Configuration.ORIENTATION_PORTRAIT)
 
     /**
-     * 当子组件依赖父组件的属性时，通过此方法设置父组件的state，方便自组件进行属性依赖
+     * 组件内部默认的属性，表示当前是否需要懒加载，此属性定位为私有属性
      */
-    internal fun setParentState(parentState: State) {
-        depState = parentState
+    var isShowUI: Boolean by ReactUIData(true)
+
+    internal fun setTargetState(target: State) {
+        depHelper.setTargetState(target)
     }
 
     internal fun startMergeState() {
-        isMergingState = true
+        depHelper.startMergeState()
     }
 
     internal fun endMergeState() {
-        isMergingState = false
-        stateHasMerged = true
-        depState = null
+        depHelper.endMergeState()
+    }
+
+    internal fun startCollectAtomKey() {
+        depHelper.startCollectAtomKey()
+    }
+
+    internal fun endCollectAtomKey() {
+        depHelper.endCollectAtomKey()
+    }
+
+    internal fun atomKeyList(): ArrayList<String> {
+        return depHelper.atomKeyList()
     }
 
     /**
@@ -168,24 +127,7 @@ abstract class State {
     }
 
     internal fun detectField() {
-        if (calledDetect) {
-            return
-        }
-        calledDetect = true
-
-        val kClass = this.javaClass.kotlin
-        kClass.memberProperties.forEach {
-            if (!excludePropMap.containsKey(it.name) && !dataMap.containsKey(it.name) && !it.isAbstract) {
-                // it.isAccessible = true
-                try {
-                    it.getter.call(this@State)
-                } catch (e: Throwable) {
-                    logger.w("state detect", "${e.cause}")
-                }
-                // it.isAccessible = false
-            }
-        }
-        excludePropMap.clear()
+        depHelper.detectField(this)
     }
 
     /**
@@ -234,32 +176,6 @@ abstract class State {
         }
     }
 
-    private fun depProp(curProp: ReactiveProp<Any>) {
-        if (!isMergingState || stateHasMerged || depState == null) {
-            logger.e("State", "this step can not dep the prop from parent")
-            return
-        }
-
-        val parentReactiveProp = depState!!.findProp()
-        if (parentReactiveProp != null) {
-            // 执行依赖
-            if (parentReactiveProp.myStateIsGlobalState()) {
-                logger.i("State", "dep global prop")
-                curProp.depGlobalProp(parentReactiveProp)
-            } else {
-                logger.i("State", "dep parent prop")
-                curProp.depUpperComponentProp(parentReactiveProp)
-            }
-        } else {
-            logger.w("State", "can not find the prop from parent,"
-                    + " please check to dep global prop")
-        }
-    }
-
-     private fun findProp(): ReactiveProp<Any>? {
-        return dataMap[curDepPropKey]
-    }
-
     /**
      * 由于目前是主动依赖属性，所以退出时，需要将依赖删除
      */
@@ -270,6 +186,9 @@ abstract class State {
         depGlobalStateMap.clear()
     }
 
+    /**
+     * 内部类，用于实现UI字段响应式属性的委托
+     */
     inner class ReactUIData<V : Any?>(initialValue: V, private val updateValueByInit: Boolean = true) : ReadWriteProperty<Any?, V> {
         private var value = initialValue
 
@@ -288,7 +207,7 @@ abstract class State {
 
         override fun getValue(thisRef: Any?, property: KProperty<*>): V {
             val key = property.name
-            curDepPropKey = key
+            depHelper.recordDepPropKey(key)
             checkDataMap(key, value) {
                 value = it
             }
@@ -296,35 +215,31 @@ abstract class State {
         }
 
         /**
-         * 设置属性的值，，首次设置的时候要设置依赖关系
+         * 设置属性的值, 首次设置的时候要设置依赖关系
          */
         override fun setValue(thisRef: Any?, property: KProperty<*>, value: V) {
             val name = property.name
-            Log.d("state", "call start prop setValue: $name, state: ${this@State.javaClass.name}")
+            logger.d("state", "call start prop setValue: $name, state: ${this@State.javaClass.name}")
 
             checkDataMap(name, this.value) {
                 this.value = it
             }
 
             val prop = dataMap[name]
-            if ((stateType == StateType.COMPONENT_TYPE) && isMergingState && !stateHasMerged) {
-                if (prop != null) {
-                    Log.d("state", "start dep ui prop: $name")
-                    depProp(prop)
-                }
-
+            if ((stateType == StateType.COMPONENT_TYPE) && depHelper.canMergeState()) {
+                depHelper.depProp(prop)
                 this.value = value
                 return
             }
 
-            if (!calledDetect || prop?.canSet(value as Any) == true) {
+            if (depHelper.canSetPropValue(prop, value as Any)) {
                 this.value = value
             }
         }
     }
 
     /**
-     * 内部类，用于实现响应式属性的委托
+     * 内部类，用于实现逻辑字段响应式属性的委托
      */
     open inner class ReactLogicData<V : Any?>(initialValue: V, private val updateValueByInit: Boolean = true) : ReadWriteProperty<Any?, V> {
         private var value = initialValue
@@ -346,7 +261,7 @@ abstract class State {
          */
         override fun getValue(thisRef: Any?, property: KProperty<*>): V {
             val key = property.name
-            curDepPropKey = key
+            depHelper.recordDepPropKey(key)
             checkDataMap(key, value) {
                 value = it
             }
@@ -354,7 +269,7 @@ abstract class State {
         }
 
         /**
-         * 设置属性的值，，首次设置的时候要设置依赖关系
+         * 设置属性的值，首次设置的时候要设置依赖关系
          */
         override fun setValue(thisRef: Any?, property: KProperty<*>, value: V) {
             val name = property.name
@@ -363,16 +278,13 @@ abstract class State {
             }
 
             val prop = dataMap[name]
-            if ((stateType == StateType.COMPONENT_TYPE) && isMergingState && !stateHasMerged) {
-                if (prop != null) {
-                    depProp(prop)
-                }
-
+            if ((stateType == StateType.COMPONENT_TYPE) && depHelper.canMergeState()) {
+                depHelper.depProp(prop)
                 this.value = value
                 return
             }
 
-            if (!calledDetect || prop?.canSet(value as Any) == true) {
+            if (depHelper.canSetPropValue(prop, value as Any)) {
                 this.value = value
             }
         }

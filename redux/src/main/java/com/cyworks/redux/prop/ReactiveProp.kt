@@ -1,6 +1,5 @@
 package com.cyworks.redux.prop
 
-import android.util.Log
 import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.state.State
 import com.cyworks.redux.state.StateProxy
@@ -227,12 +226,11 @@ class ReactiveProp<T>(
     }
 
     private fun setParent(prop: ReactiveProp<T>, type: PropFromType) {
-        Log.i("react prop", "setParent")
         dispose = prop.addChild(this)
 
         // 如果当前依赖的是全局store，则将当前state的token写入全局store中，方便后续快速查找
         if (type == PropFromType.FROM_GLOBAL_STORE) {
-            Log.i("react prop", "setParent FROM_GLOBAL_STORE ${prop.stateToken()}")
+            ReduxManager.instance.logger.d("react prop", "parent FROM_GLOBAL_STORE ${prop.stateToken()}")
             prop.state.addTheStateToGlobalState(stateToken())
         }
 

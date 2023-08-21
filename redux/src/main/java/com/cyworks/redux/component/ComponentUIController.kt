@@ -6,12 +6,12 @@ import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.atom.UIPropsWatcher
-import com.cyworks.redux.ui.UIChangedBean
-import com.cyworks.redux.ui.UIChangedType
 import com.cyworks.redux.dependant.Dependant
 import com.cyworks.redux.lifecycle.LifeCycleAction
 import com.cyworks.redux.state.State
 import com.cyworks.redux.ui.ComponentViewHolder
+import com.cyworks.redux.ui.UIChangedBean
+import com.cyworks.redux.ui.UIChangedType
 import com.cyworks.redux.ui.ViewModule
 import com.cyworks.redux.util.Environment
 import com.cyworks.redux.util.ILogger
@@ -106,6 +106,7 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
         // 创建属性订阅器
         uiPropsWatcher = UIPropsWatcher()
         innerViewModule.subscribeProps(state, uiPropsWatcher)
+        uiPropsWatcher!!.generateKeyList(state)
     }
 
     /**
@@ -415,8 +416,8 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
      * @param state 当前最新的State
      * @param holder 当前UI组件的View Holder
      */
-    fun callUIUpdate(state: S, holder: ComponentViewHolder?) {
-        uiPropsWatcher?.update(state, holder)
+    fun callUIUpdate(state: S, changedKeys: List<String>?, holder: ComponentViewHolder?) {
+        uiPropsWatcher?.update(state, changedKeys, holder)
     }
 
     /**

@@ -17,11 +17,11 @@ class LogicAtom<S : State> : Atom<S>() {
             return
         }
 
-        val isChanged = !isEqual(changedProps, watchedProps)
-        if (isChanged) {
-            val oldDeps = watchedProps
-            watchedProps = changedProps
-            onChanged?.update(state, oldDeps, ctx)
-        }
+//        val isChanged = !isEqual(changedProps, watchedProps)
+//        if (isChanged) {
+//            val oldDeps = watchedProps
+//            watchedProps = changedProps
+//            onChanged?.update(state, oldDeps, ctx)
+//        }
     }
 }

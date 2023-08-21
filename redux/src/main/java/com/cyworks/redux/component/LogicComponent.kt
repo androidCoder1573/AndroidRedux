@@ -97,7 +97,7 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
         // 标记开始merge
         state.startMergeState()
 
-        state.setParentState(parentState)
+        state.setTargetState(parentState)
 
         // 关联框架内部数据
         state.currentOrientation = parentState.currentOrientation

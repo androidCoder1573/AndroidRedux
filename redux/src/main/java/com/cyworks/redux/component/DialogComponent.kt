@@ -24,6 +24,9 @@ abstract class DialogComponent<S : State> : BaseComponent<S>(true) {
      */
     private var dialogInstance: ILRDialog? = null
 
+    // 将变化的属性的key抽离到一个列表中
+    private val changedPropKeys: ArrayList<String> = ArrayList()
+
     /**
      * 框架注入的对话框控制接口
      */
@@ -57,10 +60,9 @@ abstract class DialogComponent<S : State> : BaseComponent<S>(true) {
             return
         }
 
-        // 将变化的属性的key抽离到一个列表中
-        val propKeys: MutableList<String?> = ArrayList()
+        changedPropKeys.clear()
         for (prop in props) {
-            propKeys.add(prop.key)
+            changedPropKeys.add(prop.key ?: "")
         }
 
         // 如果组件UI不可见
@@ -71,12 +73,12 @@ abstract class DialogComponent<S : State> : BaseComponent<S>(true) {
         }
 
         // 屏幕旋转事件
-        if (needHandleOrientation(propKeys)) {
+        if (needHandleOrientation(changedPropKeys)) {
             return
         }
 
         // 最后更新UI
-        uiController.callUIUpdate(stateCompare.lastState, uiController.viewHolder)
+        uiController.callUIUpdate(stateCompare.lastState, changedPropKeys, uiController.viewHolder)
     }
 
     /**
@@ -84,7 +86,7 @@ abstract class DialogComponent<S : State> : BaseComponent<S>(true) {
      * @param propKeys 当前状态变化的属性对应key
      * @return 是否可以处理屏幕旋转
      */
-    private fun needHandleOrientation(propKeys: MutableList<String?>): Boolean {
+    private fun needHandleOrientation(propKeys: ArrayList<String>): Boolean {
         val orientationKey = "currentOrientation"
         if (!propKeys.contains(orientationKey)) {
             return false

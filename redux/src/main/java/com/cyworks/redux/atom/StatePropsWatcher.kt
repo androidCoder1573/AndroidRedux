@@ -17,7 +17,6 @@ class StatePropsWatcher<S : State> {
 
     /**
      * 当数据有更新时，通过此方法触发每个Atom进行更新
-     *
      * @param state 当前最新的State
      */
     fun update(state: S, ctx: ReduxContext<S>) {
