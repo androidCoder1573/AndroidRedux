@@ -7,7 +7,6 @@ import com.cyworks.demo.demopage.DemoPageState
 import com.cyworks.demo.userstore.UserState
 import com.cyworks.demo.userstore.UserStore
 import com.cyworks.redux.interceptor.InterceptorCollector
-import com.cyworks.redux.state.State
 import com.cyworks.redux.store.GlobalStoreSubscribe
 
 class DemoComponentConnector : Connector<DemoFeatureState, DemoPageState>() {
@@ -27,9 +26,8 @@ class DemoComponentConnector : Connector<DemoFeatureState, DemoPageState>() {
                 childState: DemoFeatureState,
                 globalState: UserState
             ) {
-                val gState = globalState as UserState
-                childState.age = gState.age
-                childState.name = gState.name
+                childState.age = globalState.age
+                childState.name = globalState.name
             }
         })
     }

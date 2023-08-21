@@ -23,7 +23,7 @@ class DepHelper {
     /**
      * 在进行属性依赖期间，用于表示当前state的属性要依赖的父属性的key
      */
-    private var curDepPropKey: String = ""
+    internal var curDepPropKey: String = ""
 
     /**
      * 是否调用了detect函数进行key-value映射
@@ -79,11 +79,12 @@ class DepHelper {
         }
 
         if (!isMergingState || stateHasMerged || targetState == null) {
-            ReduxManager.instance.logger.e("Dep Collect", "this step can not dep the prop from parent")
+            ReduxManager.instance.logger.e("Dep Collect",
+                "this step can not dep the prop from parent")
             return
         }
 
-        val parentReactiveProp = findProp(targetState)
+        val parentReactiveProp = targetState?.findProp()
         if (parentReactiveProp != null) {
             // 执行依赖
             if (parentReactiveProp.myStateIsGlobalState()) {
@@ -91,14 +92,7 @@ class DepHelper {
             } else {
                 prop.depUpperComponentProp(parentReactiveProp)
             }
-        } else {
-            ReduxManager.instance.logger.w("State", "can not find the prop from parent,"
-                    + " please check to dep global prop")
         }
-    }
-
-    private fun findProp(state: State?): ReactiveProp<Any>? {
-        return state?.dataMap?.get(curDepPropKey)
     }
 
     fun canMergeState(): Boolean {

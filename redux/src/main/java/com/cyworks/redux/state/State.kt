@@ -134,16 +134,19 @@ abstract class State {
      * 当某个属性对外有依赖时，依赖的父属性发生更新时，此时需要更新当前属性，但是此时不能触发更新收集
      */
     internal fun innerSetProp(key: String, value: Any) {
-        logger.i("State", "innerSetProp: key: $key, value: $value")
         propertyMap[key]?.let { it(value) }
     }
 
     internal fun addTheStateToGlobalState(token: JvmType.Object) {
-        depGlobalStateMap[token] = DEPENDANT_STATE_FLAG
+        if (stateType == StateType.GLOBAL_TYPE) {
+            depGlobalStateMap[token] = DEPENDANT_STATE_FLAG
+        }
     }
 
     internal fun removeTheStateFromGlobalState(token: JvmType.Object) {
-        depGlobalStateMap.remove(token)
+        if (stateType == StateType.GLOBAL_TYPE) {
+            depGlobalStateMap.remove(token)
+        }
     }
 
     /**
@@ -151,8 +154,15 @@ abstract class State {
      * @param token 全局store对应的token
      */
     internal fun isTheStateDependGlobalState(token: JvmType.Object): Boolean {
+        if (stateType != StateType.GLOBAL_TYPE) {
+            return false
+        }
         val result = depGlobalStateMap[token] ?: return false
         return result == DEPENDANT_STATE_FLAG
+    }
+
+    internal fun findProp(): ReactiveProp<Any>? {
+        return dataMap[depHelper.curDepPropKey]
     }
 
     internal fun attach() {
@@ -194,11 +204,17 @@ abstract class State {
 
         @Suppress("UNCHECKED_CAST")
         private fun checkDataMap(key: String, value: V, set: PropertySet<V>) {
+            if (stateType == StateType.GLOBAL_TYPE
+                && (key == "currentOrientation" || key == "isShowUI")) {
+                return
+            }
+
             if (propertyMap[key] == null) {
                 propertyMap[key] = set as PropertySet<Any>
             }
             if (dataMap[key] == null) {
-                logger.d("State", "create ui ReactiveProp $key, state: ${this@State.javaClass.name}")
+                logger.d("State",
+                    "create ui ReactiveProp $key, state: ${this@State.javaClass.name}")
                 val prop = ReactiveProp(value, this@State, true, updateValueByInit)
                 prop.key = key
                 dataMap[key] = prop as ReactiveProp<Any>
@@ -206,9 +222,15 @@ abstract class State {
         }
 
         override fun getValue(thisRef: Any?, property: KProperty<*>): V {
-            val key = property.name
-            depHelper.recordDepPropKey(key)
-            checkDataMap(key, value) {
+            val name = property.name
+
+            if (stateType == StateType.GLOBAL_TYPE
+                && (name == "currentOrientation" || name == "isShowUI")) {
+                return this.value
+            }
+
+            depHelper.recordDepPropKey(name)
+            checkDataMap(name, value) {
                 value = it
             }
             return value
@@ -219,7 +241,12 @@ abstract class State {
          */
         override fun setValue(thisRef: Any?, property: KProperty<*>, value: V) {
             val name = property.name
-            logger.d("state", "call start prop setValue: $name, state: ${this@State.javaClass.name}")
+
+            if (stateType == StateType.GLOBAL_TYPE
+                && (name == "currentOrientation" || name == "isShowUI")) {
+                this.value = value
+                return
+            }
 
             checkDataMap(name, this.value) {
                 this.value = it

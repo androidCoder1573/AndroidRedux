@@ -230,7 +230,6 @@ class ReactiveProp<T>(
 
         // 如果当前依赖的是全局store，则将当前state的token写入全局store中，方便后续快速查找
         if (type == PropFromType.FROM_GLOBAL_STORE) {
-            ReduxManager.instance.logger.d("react prop", "parent FROM_GLOBAL_STORE ${prop.stateToken()}")
             prop.state.addTheStateToGlobalState(stateToken())
         }
 
@@ -244,12 +243,12 @@ class ReactiveProp<T>(
     }
 
     private fun addChild(child: ReactiveProp<T>): Dispose {
-        if (this.depMap == null) {
-            this.depMap = HashMap()
+        if (depMap == null) {
+            depMap = HashMap()
         }
 
         val key = child.stateToken()
-        this.depMap!![key] = child
+        depMap!![key] = child
         return { depMap!!.remove(key) }
     }
 
