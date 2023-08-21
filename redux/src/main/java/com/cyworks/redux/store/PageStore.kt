@@ -24,6 +24,9 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
      */
     private var stateGetters: CopyOnWriteArrayList<StateGetter<State>>? = null
 
+    // 定义最终变化列表
+    private val finalList: MutableList<ReactiveProp<Any>> = ArrayList()
+
     /**
      * Page 容器是否展示
      */
@@ -166,8 +169,7 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
     override fun update(changedPropList: List<ReactiveProp<Any>>) {
         val time = System.currentTimeMillis()
 
-        // 定义最终变化列表
-        val finalList: MutableList<ReactiveProp<Any>> = ArrayList()
+        finalList.clear()
 
         // 更新state
         changedPropList.forEach {

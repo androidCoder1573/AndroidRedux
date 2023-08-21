@@ -1,4 +1,4 @@
-package com.cyworks.redux.permission
+package com.cyworks.permissions
 
 /**
  * 自定义的权限请求结果的callback

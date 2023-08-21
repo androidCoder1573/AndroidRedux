@@ -10,7 +10,7 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 /**
- * Desc: 保存一些Redux运行过程中的全局对象
+ * 保存一些Redux运行过程中的全局对象
  *
  * 1、提供App级别的Effect Bus，方便页面之间通过此BUS进行交互，这里页面间的交互主要指的是广播，
  * 我们限制了广播接收者只能是page，防止了组件间直接通过广播进行交互。

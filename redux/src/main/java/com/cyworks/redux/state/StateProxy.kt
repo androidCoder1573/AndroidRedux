@@ -18,6 +18,9 @@ class StateProxy {
      */
     private val changeQueue: MutableList<ReactiveProp<Any>>
 
+    private val privateChangedQueue = ArrayList<ReactiveProp<Any>>()
+    private val publishChangedQueue = ArrayList<ReactiveProp<Any>>()
+
     init {
         changeQueue = ArrayList()
     }
@@ -39,16 +42,16 @@ class StateProxy {
             if (changeQueue.isEmpty()) {
                 return null
             }
-            val list: MutableList<ReactiveProp<Any>> = ArrayList()
+            privateChangedQueue.clear()
             val it = changeQueue.iterator()
             while (it.hasNext()) {
                 val changedProp = it.next()
                 if (changedProp.isPrivateProp) {
-                    list.add(changedProp)
+                    privateChangedQueue.add(changedProp)
                     it.remove()
                 }
             }
-            return if (list.isEmpty()) null else list
+            return if (privateChangedQueue.isEmpty()) null else privateChangedQueue
         }
 
     /**
@@ -60,14 +63,14 @@ class StateProxy {
             if (changeQueue.isEmpty()) {
                 return null
             }
-            val list: MutableList<ReactiveProp<Any>> = ArrayList()
+            publishChangedQueue.clear()
             for (changedProp in changeQueue) {
                 if (!changedProp.isPrivateProp) {
-                    list.add(changedProp)
+                    publishChangedQueue.add(changedProp)
                 }
             }
             changeQueue.clear()
-            return if (list.isEmpty()) null else list
+            return if (publishChangedQueue.isEmpty()) null else publishChangedQueue
         }
 
     fun clear() {

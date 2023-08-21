@@ -1,4 +1,4 @@
-package com.cyworks.redux.permission
+package com.cyworks.permissions
 
 /**
  * 权限请求结果listener，用于直接对接Activity

@@ -1,4 +1,4 @@
-package com.cyworks.redux.permission
+package com.cyworks.permissions
 
 import android.content.Context
 import android.content.Intent

@@ -13,11 +13,7 @@ class BaseController<S : State> {
     protected lateinit var reduxContext: ReduxContext<S>
     protected lateinit var platform: IPlatform
 
-    /**
-     * 设置ReduxContext，并初始化部分成员
-     * @param reduxContext ReduxContext
-     */
-    fun setReduxContext(reduxContext: ReduxContext<S>) {
+    fun setCtx(reduxContext: ReduxContext<S>) {
         this.reduxContext = reduxContext
         platform = reduxContext.platform
     }

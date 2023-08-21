@@ -5,7 +5,6 @@ import androidx.annotation.MainThread
 import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.prop.ReactiveProp
 import com.cyworks.redux.state.State
-import com.cyworks.redux.types.Dispatch
 import com.cyworks.redux.types.Dispose
 import com.cyworks.redux.util.ILogger
 import java.util.concurrent.CopyOnWriteArrayList
@@ -61,10 +60,7 @@ open class Store<S : State>  {
      */
     private var listeners: CopyOnWriteArrayList<StoreObserver>? = null
 
-    /**
-     * 分发Reducer的dispatch, 需要在page中使用，扩展dispatch能力
-     */
-    var dispatcher: Dispatch? = null
+    private val tempChangedList: ArrayList<ReactiveProp<Any>> = ArrayList()
 
     /**
      * store是否销毁了, 销毁后不能再处理数据
@@ -84,9 +80,7 @@ open class Store<S : State>  {
     }
 
     /**
-     * 监听store中的属性,
-     * 为了防止外部随意监听store变化，控制了仅限框架内部调用
-     *
+     * 监听store中的属性，为了防止外部随意监听store变化，控制了仅限框架内部调用
      * @param observer [StoreObserver] 监听器
      */
     @MainThread
@@ -146,22 +140,22 @@ open class Store<S : State>  {
      * @return 组件变化的属性列表
      */
     private fun checkChangeList(changeList: List<ReactiveProp<Any>>, token: JvmType.Object): List<ReactiveProp<Any>> {
-        val tempList: ArrayList<ReactiveProp<Any>> = ArrayList()
+        tempChangedList.clear()
         changeList.forEach {
             // 如果组件的属性就在当前变化的列表里，直接加入
             if (it.stateToken() == token) {
-                tempList.add(it)
+                tempChangedList.add(it)
             } else {
                 // 如果组件属性没在变化列表里，看当前属性的孩子是否具有此属性
                 val child = it.getChild(token)
                 if (child != null) {
                     // 首先要同步value
                     child.innerSetter(it.value())
-                    tempList.add(child)
+                    tempChangedList.add(child)
                 }
             }
         }
-        return tempList
+        return tempChangedList
     }
 
     /**

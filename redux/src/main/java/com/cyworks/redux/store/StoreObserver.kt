@@ -25,7 +25,6 @@ internal class StoreObserver(token: JvmType.Object, cb: IPropsChanged) {
 
     /**
      * 当store内部数据发生变化时，通知关心的组件状态变化了
-     *
      * @param props 变化的属性
      */
     fun onPropChanged(props: List<ReactiveProp<Any>>?) {

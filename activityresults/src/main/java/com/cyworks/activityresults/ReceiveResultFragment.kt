@@ -1,4 +1,4 @@
-package com.cyworks.redux.activityresult
+package com.cyworks.activityresults
 
 import android.app.Fragment
 import android.util.SparseArray

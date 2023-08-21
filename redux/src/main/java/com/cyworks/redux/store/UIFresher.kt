@@ -21,10 +21,10 @@ class UIFresher internal constructor(private val vsync: VsyncCallback) {
             drawing = true
             val needRequestNext = vsync.onVsync() || needRequestVsyncWhenDrawFinish
             drawing = false
+            needRequestVsyncWhenDrawFinish = false
             if (needRequestNext) {
                 requestNextDraw()
             }
-            needRequestVsyncWhenDrawFinish= false
         }
     }
 

@@ -15,7 +15,6 @@ import com.cyworks.redux.store.StoreObserver
 import com.cyworks.redux.types.Dispatch
 import com.cyworks.redux.types.Dispatcher
 import com.cyworks.redux.types.Dispose
-import com.cyworks.redux.types.Effect
 import com.cyworks.redux.types.IPropsChanged
 import com.cyworks.redux.types.IStateChange
 import com.cyworks.redux.types.Reducer
@@ -38,9 +37,9 @@ import com.cyworks.redux.util.IPlatform
  */
 class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<S>) {
     /**
-     * ReduxContext对应的组件实例
+     * 平台操作相关
      */
-    private var logic: Logic<S>? = null
+    val platform: IPlatform
 
     /**
      * 组件对应的State
@@ -56,9 +55,24 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         private set
 
     /**
-     * 当状态发生变化时，通过此接口分发给UI
+     * ReduxContext对应的组件实例
+     */
+    private var logic: Logic<S>? = null
+
+    /**
+     * 当自身组件的状态发生变化时，通过此接口分发给UI
      */
     private var componentStateChangeListener: IStateChange<S>? = null
+
+    /**
+     * 保存对UI更新listener的反注册器，这里是注册对vsync同步信号的监听
+     */
+    private var uiUpdaterDispose: Dispose? = null
+
+    /**
+     * 保存对store观察的反注册器
+     */
+    private var storeObserverDispose: Dispose? = null
 
     /**
      * 保存注入的StateGetter的反注册器
@@ -71,47 +85,14 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     private var dispatchDispose: Dispose? = null
 
     /**
-     * 保存对UI更新listener的反注册器
-     */
-    private var uiUpdaterDispose: Dispose? = null
-
-    /**
-     * 保存对store观察的反注册器
-     */
-    private var storeObserverDispose: Dispose? = null
-
-    /**
      * 存放当前组件已更新的属性，在下一次vsync信号过来时，用于UI更新
      */
     private var pendingChangedProps: HashMap<String, ReactiveProp<Any>>? = null
 
     /**
-     * 可分发effect的dispatch
-     */
-    internal val effectDispatch: Dispatch = object : Dispatch {
-        override fun dispatch(action: Action<out Any>) {
-            if (isDestroy) {
-                return
-            }
-
-            if (logic != null) {
-                logger.i("Dispatcher", "<${logic!!.javaClass.name}>"
-                        + " send effect action, <${action.type}>")
-                val effect = logic?.effect
-                effect?.doAction(action, this@ReduxContext)
-            }
-        }
-    }
-
-    /**
      * 保存一些父组件相关的数据
      */
     private var environment: Environment? = null
-
-    /**
-     * 平台操作相关
-     */
-    val platform: IPlatform
 
     private val logger: ILogger = ReduxManager.instance.logger
 
@@ -142,8 +123,26 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
             if (field == null) {
                 field = BaseController()
             }
-            field!!.setReduxContext(this)
+            field!!.setCtx(this)
         }
+
+    /**
+     * 可分发effect的dispatch
+     */
+    internal val effectDispatch: Dispatch = object : Dispatch {
+        override fun dispatch(action: Action<out Any>) {
+            if (isDestroy) {
+                return
+            }
+
+            if (logic != null) {
+                logger.i("Dispatcher", "<${logic!!.javaClass.name}>"
+                        + " send effect action, <${action.type}>")
+                val effect = logic?.effect
+                effect?.doAction(action, this@ReduxContext)
+            }
+        }
+    }
 
     val dispatcher: Dispatcher = object : Dispatcher {
         override fun dispatch(action: Action<out Any>) {
@@ -155,7 +154,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
                 return
             }
 
-            val innerAction = Action(InnerActionTypes.INTERCEPT_ACTION_TYPE,  InterceptorPayload(action))
+            val innerAction = Action(InnerActionTypes.INTERCEPT_ACTION_TYPE, InterceptorPayload(action))
             val bus = environment?.pageDispatchBus
             bus?.pageDispatch?.dispatch(innerAction)
             logger.i("Dispatcher","<${logic?.javaClass?.name}>"
@@ -187,8 +186,8 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
                 if (maps != null) {
                     for (dependant in maps.values) {
                         val logic = dependant.logic
-                        val ctx = logic.context
-                        ctx.dispatcher.dispatchToSubComponents(action)
+                        val subCtx = logic.context
+                        subCtx.dispatcher.dispatchToSubComponents(action)
                     }
                 }
             }
@@ -294,10 +293,6 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     }
 
     fun updateState(reducer: Reducer<S>) {
-        if (isDestroy || environment == null) {
-            return
-        }
-
         logger.d("redux context", "state: ${state.javaClass.name} will change prop")
         if (Looper.getMainLooper() == Looper.myLooper()) {
             innerUpdateState(reducer)
@@ -307,6 +302,10 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     }
 
     private fun innerUpdateState(reducer: Reducer<S>) {
+        if (isDestroy || environment == null) {
+            return
+        }
+
         isModifyState = true
 
         stateProxy.clear()
@@ -314,9 +313,10 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
 
         val newState: S = reducer.update(state)
 
-        // 获取私有属性变化，并本地更新
+        // 获取私有属性变化，记录到本地记录，并请求vsync
         val privateProps = newState.privatePropChanged
         privateProps?.let { onStateChange(it) }
+
         // 公共属性
         environment!!.store!!.onStateChanged(newState)
 
@@ -346,7 +346,10 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     /**
      * 首次创建UI时，根据是否更新初始值来展示UI
      */
-    fun runFirstUpdate() {
+    internal fun runFirstUpdate() {
+        if (isDestroy) {
+            return
+        }
         val map = state.dataMap
         for (key in map.keys) {
             val reactiveProp = map[key]
@@ -360,7 +363,10 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     /**
      * 进行一次全量更新：主要用组件隐藏之后再显示的操作，或者横竖屏切换时的操作
      */
-    fun runFullUpdate() {
+    internal fun runFullUpdate() {
+        if (isDestroy) {
+            return
+        }
         val map = state.dataMap
         for (key in map.keys) {
             val prop = map[key]

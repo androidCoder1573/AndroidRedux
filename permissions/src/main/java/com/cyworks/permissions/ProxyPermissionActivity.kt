@@ -1,4 +1,4 @@
-package com.cyworks.redux.permission
+package com.cyworks.permissions
 
 import android.app.Activity
 import android.os.Build

@@ -17,3 +17,5 @@ dependencyResolutionManagement {
 rootProject.name = "AndroidRedux"
 include ':app'
 include ':redux'
+include ':activityresults'
+include ':permissions'

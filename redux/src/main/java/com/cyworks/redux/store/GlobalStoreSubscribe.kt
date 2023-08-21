@@ -1,6 +1,5 @@
 package com.cyworks.redux.store
 
-import android.util.Log
 import com.cyworks.redux.state.State
 import com.cyworks.redux.types.Dispose
 import com.cyworks.redux.types.IPropsChanged
@@ -56,9 +55,7 @@ class GlobalStoreSubscribe<CS : State> internal constructor(callback: IPropsChan
             state.setParentState(globalStoreState)
             iBind.combine(state, globalStoreState)
             val token: JvmType.Object = state.token
-            Log.e("generateDependant", "1 dep global store, $token")
             if (globalStoreState.isTheStateDependGlobalState(token)) {
-                Log.e("generateDependant", "2 dep global store, $token")
                 batchStoreObserver(store, token)
             }
         }
@@ -73,7 +70,6 @@ class GlobalStoreSubscribe<CS : State> internal constructor(callback: IPropsChan
         if (store == null || token == null) {
             return
         }
-        Log.e("generateDependant", "set observer to global store, $token")
         val dispose: Dispose? = store.observe(StoreObserver(token, cb))
         if (dispose != null) {
             disposeList.add(dispose)
