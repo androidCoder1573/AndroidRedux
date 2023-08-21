@@ -7,7 +7,7 @@ import com.cyworks.redux.types.IBus
 
 class DispatchBus internal constructor() : IBus {
     /**
-     * 每个bus中，保存的dispatch需要根据Page以及父组件分别保存。
+     * 每个bus中，保存的dispatch需要根据Page以及父组件分别保存
      * 目前需求的通信方式是，组件只能发action给Page，但是Page可以发送Action给所有的组件，所以这里区分一下
      */
     internal var pageDispatch: Dispatch? = null

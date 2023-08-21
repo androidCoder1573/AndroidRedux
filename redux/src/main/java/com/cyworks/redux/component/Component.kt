@@ -2,7 +2,7 @@ package com.cyworks.redux.component
 
 import android.view.View
 import androidx.lifecycle.Observer
-import com.cyworks.redux.beans.UIChangedType
+import com.cyworks.redux.ui.UIChangedType
 import com.cyworks.redux.prop.ChangedState
 import com.cyworks.redux.prop.ReactiveProp
 import com.cyworks.redux.state.State

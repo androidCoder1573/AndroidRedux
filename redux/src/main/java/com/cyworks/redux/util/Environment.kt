@@ -66,7 +66,7 @@ class Environment private constructor() {
         }
 
         /**
-         * 复制一些Env的公用信息
+         * 复制一些Env的公共信息
          */
         @JvmStatic
         fun copy(env: Environment): Environment {

@@ -1,4 +1,4 @@
-package com.cyworks.redux.beans
+package com.cyworks.redux.ui
 
 import android.view.View
 

@@ -6,8 +6,8 @@ import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.atom.UIPropsWatcher
-import com.cyworks.redux.beans.UIChangedBean
-import com.cyworks.redux.beans.UIChangedType
+import com.cyworks.redux.ui.UIChangedBean
+import com.cyworks.redux.ui.UIChangedType
 import com.cyworks.redux.dependant.Dependant
 import com.cyworks.redux.lifecycle.LifeCycleAction
 import com.cyworks.redux.state.State
