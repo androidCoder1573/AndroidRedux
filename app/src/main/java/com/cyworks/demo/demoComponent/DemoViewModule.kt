@@ -1,6 +1,5 @@
 package com.cyworks.demo.demoComponent
 
-import android.content.res.Configuration
 import android.view.View
 import android.widget.Button
 import android.widget.TextView

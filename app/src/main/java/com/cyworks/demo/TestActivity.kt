@@ -2,6 +2,7 @@ package com.cyworks.demo
 
 import android.app.Activity
 import android.content.Context
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
@@ -41,5 +42,31 @@ class TestActivity : AppCompatActivity() {
         })
 
         setContentView(page!!.pageRootView)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val configuration = this.resources.configuration
+        changeView(configuration)
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        changeView(newConfig)
+        page!!.requestOrientationChange(newConfig)
+    }
+
+    private fun changeView(newConfig: Configuration) {
+//        if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
+//            this.findViewById<View>(R.id.demo_horizontal).visibility =
+//                View.GONE
+//            this.findViewById<View>(R.id.demo_vertical).visibility =
+//                View.VISIBLE
+//        } else if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+//            this.findViewById<View>(R.id.demo_vertical).visibility =
+//                View.GONE
+//            this.findViewById<View>(R.id.demo_horizontal).visibility =
+//                View.VISIBLE
+//        }
     }
 }
