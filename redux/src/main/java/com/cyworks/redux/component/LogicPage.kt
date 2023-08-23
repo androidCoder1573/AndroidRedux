@@ -33,7 +33,7 @@ import com.cyworks.redux.util.IPlatform
  * 这其实是有需求场景的，比如开发者需要等一些server的返回值才能决定目前的加载哪些组件，
  * 再比如：如果开发者需要定制组件的加载过程，也可以通过懒加载的方式进行。
  */
-abstract class LogicPage<S : State>(proxy: LifeCycleProxy) : Logic<S>(proxy.props) {
+abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S>(p) {
     /**
      * 当前App级别的Effect Bus
      */
@@ -51,11 +51,10 @@ abstract class LogicPage<S : State>(proxy: LifeCycleProxy) : Logic<S>(proxy.prop
      */
     private var dependencies: DependentCollector<S>? = null
 
-    @Suppress("UNCHECKED_CAST")
-    override val childrenDepMap: HashMap<String, Dependant<out State, State>>?
+    override val childrenDepMap: HashMap<String, Dependant<out State, S>>?
         get() = if (dependencies == null) {
             null
-        } else dependencies!!.dependantMap as HashMap<String, Dependant<out State, State>>
+        } else dependencies!!.dependantMap
 
     protected val controller: BaseController<S>?
         get() = null

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="父组件状态"
+        android:layout_marginBottom="5dp"/>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="3dp"
+        android:layout_marginTop="5dp"
+        android:layout_marginBottom="5dp"
+        android:background="@android:color/holo_blue_bright" />
+
+    <TextView
+        android:id="@+id/root_num"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="计数"
+        android:layout_marginBottom="5dp"/>
+
+    <TextView
+        android:id="@+id/root_goods_info"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="商品信息"
+        android:layout_marginBottom="5dp"/>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="3dp"
+        android:layout_marginTop="5dp"
+        android:layout_marginBottom="5dp"
+        android:background="@android:color/holo_blue_bright" />
+
+    <ViewStub
+        android:id="@+id/root_component_stub"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:layout_marginLeft="10dp"
+        android:id="@+id/root_launcher_dialog"
+        android:layout_gravity="center_horizontal"
+        android:visibility="gone"
+        android:text="启动对话框"/>
+
+</LinearLayout>

@@ -21,7 +21,7 @@ import com.cyworks.redux.util.IPlatform
 /**
  * Live-Redux框架是一个UI/逻辑完全分离的框架，LogicComponent内只针对状态管理/组件逻辑操作，不包含UI。
  */
-abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
+abstract class LogicComponent<S : State>(p: Bundle?) : Logic<S>(p) {
     /**
      * 当前组件的与页面的连接器
      */
@@ -55,9 +55,9 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
     /**
      * 组件的依赖的子组件的集合
      */
-    private var dependencies: DependentCollector<State>? = null
+    private var dependencies: DependentCollector<S>? = null
 
-    final override val childrenDepMap: HashMap<String, Dependant<out State, State>>?
+    final override val childrenDepMap: HashMap<String, Dependant<out State, S>>?
         get() = if (dependencies == null) {
             null
         } else dependencies!!.dependantMap
@@ -80,7 +80,7 @@ abstract class LogicComponent<S : State>(bundle: Bundle?) : Logic<S>(bundle) {
      * 增加组件的依赖，子类如果有子组件，需要实现此方法
      * @param collect DependentCollect
      */
-    protected fun addDependencies(collect: DependentCollector<State>?) {
+    protected open fun addDependencies(collect: DependentCollector<S>?) {
         // sub class impl
     }
 

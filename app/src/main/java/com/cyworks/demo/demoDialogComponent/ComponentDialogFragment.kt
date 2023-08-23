@@ -1,4 +1,4 @@
-package com.cyworks.demo.dialogfeature
+package com.cyworks.demo.demoDialogComponent
 
 import android.R
 import android.app.Activity

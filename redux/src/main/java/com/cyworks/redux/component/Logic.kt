@@ -25,7 +25,7 @@ import com.cyworks.redux.util.ILogger
  *
  * 针对复杂逻辑对象，内部可能有状态，建议使用ReduxObject来包裹。
  */
-abstract class Logic<S : State>(b: Bundle?) {
+abstract class Logic<S : State>(p: Bundle?) {
     /**
      * 组件的Effect
      */
@@ -45,7 +45,7 @@ abstract class Logic<S : State>(b: Bundle?) {
     /**
      * 创建页面时，携带的Bundle参数
      */
-    protected var props: Bundle? = b
+    protected var props: Bundle? = p
 
     protected val logger: ILogger = ReduxManager.instance.logger
 
@@ -72,7 +72,7 @@ abstract class Logic<S : State>(b: Bundle?) {
     /**
      * 获取依赖的子组件集合
      */
-    internal abstract val childrenDepMap: HashMap<String, Dependant<out State, State>>?
+    internal abstract val childrenDepMap: HashMap<String, Dependant<out State, S>>?
 
     /**
      * 初始Effect以及一些依赖

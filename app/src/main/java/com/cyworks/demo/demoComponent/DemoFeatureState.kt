@@ -1,4 +1,4 @@
-package com.cyworks.demo.demofeature
+package com.cyworks.demo.demoComponent
 
 import android.os.Bundle
 import com.cyworks.redux.state.State

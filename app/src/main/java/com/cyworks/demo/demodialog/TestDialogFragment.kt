@@ -27,9 +27,7 @@ class TestDialogFragment : DialogFragment() {
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        mPage = DemoPage(R.layout.activity_main, object : LifeCycleProxy {
-            override val props: Bundle?
-                get() = this@TestDialogFragment.arguments
+        mPage = DemoPage(R.layout.page_ui, arguments, object : LifeCycleProxy {
             override val context: Context?
                 get() = this@TestDialogFragment.context
             override val activity: Activity?

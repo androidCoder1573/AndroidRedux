@@ -1,5 +1,6 @@
 package com.cyworks.redux.component
 
+import android.os.Bundle
 import android.view.View
 import androidx.lifecycle.Observer
 import com.cyworks.redux.prop.ChangedState
@@ -11,7 +12,7 @@ import com.cyworks.redux.ui.UIChangedType
  * Desc: 一个UI组件的基类，主要针对组件的显示/隐藏，
  * 屏幕方向切换做了一些特殊处理
  */
-abstract class Component<S : State>(lazyBindUI: Boolean) : BaseComponent<S>(lazyBindUI) {
+abstract class Component<S : State>(lazyBindUI: Boolean, p: Bundle?) : BaseComponent<S>(lazyBindUI, p) {
     private val changedPropKeys: ArrayList<String> = ArrayList()
 
     val currentView: View?

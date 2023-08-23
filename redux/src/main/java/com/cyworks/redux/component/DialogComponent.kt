@@ -1,5 +1,6 @@
 package com.cyworks.redux.component
 
+import android.os.Bundle
 import android.view.View
 import androidx.annotation.CallSuper
 import androidx.lifecycle.Observer
@@ -17,7 +18,7 @@ import com.cyworks.redux.util.IPlatform
  *
  * @note: 如果对话框本身功能比较复杂，还是建议使用Page来实现, 防止单一组件功能过多。
  */
-abstract class DialogComponent<S : State> : BaseComponent<S>(true) {
+abstract class DialogComponent<S : State>(p: Bundle?) : BaseComponent<S>(true, p) {
     /**
      * 当前展示的对话框实例,
      * 通过这种方式，框架不需要关心对话框的具体形式(Dialog 或者 FragmentDialog，androidX等)

@@ -8,14 +8,6 @@ import com.cyworks.redux.logic.LogicModule
 class DemoPageLogic : LogicModule<DemoPageState> {
     override fun addLocalEffects(collect: EffectCollector<DemoPageState>) {
         collect.add(ACTION_ON_CREATE) { action, ctx ->
-            ctx?.updateState { state ->
-                val goodInfo = GoodInfo()
-                goodInfo.mTitle = "电脑+手机"
-                goodInfo.mPrice = "20000"
-                state.goodInfo = goodInfo
-                state
-            }
-
 //            object : Thread() {
 //                override fun run() {
 //                    try {

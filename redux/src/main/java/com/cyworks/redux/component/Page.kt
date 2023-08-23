@@ -2,6 +2,7 @@ package com.cyworks.redux.component
 
 import android.content.Context
 import android.content.res.Configuration
+import android.os.Bundle
 import android.os.SystemClock
 import android.view.LayoutInflater
 import android.view.View
@@ -52,7 +53,7 @@ abstract class Page<S : State> : LogicPage<S> {
      * @param rootId root view id
      * @param proxy 生命周期代理
      */
-    constructor(@LayoutRes rootId: Int, proxy: LifeCycleProxy) : super(proxy) {
+    constructor(@LayoutRes rootId: Int, p: Bundle?, proxy: LifeCycleProxy, ) : super(p, proxy) {
         val view = proxy.context?.let { bindView(it, rootId) }
         if (view != null) {
             logger.i("Page", "page create view success")
@@ -65,7 +66,7 @@ abstract class Page<S : State> : LogicPage<S> {
      * 构造器，初始化Page，依赖外部传入的Lifecycle代理
      * @param proxy LifeCycleProxy
      */
-    constructor(rootView: View?, proxy: LifeCycleProxy) : super(proxy) {
+    constructor(rootView: View?, p: Bundle?, proxy: LifeCycleProxy) : super(p, proxy) {
         environment.parentView = rootView
         init(proxy)
     }

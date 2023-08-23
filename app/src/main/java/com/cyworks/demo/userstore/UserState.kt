@@ -3,8 +3,8 @@ package com.cyworks.demo.userstore
 import com.cyworks.redux.state.State
 
 class UserState : State() {
-    var name: String by this.ReactUIData("")
-    var age: Int by this.ReactUIData(0)
+    var name: String by this.ReactLogicData("")
+    var age: Int by this.ReactLogicData(0)
 }
 
 fun userStateInit(): UserState {

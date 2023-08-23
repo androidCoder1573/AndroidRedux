@@ -1,6 +1,7 @@
 package com.cyworks.redux.component
 
 import android.annotation.SuppressLint
+import android.os.Bundle
 import androidx.annotation.CallSuper
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -20,7 +21,7 @@ import com.cyworks.redux.util.IPlatform
 import com.cyworks.redux.util.Platform
 
 data class ComponentProxy<S : State>(
-    val childrenDepMap: HashMap<String, Dependant<out State, State>>?,
+    val childrenDepMap: HashMap<String, Dependant<out State, S>>?,
     val token: String,
     val lazyBindUI: Boolean,
     val viewModule: ViewModule<S>,
@@ -41,7 +42,7 @@ data class ComponentProxy<S : State>(
  *
  * @params: lazyBindUI 是否延迟加载UI
  */
-abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>(null) {
+abstract class BaseComponent<S : State>(lazyBindUI: Boolean, p: Bundle?) : LogicComponent<S>(p) {
     /**
      * 组件是否bind到父组件上
      */
@@ -99,7 +100,6 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean) : LogicComponent<S>
 
         // todo 都从统一的地方拿启动参数是否合理
         val lifeCycleProxy: LifeCycleProxy? = environment.lifeCycleProxy
-        props = lifeCycleProxy?.props
 
         // 添加生命周期观察
         liveData = MutableLiveData()

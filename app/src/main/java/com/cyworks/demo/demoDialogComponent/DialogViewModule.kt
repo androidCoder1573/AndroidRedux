@@ -1,4 +1,4 @@
-package com.cyworks.demo.dialogfeature
+package com.cyworks.demo.demoDialogComponent
 
 import android.view.View
 import android.widget.TextView
@@ -13,12 +13,12 @@ class DialogViewModule : ViewModule<DialogState> {
     private val onNumChanged =
         OnUIAtomChanged<DialogState> { state, oldDeps, holder ->
             val textView: TextView? = holder?.getView(R.id.dialog_num_text)
-            textView?.text = "页面计数: " + state.num
+            textView?.text = "计数: ${state.num}"
         }
 
     private val onLocalNumChanged = OnUIAtomChanged<DialogState> { state, oldDeps, holder ->
             val textView: TextView? = holder?.getView(R.id.dialog_local_num_text)
-            textView?.text = "本地计数: " + state.localNum
+            textView?.text = "本地计数: ${state.localNum}"
         }
 
     override fun getView(context: ReduxContext<DialogState>, parent: View): View? {
@@ -27,6 +27,13 @@ class DialogViewModule : ViewModule<DialogState> {
             val next: Int = context.state.localNum + 1
             context.updateState { state ->
                 state.localNum = next
+                state
+            }
+        }
+        v.findViewById<View>(R.id.dialog_set_num).setOnClickListener { v1: View? ->
+            val next: Int = context.state.num + 1
+            context.updateState { state ->
+                state.num = next
                 state
             }
         }

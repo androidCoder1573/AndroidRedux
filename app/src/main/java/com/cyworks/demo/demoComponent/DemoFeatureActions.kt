@@ -1,4 +1,4 @@
-package com.cyworks.demo.demofeature
+package com.cyworks.demo.demoComponent
 
 import com.cyworks.redux.action.ActionType
 
