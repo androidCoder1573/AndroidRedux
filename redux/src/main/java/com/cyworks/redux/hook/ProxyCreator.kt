@@ -19,40 +19,35 @@
 ** License along with DroidPlugin.  If not, see <http://www.gnu.org/licenses/lgpl.txt>
 **
 **/
+package com.cyworks.redux.hook
 
-package com.cyworks.redux.hook.helper;
+import java.lang.reflect.InvocationHandler
+import java.lang.reflect.Method
+import java.lang.reflect.Proxy
+import java.net.SocketException
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
-import java.net.SocketException;
-
-/**
- * Created by Andy Zhang(zhangyong232@gmail.com)ClassUtils on 2015/3/25.
- */
-public class MyProxy {
-
-    public static Object newProxyInstance(ClassLoader loader, Class<?>[] interfaces,
-                                          InvocationHandler invocationHandler) {
-        return Proxy.newProxyInstance(loader, interfaces,
-                invocationHandler);
+object ProxyCreator {
+    fun newProxyInstance(
+        loader: ClassLoader?, interfaces: Array<Class<*>?>?,
+        invocationHandler: InvocationHandler?
+    ): Any {
+        return Proxy.newProxyInstance(loader, interfaces, invocationHandler)
     }
 
     /**
      * 判断某个异常是否已经在某个方法上声明了。
      */
-    public static boolean isMethodDeclaredThrowable(Method method, Throwable e) {
-        if (e instanceof RuntimeException) {
-            return true;
+    @JvmStatic
+    fun isMethodDeclaredThrowable(method: Method?, e: Throwable?): Boolean {
+        if (e is RuntimeException) {
+            return true
         }
-
         if (method == null || e == null) {
-            return false;
+            return false
         }
-
-        Class[] es = method.getExceptionTypes();
-        if (es == null && es.length <= 0) {
-            return false;
+        val es = method.exceptionTypes
+        if (es == null || es.isEmpty()) {
+            return false
         }
 
 //bugfix,这个问题我也不知道为什么出现，先这么处理吧。
@@ -71,20 +66,19 @@ public class MyProxy {
 //        at java.lang.reflect.Method.invoke(Method.java:511)
 //        ... 7 more
         try {
-            String methodName = method.getName();
-            boolean va = "accept".equals(methodName) || "sendto".equals(methodName);
-            if (e instanceof SocketException && va && method.getDeclaringClass().getName().indexOf("libcore") >= 0) {
-                return true;
+            val methodName = method.name
+            val va = "accept" == methodName || "sendto" == methodName
+            if (e is SocketException && va && method.declaringClass.name.indexOf("libcore") >= 0) {
+                return true
             }
-        } catch (Throwable e1) {
+        } catch (e1: Throwable) {
             //DO NOTHING
         }
-
-        for (Class aClass : es) {
-            if (aClass.isInstance(e) || aClass.isAssignableFrom(e.getClass())) {
-                return true;
+        for (aClass in es) {
+            if (aClass.isInstance(e) || aClass.isAssignableFrom(e.javaClass)) {
+                return true
             }
         }
-        return false;
+        return false
     }
 }
