@@ -1,37 +1,51 @@
-/*
-**        DroidPlugin Project
-**
-** Copyright(c) 2015 Andy Zhang <zhangyong232@gmail.com>
-**
-** This file is part of DroidPlugin.
-**
-** DroidPlugin is free software: you can redistribute it and/or
-** modify it under the terms of the GNU Lesser General Public
-** License as published by the Free Software Foundation, either
-** version 3 of the License, or (at your option) any later version.
-**
-** DroidPlugin is distributed in the hope that it will be useful,
-** but WITHOUT ANY WARRANTY; without even the implied warranty of
-** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-** Lesser General Public License for more details.
-**
-** You should have received a copy of the GNU Lesser General Public
-** License along with DroidPlugin.  If not, see <http://www.gnu.org/licenses/lgpl.txt>
-**
-**/
 package com.cyworks.redux.hook
 
+import com.cyworks.redux.IController
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method
 import java.lang.reflect.Proxy
 import java.net.SocketException
 
+
 object ProxyCreator {
-    fun newProxyInstance(
-        loader: ClassLoader?, interfaces: Array<Class<*>?>?,
-        invocationHandler: InvocationHandler?
-    ): Any {
+    @Suppress("UNCHECKED_CAST")
+    fun createProxy(obj: IController, loader: ClassLoader): IController {
+        val iPmClass = obj::class.java
+        val interfaces: List<Class<*>>? = getAllInterfaces(iPmClass)
+        val ifs: Array<Class<*>?> =
+            if (!interfaces.isNullOrEmpty()) interfaces.toTypedArray()
+            else arrayOfNulls(0)
+
+        return newProxyInstance(loader, ifs as Array<Class<*>>, ProxyInvocationHandler(obj)) as IController
+    }
+
+    private fun newProxyInstance(
+        loader: ClassLoader,
+        interfaces: Array<Class<*>>,
+        invocationHandler: InvocationHandler): Any {
         return Proxy.newProxyInstance(loader, interfaces, invocationHandler)
+    }
+
+    private fun getAllInterfaces(cls: Class<*>?): List<Class<*>>? {
+        if (cls == null) {
+            return null
+        }
+        val interfacesFound = LinkedHashSet<Class<*>>()
+        getAllInterfaces(cls, interfacesFound)
+        return ArrayList(interfacesFound)
+    }
+
+    private fun getAllInterfaces(cls: Class<*>, interfacesFound: HashSet<Class<*>>) {
+        var temp: Class<*>? = cls
+        while (temp != null) {
+            val interfaces = temp.interfaces
+            for (i in interfaces) {
+                if (interfacesFound.add(i)) {
+                    getAllInterfaces(i, interfacesFound)
+                }
+            }
+            temp = temp.superclass
+        }
     }
 
     /**

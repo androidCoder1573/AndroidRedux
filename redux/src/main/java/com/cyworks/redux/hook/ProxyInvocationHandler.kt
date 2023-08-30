@@ -6,7 +6,7 @@ import com.cyworks.redux.hook.ProxyCreator.isMethodDeclaredThrowable
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method
 
-abstract class ProxyInvocationHandler(protected var oldObj: Any) : InvocationHandler {
+class ProxyInvocationHandler(private var oldObj: Any) : InvocationHandler {
     var hookedMethodHandler = MethodProxy()
 
     @Throws(Throwable::class)

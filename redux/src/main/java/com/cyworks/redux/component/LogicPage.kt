@@ -3,7 +3,7 @@ package com.cyworks.redux.component
 import android.os.Bundle
 import android.os.Looper
 import androidx.annotation.CallSuper
-import com.cyworks.redux.BaseController
+import com.cyworks.redux.IController
 import com.cyworks.redux.DispatchBus
 import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.ReduxContextBuilder
@@ -56,7 +56,7 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
             null
         } else dependencies!!.dependantMap
 
-    protected val controller: BaseController<S>?
+    protected val controller: IController<S>?
         get() = null
 
     init {

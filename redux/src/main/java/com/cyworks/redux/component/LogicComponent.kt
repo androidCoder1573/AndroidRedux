@@ -2,7 +2,7 @@ package com.cyworks.redux.component
 
 import android.os.Bundle
 import androidx.annotation.CallSuper
-import com.cyworks.redux.BaseController
+import com.cyworks.redux.IController
 import com.cyworks.redux.ReduxContextBuilder
 import com.cyworks.redux.action.InnerActionTypes
 import com.cyworks.redux.dependant.Dependant
@@ -67,7 +67,7 @@ abstract class LogicComponent<S : State>(p: Bundle?) : Logic<S>(p) {
      */
     private var interceptorManager: InterceptorManager? = null
 
-    private var controller: BaseController<S>? = null
+    private var controller: IController<S>? = null
 
     init {
         if (dependencies == null) {

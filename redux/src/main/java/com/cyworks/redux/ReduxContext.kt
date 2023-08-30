@@ -7,6 +7,7 @@ import com.cyworks.redux.component.DialogComponent
 import com.cyworks.redux.component.Logic
 import com.cyworks.redux.component.LogicPage
 import com.cyworks.redux.dialog.ILRDialog
+import com.cyworks.redux.hook.ProxyCreator
 import com.cyworks.redux.interceptor.InterceptorPayload
 import com.cyworks.redux.lifecycle.LifeCycleAction
 import com.cyworks.redux.prop.ReactiveProp
@@ -119,14 +120,9 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     /**
      * 如果开发这不想使用Action驱动，可以通过传统的方式书写逻辑代码，需继承BaseController
      */
-    var controller: BaseController<S>? = null
-        internal set(controller) {
-            field = controller
-            if (field == null) {
-                field = BaseController()
-            }
-            field!!.setCtx(this)
-        }
+    var controller: IController? = null
+
+    var controllerProxy: IController? = null
 
     /**
      * 可分发effect的dispatch
@@ -217,6 +213,10 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
 
         // 初始化Dispatch
         initPageDispatch()
+
+        if (controller != null) {
+            controllerProxy = ProxyCreator.createProxy(controller!!, this.javaClass.classLoader)
+        }
 
         // 获取组件的初始state
         state = builder.state
