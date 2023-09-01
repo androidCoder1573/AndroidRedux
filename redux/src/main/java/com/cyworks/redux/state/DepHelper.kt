@@ -2,6 +2,8 @@ package com.cyworks.redux.state
 
 import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.prop.ReactiveProp
+import com.cyworks.redux.util.ILogger
+import kotlin.reflect.KProperty1
 import kotlin.reflect.full.memberProperties
 
 class DepHelper {
@@ -52,25 +54,27 @@ class DepHelper {
         excludePropMap["token"] = 1
     }
 
-    fun detectField(state: State) {
+    fun detectField(list: Collection<KProperty1<out State, *>>, state: State) {
         if (calledDetect) {
             return
         }
+        val time = System.currentTimeMillis()
         calledDetect = true
 
-        val kClass = state.javaClass.kotlin
-        kClass.memberProperties.forEach {
+        // val memberList = state.javaClass.kotlin.memberProperties
+        list.forEach {
             if (!excludePropMap.containsKey(it.name) && !state.dataMap.containsKey(it.name) && !it.isAbstract) {
-                // it.isAccessible = true
                 try {
                     it.getter.call(state)
                 } catch (e: Throwable) {
-                    ReduxManager.instance.logger.w("state detect", "${e.cause}")
+                    ReduxManager.instance.logger.w(ILogger.ERROR_TAG, "${e.cause}")
                 }
-                // it.isAccessible = false
             }
         }
+
         excludePropMap.clear()
+        ReduxManager.instance.logger.d(ILogger.PERF_TAG,
+            "detect state filed consume: ${System.currentTimeMillis() - time}ms, in State: ${state.javaClass.name}")
     }
 
     internal fun depProp(prop: ReactiveProp<Any>?) {

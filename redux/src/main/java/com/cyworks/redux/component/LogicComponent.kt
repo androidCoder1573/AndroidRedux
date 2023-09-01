@@ -2,24 +2,27 @@ package com.cyworks.redux.component
 
 import android.os.Bundle
 import androidx.annotation.CallSuper
-import com.cyworks.redux.IController
 import com.cyworks.redux.ReduxContextBuilder
+import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.action.InnerActionTypes
 import com.cyworks.redux.dependant.Dependant
 import com.cyworks.redux.dependant.DependentCollector
 import com.cyworks.redux.interceptor.InterceptorCollector
 import com.cyworks.redux.interceptor.InterceptorManager
 import com.cyworks.redux.logic.EffectCollector
+import com.cyworks.redux.state.ReflectStateManager
 import com.cyworks.redux.state.State
 import com.cyworks.redux.state.StateType
 import com.cyworks.redux.store.GlobalStoreSubscribe
 import com.cyworks.redux.types.IPropsChanged
 import com.cyworks.redux.types.IStateChange
 import com.cyworks.redux.util.Environment
+import com.cyworks.redux.util.ILogger
 import com.cyworks.redux.util.IPlatform
+import kotlin.reflect.full.memberProperties
 
 /**
- * Live-Redux框架是一个UI/逻辑完全分离的框架，LogicComponent内只针对状态管理/组件逻辑操作，不包含UI。
+ * Android-Redux框架是一个UI/逻辑完全分离的框架，LogicComponent内只针对状态管理/组件逻辑操作，不包含UI。
  */
 abstract class LogicComponent<S : State>(p: Bundle?) : Logic<S>(p) {
     /**
@@ -32,7 +35,6 @@ abstract class LogicComponent<S : State>(p: Bundle?) : Logic<S>(p) {
      */
     private var globalStoreSubscribe: GlobalStoreSubscribe<S>? = null
 
-
     protected var stateChangedListener: IStateChange<S>? = null
 
     /**
@@ -44,8 +46,6 @@ abstract class LogicComponent<S : State>(p: Bundle?) : Logic<S>(p) {
 
     /**
      * 获取依赖的列表组件的Adapter
-     *
-     * @return Dependant Adapter依赖
      */
 //    val adapterDependant: Dependant<out State, State>?
 //        get() = if (dependencies == null) {
@@ -66,8 +66,6 @@ abstract class LogicComponent<S : State>(p: Bundle?) : Logic<S>(p) {
      * 用于注入拦截器
      */
     private var interceptorManager: InterceptorManager? = null
-
-    private var controller: IController<S>? = null
 
     init {
         if (dependencies == null) {
@@ -92,6 +90,7 @@ abstract class LogicComponent<S : State>(p: Bundle?) : Logic<S>(p) {
      * @param state 当前组件的State
      */
     private fun mergeState(state: S, cb: IPropsChanged) {
+        val time = System.currentTimeMillis()
         val parentState = connector?.pState ?: return
 
         // 标记开始merge
@@ -113,6 +112,8 @@ abstract class LogicComponent<S : State>(p: Bundle?) : Logic<S>(p) {
 
         // 标记结束merge，后续不可再继续开启
         state.endMergeState()
+        logger.d(ILogger.PERF_TAG,
+            "merge dep state consume: ${System.currentTimeMillis() - time}ms, in state: ${state.javaClass.name}")
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -157,18 +158,8 @@ abstract class LogicComponent<S : State>(p: Bundle?) : Logic<S>(p) {
         val state = onCreateState(props)
         state.stateType = StateType.COMPONENT_TYPE
 
-        // 生成内部的Key映射表
-        state.detectField()
-
-        // 合并page State以及global State
-        mergeState(state) { props ->
-            if (props != null) {
-                context.onStateChange(props)
-            }
-        }
-
-        // 负责处理额外的事情
-        onStateMerged(state)
+        // 反射解析属性
+        reflect(state)
 
         // 创建Context
         context = ReduxContextBuilder<S>()
@@ -177,10 +168,47 @@ abstract class LogicComponent<S : State>(p: Bundle?) : Logic<S>(p) {
             .setOnStateChangeListener(makeStateChangeCB())
             .setPlatform(createPlatform()!!)
             .build()
-        context.controller = controller
-        context.setStateReady()
+    }
 
-        logicModule.subscribeProps(context.state, propsWatcher)
+    private fun reflect(state: S) {
+        val detectRunnable = Runnable {
+            val memberList = state.javaClass.kotlin.memberProperties
+            // 提交到主线程
+            ReduxManager.instance.submitInMainThread {
+                state.detectField(memberList)
+                // 合并page State以及global State
+                mergeState(state) { props ->
+                    if (props != null) {
+                        context.onStateChange(props)
+                    }
+                }
+                // 负责处理额外的事情
+                onStateMerged(state)
+                context.setStateReady()
+                // 检查下一个任务
+                ReflectStateManager.instance.tryRunNextTask(environment.task, state.token)
+                // 订阅属性
+                logicModule.subscribeProps(context.state, propsWatcher)
+            }
+        }
+
+        if (environment.task == null) {
+            val memberList = state.javaClass.kotlin.memberProperties
+            state.detectField(memberList)
+            // 合并page State以及global State
+            mergeState(state) { props ->
+                if (props != null) {
+                    context.onStateChange(props)
+                }
+            }
+            // 负责处理额外的事情
+            onStateMerged(state)
+            context.setStateReady()
+            // 订阅属性
+            logicModule.subscribeProps(context.state, propsWatcher)
+        } else {
+            environment.task?.add(state.token, detectRunnable)
+        }
     }
 
     /**
@@ -209,7 +237,7 @@ abstract class LogicComponent<S : State>(p: Bundle?) : Logic<S>(p) {
      * @param env 组件需要的环境
      * @param connector 父组件的连接器
      */
-    abstract fun install(env: Environment, connector: Connector<S, State>?)
+    internal abstract fun install(env: Environment, connector: Connector<S, State>?)
 
     @CallSuper
     override fun clear() {

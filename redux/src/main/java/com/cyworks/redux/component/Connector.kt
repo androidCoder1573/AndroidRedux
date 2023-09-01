@@ -7,7 +7,7 @@ import com.cyworks.redux.types.ComponentContextWrapper
 import com.cyworks.redux.types.StateGetter
 
 /**
- * Desc: 用于连接子组件和父组件，做几件事情：
+ * 用于连接子组件和父组件，做几件事情：
  * 1、负责依赖PageState中的数据
  * 2、负责将子组件的Reducer生成SubReducer
  *
@@ -51,7 +51,7 @@ abstract class Connector<CS : State, PS : State> {
 
     fun injectChildContextWrapper(wrapper: ComponentContextWrapper<CS>) {
         collector = InterceptorCollector(wrapper)
-        interceptorCollector(collector!!)
+        interceptorCollect(collector!!)
     }
 
     fun getInterceptorCollector(): InterceptorCollector<CS>? {
@@ -71,5 +71,5 @@ abstract class Connector<CS : State, PS : State> {
     /**
      * 通过此接口配置与外界通信的interceptor
      */
-    abstract fun interceptorCollector(collect: InterceptorCollector<CS>)
+    abstract fun interceptorCollect(collect: InterceptorCollector<CS>)
 }

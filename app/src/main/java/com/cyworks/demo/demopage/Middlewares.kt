@@ -21,7 +21,7 @@ class Middlewares {
     //        final long markPrev = System.currentTimeMillis();
     //        next.dispatch(action, payload);
     //        final long markNext = System.currentTimeMillis();
-    //        logger.d("Live_Redux", "consumer: " + (markNext - markPrev));
+    //        logger.d("Live_Redux", "consume: " + (markNext - markPrev));
     //    };
     //
     //    /**

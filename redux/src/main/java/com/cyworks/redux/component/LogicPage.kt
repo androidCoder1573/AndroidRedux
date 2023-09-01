@@ -3,7 +3,6 @@ package com.cyworks.redux.component
 import android.os.Bundle
 import android.os.Looper
 import androidx.annotation.CallSuper
-import com.cyworks.redux.IController
 import com.cyworks.redux.DispatchBus
 import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.ReduxContextBuilder
@@ -17,6 +16,8 @@ import com.cyworks.redux.interceptor.InterceptorManager
 import com.cyworks.redux.interceptor.InterceptorPayload
 import com.cyworks.redux.lifecycle.LifeCycleProxy
 import com.cyworks.redux.logic.EffectCollector
+import com.cyworks.redux.state.ReflectStateManager
+import com.cyworks.redux.state.ReflectTask
 import com.cyworks.redux.state.State
 import com.cyworks.redux.state.StateType
 import com.cyworks.redux.store.PageStore
@@ -24,6 +25,8 @@ import com.cyworks.redux.types.Effect
 import com.cyworks.redux.types.Interceptor
 import com.cyworks.redux.util.Environment
 import com.cyworks.redux.util.IPlatform
+import kotlin.reflect.full.memberProperties
+
 
 /**
  * Page最重要的功能：负责创建Store以及组织页面的Effect调度。
@@ -55,9 +58,6 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
         get() = if (dependencies == null) {
             null
         } else dependencies!!.dependantMap
-
-    protected val controller: IController<S>?
-        get() = null
 
     init {
         environment = Environment.of()
@@ -117,29 +117,45 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
      * 创建页面的ReduxContext，依赖一个初始的PureState
      */
     private fun createContext() {
-        // 1、生成state
+        // 生成state
         val state = onCreateState(props)
         state.stateType = StateType.PAGE_TYPE
 
-        // 生成Key映射表
-        state.detectField()
+        // 反射解析属性
+        reflect(state)
 
-        // 负责处理额外的事情
-        onStateDetected(state)
-
-        // 2、创建Store
+        // 创建Store
         createStore(state)
 
-        // 3、创建Context
+        // 创建Context
         context = ReduxContextBuilder<S>()
             .setLogic(this)
             .setState(state)
             .setPlatform(createPlatform()!!)
             .build()
-        context.controller = controller
-        context.setStateReady()
+    }
 
-        logicModule.subscribeProps(context.state, propsWatcher)
+    private fun reflect(state: S) {
+        val rootTask = ReflectTask(1)
+
+        val detectRunnable = Runnable {
+            val memberList = state.javaClass.kotlin.memberProperties
+            // 提交到主线程
+            ReduxManager.instance.submitInMainThread {
+                state.detectField(memberList)
+                // 负责处理额外的事情
+                onStateDetected(state)
+                context.setStateReady()
+                // 检查下一个任务
+                ReflectStateManager.instance.tryRunNextTask(rootTask, state.token)
+                // 订阅属性
+                logicModule.subscribeProps(context.state, propsWatcher)
+            }
+        }
+
+        rootTask.add(state.token, detectRunnable)
+
+        ReflectStateManager.instance.putTask(rootTask)
     }
 
     /**
@@ -161,11 +177,13 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
 
         // 子组件需要从父组件那边继承一些信息
         val env = copyEnvToChild()
+        env.task = ReflectTask(map.size)
 
         // 安装子组件
         for (dependant in map.values) {
             dependant.install(env)
         }
+        ReflectStateManager.instance.putTask(env.task!!)
     }
 
     protected abstract fun copyEnvToChild(): Environment
@@ -266,7 +284,6 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
 
     /**
      * 创建页面的State，页面的State默认页面的一级组件都可以进行关联
-     *
      * @return state [State]
      */
     abstract fun onCreateState(props: Bundle?): S
@@ -274,8 +291,7 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
     /**
      * 配置当前页面的Feature(依赖)集合PageDependantCollect，需要外部设置
      */
-    abstract fun addDependencies(collect: DependentCollector<S>?)// sub class can impl
+    abstract fun addDependencies(collect: DependentCollector<S>?)
 
-    @CallSuper
     protected open fun destroy() {}
 }

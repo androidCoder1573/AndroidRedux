@@ -18,5 +18,5 @@ class RootComponentConnector : Connector<RootComponentState, DemoPageState>() {
 
     override fun dependGlobalState(watcher: GlobalStoreSubscribe<RootComponentState>) {}
 
-    override fun interceptorCollector(collect: InterceptorCollector<RootComponentState>) {}
+    override fun interceptorCollect(collect: InterceptorCollector<RootComponentState>) {}
 }

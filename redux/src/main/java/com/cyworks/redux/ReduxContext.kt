@@ -104,25 +104,24 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     /**
      * 是否检测状态完成
      */
-    @Volatile private var isStateReady = false
+    private var isStateReady = false
 
     private var isModifyState = false
 
     /**
      * 存放因为异步操作而被挂起的action
      */
-    private var pendingLifeCycleActionList: ArrayList<Action<Any>>? = null
+    private var pendingLifecycleActionList: ArrayList<Action<Any>>? = null
 
     private val changedProps: ArrayList<ReactiveProp<Any>> = ArrayList()
 
     private val stateProxy = StateProxy()
 
     /**
-     * 如果开发这不想使用Action驱动，可以通过传统的方式书写逻辑代码，需继承BaseController
+     * 如果开发这不想使用Action驱动，可以通过传统的方式书写逻辑代码，需继承IController
      */
-    var controller: IController? = null
-
-    var controllerProxy: IController? = null
+    private var originController: IController? = null
+    private var controllerProxy: IController? = null
 
     /**
      * 可分发effect的dispatch
@@ -214,8 +213,8 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         // 初始化Dispatch
         initPageDispatch()
 
-        if (controller != null) {
-            controllerProxy = ProxyCreator.createProxy(controller!!, this.javaClass.classLoader)
+        if (originController != null) {
+            controllerProxy = ProxyCreator.createProxy(originController!!, this.javaClass.classLoader)
         }
 
         // 获取组件的初始state
@@ -294,6 +293,11 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         }
     }
 
+    fun <R: IController> getController(): R? {
+        @Suppress("UNCHECKED_CAST")
+        return controllerProxy as R?
+    }
+
     fun updateState(reducer: Reducer<S>) {
         logger.d("redux context", "state: ${state.javaClass.name} will change prop")
         if (Looper.getMainLooper() == Looper.myLooper()) {
@@ -304,7 +308,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     }
 
     private fun innerUpdateState(reducer: Reducer<S>) {
-        if (isDestroy || environment == null) {
+        if (isDestroy || environment == null || !isStateReady) {
             return
         }
 
@@ -330,7 +334,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      * 当状态发生变化的时候，通过这个接口更新UI
      * @param props 变化的属性列表 [ReactiveProp]
      */
-    fun onStateChange(props: List<ReactiveProp<Any>>) {
+    internal fun onStateChange(props: List<ReactiveProp<Any>>) {
         for (prop in props) {
             val key = prop.key
             putChangedProp(key, prop)
@@ -349,7 +353,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      * 首次创建UI时，根据是否更新初始值来展示UI
      */
     internal fun runFirstUpdate() {
-        if (isDestroy) {
+        if (isDestroy || !isStateReady) {
             return
         }
         val map = state.dataMap
@@ -366,7 +370,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      * 进行一次全量更新：主要用组件隐藏之后再显示的操作，或者横竖屏切换时的操作
      */
     internal fun runFullUpdate() {
-        if (isDestroy) {
+        if (isDestroy || !isStateReady) {
             return
         }
         val map = state.dataMap
@@ -397,10 +401,6 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         }
     }
 
-    fun isSameEffectDispatch(dispatch: Dispatch): Boolean {
-        return dispatch == effectDispatch
-    }
-
     /**
      * 发送全局广播，本方法在App级别是全局的, 只有page下的Effect才可以处理
      */
@@ -421,10 +421,10 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         }
 
         if (!isStateReady) {
-            if (pendingLifeCycleActionList == null) {
-                pendingLifeCycleActionList = ArrayList()
+            if (pendingLifecycleActionList == null) {
+                pendingLifecycleActionList = ArrayList()
             }
-            pendingLifeCycleActionList!!.add(action)
+            pendingLifecycleActionList!!.add(action)
             return
         }
         dispatcher.dispatch(action)
@@ -435,16 +435,16 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      */
     fun setStateReady() {
         isStateReady = true
-        if (pendingLifeCycleActionList == null) {
+        if (pendingLifecycleActionList == null) {
             return
         }
-        val size = pendingLifeCycleActionList!!.size
+        val size = pendingLifecycleActionList!!.size
         if (size > 0) {
-            val copy: List<Action<Any>> = ArrayList(pendingLifeCycleActionList!!)
+            val copy: List<Action<Any>> = ArrayList(pendingLifecycleActionList!!)
             copy.forEach {
                 onLifecycle(it)
             }
-            pendingLifeCycleActionList!!.clear()
+            pendingLifecycleActionList!!.clear()
         }
     }
 

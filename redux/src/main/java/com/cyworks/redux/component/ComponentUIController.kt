@@ -8,6 +8,8 @@ import com.cyworks.redux.action.Action
 import com.cyworks.redux.atom.UIPropsWatcher
 import com.cyworks.redux.dependant.Dependant
 import com.cyworks.redux.lifecycle.LifeCycleAction
+import com.cyworks.redux.state.ReflectStateManager
+import com.cyworks.redux.state.ReflectTask
 import com.cyworks.redux.state.State
 import com.cyworks.redux.ui.ComponentViewHolder
 import com.cyworks.redux.ui.UIChangedBean
@@ -20,7 +22,7 @@ import com.cyworks.redux.util.ILogger
  * 对组件的UI操作抽取出来放到UI处理类中:
  * 1、初始化UI;
  * 2、设置Atom，用于UI的局部更新;
- * 3、设置UI组件的View的显示/隐藏以及绑定/删除操作;
+ * 3、设置UI组件的View的显示/隐藏/绑定/删除操作;
  */
 class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
     /**
@@ -461,10 +463,12 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
         }
 
         val env = copyEnvironment()
+        env.task = ReflectTask(map.size)
 
         for (dependant in map.values) {
             dependant.installComponent(env)
         }
+        ReflectStateManager.instance.putTask(env.task!!)
     }
 
     private fun copyEnvironment(): Environment {

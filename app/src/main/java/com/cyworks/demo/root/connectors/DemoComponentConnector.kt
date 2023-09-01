@@ -32,5 +32,5 @@ class DemoComponentConnector : Connector<DemoFeatureState, RootComponentState>()
         })
     }
 
-    override fun interceptorCollector(collect: InterceptorCollector<DemoFeatureState>) {}
+    override fun interceptorCollect(collect: InterceptorCollector<DemoFeatureState>) {}
 }

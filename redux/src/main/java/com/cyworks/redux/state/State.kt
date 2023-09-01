@@ -7,6 +7,7 @@ import com.cyworks.redux.types.PropertySet
 import com.cyworks.redux.util.ILogger
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
+import kotlin.reflect.KProperty1
 import kotlin.reflect.jvm.internal.impl.load.kotlin.JvmType
 
 enum class StateType {
@@ -126,8 +127,8 @@ abstract class State {
         }
     }
 
-    internal fun detectField() {
-        depHelper.detectField(this)
+    internal fun detectField(list: Collection<KProperty1<out State, *>>) {
+        depHelper.detectField(list, this)
     }
 
     /**

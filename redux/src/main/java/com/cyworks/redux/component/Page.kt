@@ -138,11 +138,11 @@ abstract class Page<S : State> : LogicPage<S> {
         environment.clear()
     }
 
-    public override fun onCreate() {
+    override fun onCreate() {
         val time = SystemClock.uptimeMillis()
         super.onCreate()
         logger.d(ILogger.PERF_TAG, "page: <" + this.javaClass.simpleName + ">"
-                    + " init consumer: " + (SystemClock.uptimeMillis() - time))
+                    + " init consume: ${(SystemClock.uptimeMillis() - time)}ms")
     }
 
     @Suppress("UNCHECKED_CAST")

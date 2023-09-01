@@ -98,12 +98,7 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean, p: Bundle?) : Logic
         environment = env
         uiController.setReduxEnv(environment)
 
-        // todo 都从统一的地方拿启动参数是否合理
-        val lifeCycleProxy: LifeCycleProxy? = environment.lifeCycleProxy
-
-        // 添加生命周期观察
-        liveData = MutableLiveData()
-        lifeCycleProxy?.lifecycle?.addObserver(ComponentLifeCycleObserver(this))
+        registerLifecycle()
     }
 
     @SuppressLint("ResourceType")
@@ -130,6 +125,25 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean, p: Bundle?) : Logic
         }
     }
 
+    override fun onStateMerged(componentState: S) {
+        componentState.innerSetProp("isShowUI", uiController.isShow) // 检查默认属性设置
+        uiController.onStateMerged(componentState)
+    }
+
+    protected fun registerLifecycle() {
+        // todo 都从统一的地方拿启动参数是否合理
+        val lifeCycleProxy: LifeCycleProxy? = environment.lifeCycleProxy
+
+        // 添加生命周期观察
+        liveData = MutableLiveData()
+        lifeCycleProxy?.lifecycle?.addObserver(ComponentLifeCycleObserver(this))
+    }
+
+    /**
+     * 创建View模块，外部设置
+     */
+    abstract fun createViewModule(): ViewModule<S>
+
     @CallSuper
     override fun clear() {
         super.clear()
@@ -138,16 +152,6 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean, p: Bundle?) : Logic
         uiController.clear()
         environment.clear()
     }
-
-    override fun onStateMerged(componentState: S) {
-        componentState.innerSetProp("isShowUI", uiController.isShow) // 检查默认属性设置
-        uiController.onStateMerged(componentState)
-    }
-
-    /**
-     * 创建View模块，外部设置
-     */
-    abstract fun createViewModule(): ViewModule<S>
 
     /**
      * 用于初始化Component
@@ -170,7 +174,7 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean, p: Bundle?) : Logic
 
         // 打印初始化的耗时
         logger.d(ILogger.PERF_TAG, "component: <" + javaClass.simpleName + ">"
-                    + "init consume: " + (System.currentTimeMillis() - time))
+                    + " init consume: ${System.currentTimeMillis() - time}ms")
     }
 
     /**

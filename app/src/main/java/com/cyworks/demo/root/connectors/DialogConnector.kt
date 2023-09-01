@@ -22,7 +22,7 @@ class DialogConnector : Connector<DialogState, RootComponentState>() {
     }
 
     override fun dependGlobalState(watcher: GlobalStoreSubscribe<DialogState>) {}
-    override fun interceptorCollector(collect: InterceptorCollector<DialogState>) {
+    override fun interceptorCollect(collect: InterceptorCollector<DialogState>) {
         collect.addInterceptor(DemoPageActions.sOpenDemoDialog) { _, ctx ->
             ctx?.dispatcher?.dispatch(Action(DialogActions.sOpenSelf, null))
         }

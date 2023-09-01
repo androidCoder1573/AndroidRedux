@@ -189,7 +189,7 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
         }
 
         logger.d(ILogger.PERF_TAG,
-            "page store update consumer: " + (System.currentTimeMillis() - time))
+            "page store update consume: ${(System.currentTimeMillis() - time)}ms")
     }
 
     override fun clear() {

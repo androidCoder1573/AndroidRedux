@@ -3,6 +3,7 @@ package com.cyworks.redux.util
 import android.view.View
 import com.cyworks.redux.DispatchBus
 import com.cyworks.redux.lifecycle.LifeCycleProxy
+import com.cyworks.redux.state.ReflectTask
 import com.cyworks.redux.state.State
 import com.cyworks.redux.store.Store
 import com.cyworks.redux.types.Dispatch
@@ -40,6 +41,11 @@ class Environment private constructor() {
      * 当前组件的父View
      */
     internal var parentView: View? = null
+
+    /**
+     * 用于异步获取反射数据
+     */
+    internal var task: ReflectTask? = null
 
     /**
      * 做一些清理操作

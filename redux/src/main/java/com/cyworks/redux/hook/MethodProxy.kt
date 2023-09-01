@@ -1,6 +1,7 @@
 package com.cyworks.redux.hook
 
 import com.cyworks.redux.ReduxManager
+import com.cyworks.redux.util.ILogger
 import java.lang.reflect.Method
 
 class MethodProxy {
@@ -9,8 +10,8 @@ class MethodProxy {
     fun callFunc(receiver: Any?, method: Method, args: Array<Any>): Any? {
         val time = System.currentTimeMillis()
         val invokeResult = method.invoke(receiver, *args)
-        val consumer = System.currentTimeMillis() - time
-        ReduxManager.instance.logger.d("Redux Context", "method call consumer: $consumer")
+        val consume = System.currentTimeMillis() - time
+        ReduxManager.instance.logger.d(ILogger.PERF_TAG, "call component controller func consume: ${consume}ms")
         return invokeResult
     }
 }

@@ -15,7 +15,6 @@ import com.cyworks.redux.types.Effect
 import com.cyworks.redux.util.Environment
 import com.cyworks.redux.util.ILogger
 
-
 /**
  * Page以及Component的基类，封装组件和页面的公共逻辑，一个组件可能会有多个子组件。
  *
