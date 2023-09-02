@@ -322,10 +322,9 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
         if (currentView == null || isRunFirstUpdate) {
             return
         }
-        if (context.stateReady()) {
-            isRunFirstUpdate = true
-            context.runFirstUpdate()
-        }
+
+        isRunFirstUpdate = true
+        context.runFirstUpdate()
     }
 
     /**

@@ -112,6 +112,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      * 存放因为异步操作而被挂起的action
      */
     private var pendingLifecycleActionList: ArrayList<Action<Any>>? = null
+    private var pendingRunnable: ArrayList<Runnable>? = null
 
     private val changedProps: ArrayList<ReactiveProp<Any>> = ArrayList()
     private val changedKeys: ArrayList<String> = ArrayList()
@@ -359,9 +360,18 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      * 首次创建UI时，根据是否更新初始值来展示UI
      */
     internal fun runFirstUpdate() {
-        if (isDestroy || !isStateReady) {
+        if (isDestroy) {
             return
         }
+
+        if (!isStateReady) {
+            if (pendingRunnable == null) {
+                pendingRunnable = ArrayList()
+            }
+            pendingRunnable?.add(Runnable { runFirstUpdate() })
+            return
+        }
+
         val map = state.dataMap
         for (key in map.keys) {
             val reactiveProp = map[key]
@@ -376,9 +386,18 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      * 进行一次全量更新：主要用组件隐藏之后再显示的操作，或者横竖屏切换时的操作
      */
     internal fun runFullUpdate() {
-        if (isDestroy || !isStateReady) {
+        if (isDestroy) {
             return
         }
+
+        if (!isStateReady) {
+            if (pendingRunnable == null) {
+                pendingRunnable = ArrayList()
+            }
+            pendingRunnable?.add(Runnable { runFirstUpdate() })
+            return
+        }
+
         val map = state.dataMap
         for (key in map.keys) {
             val prop = map[key]
@@ -441,21 +460,22 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      */
     fun setStateReady() {
         isStateReady = true
+        if (pendingRunnable != null) {
+            pendingRunnable!!.forEach {
+                it.run()
+            }
+            pendingRunnable!!.clear()
+        }
         if (pendingLifecycleActionList == null) {
             return
         }
         val size = pendingLifecycleActionList!!.size
         if (size > 0) {
-            val copy: List<Action<Any>> = ArrayList(pendingLifecycleActionList!!)
-            copy.forEach {
+            pendingLifecycleActionList!!.forEach {
                 onLifecycle(it)
             }
             pendingLifecycleActionList!!.clear()
         }
-    }
-
-    fun stateReady(): Boolean {
-        return isStateReady
     }
 
     /**
