@@ -25,8 +25,7 @@ abstract class Component<S : State>(lazyBindUI: Boolean, p: Bundle?) : BaseCompo
 
     /**
      * UI数据变化时的回调，检查本次变化的数据，对可见性以及屏幕旋转做一些特殊处理
-     *
-     * @param stateCompare ChangedState 本次变化的state集合
+     * @param stateCompare [ChangedState] 本次变化的state集合
      */
     private fun onDataChangedCB(stateCompare: ChangedState<S>) {
         val props: List<ReactiveProp<Any>> = stateCompare.changedProps
@@ -67,7 +66,7 @@ abstract class Component<S : State>(lazyBindUI: Boolean, p: Bundle?) : BaseCompo
      */
     private fun visibilityChanged(propKeys: ArrayList<String>): Boolean {
         val show: Boolean = context.state.isShowUI
-        if (!propKeys.contains("isShowUI")) {
+        if (!propKeys.contains(State.IS_SHOW_UI_NAME)) {
             // 当前变化的属性不包含可见性变化的属性
             return false
         }
@@ -97,7 +96,7 @@ abstract class Component<S : State>(lazyBindUI: Boolean, p: Bundle?) : BaseCompo
      * @return 是否可以处理屏幕旋转
      */
     private fun needHandleOrientation(propKeys: ArrayList<String>): Boolean {
-        val orientationKey = "current_orientation"
+        val orientationKey = State.CURRENT_ORIENTATION_NAME
         if (!propKeys.contains(orientationKey)) {
             return false
         }

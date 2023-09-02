@@ -61,7 +61,6 @@ class DepHelper {
         val time = System.currentTimeMillis()
         calledDetect = true
 
-        // val memberList = state.javaClass.kotlin.memberProperties
         list.forEach {
             if (!excludePropMap.containsKey(it.name) && !state.dataMap.containsKey(it.name) && !it.isAbstract) {
                 try {

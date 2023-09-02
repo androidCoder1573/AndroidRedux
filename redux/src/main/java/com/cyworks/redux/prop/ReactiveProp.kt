@@ -111,7 +111,6 @@ class ReactiveProp<T>(
         this.state.innerSetProp(key ?: "", value as Any)
     }
 
-    @Suppress("UNCHECKED_CAST")
     internal fun canSet(value: T): Boolean {
         // 防止开发者在非Reducer中更新UI属性
         if (stateProxy == null) {
@@ -129,6 +128,7 @@ class ReactiveProp<T>(
         }
 
         // 记录哪些数据变更了
+        @Suppress("UNCHECKED_CAST")
         stateProxy?.recordChangedProp(this as ReactiveProp<Any>)
         this.value = value
 
@@ -193,7 +193,6 @@ class ReactiveProp<T>(
      * @param value Object
      * @throws RuntimeException 当参数为空或者参数类型不一致时抛出异常
      */
-    @Suppress("UNCHECKED_CAST")
     internal fun set(value: T) {
         // 防止在非Reducer中更新UI属性
         if (stateProxy == null) {
@@ -207,6 +206,7 @@ class ReactiveProp<T>(
 
         innerSetter(value)
         // 记录哪些数据变更了
+        @Suppress("UNCHECKED_CAST")
         stateProxy!!.recordChangedProp(this as ReactiveProp<Any>)
     }
 

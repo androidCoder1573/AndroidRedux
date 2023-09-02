@@ -126,7 +126,8 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean, p: Bundle?) : Logic
     }
 
     override fun onStateMerged(componentState: S) {
-        componentState.innerSetProp("isShowUI", uiController.isShow) // 检查默认属性设置
+        // 检查默认属性设置
+        componentState.innerSetProp(State.IS_SHOW_UI_NAME, uiController.isShow)
         uiController.onStateMerged(componentState)
     }
 
@@ -145,8 +146,8 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean, p: Bundle?) : Logic
     abstract fun createViewModule(): ViewModule<S>
 
     @CallSuper
-    override fun clear() {
-        super.clear()
+    override fun destroy() {
+        super.destroy()
         observer?.let { liveData?.removeObserver(it) }
         context.destroy()
         uiController.clear()
@@ -208,7 +209,7 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean, p: Bundle?) : Logic
         override fun onDestroy(owner: LifecycleOwner) {
             // 这里的调用顺序不能乱
             component.context.onLifecycle(Action(LifeCycleAction.ACTION_ON_DESTROY, null))
-            component.clear()
+            component.destroy()
         }
     }
 }

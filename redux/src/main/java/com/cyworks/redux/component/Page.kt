@@ -29,9 +29,8 @@ import com.cyworks.redux.util.Platform
  * 在横竖屏切换的时候隐藏显示这两块区域即可。
  *
  * 这样需要开发者重写onConfigurationChanged来实现横竖屏切换。
- * todo：没有提供基于ViewModel的Store
  *
- * 如何进行切换？
+ * 如何进行屏幕切换？
  * [Page.requestOrientationChange] 此方法需要在收到onConfigurationChanged时调用
  */
 abstract class Page<S : State> : LogicPage<S> {
@@ -79,10 +78,6 @@ abstract class Page<S : State> : LogicPage<S> {
 
         // 注册生命周期
         // 这里要在创建界面之后再绑定观察者，否则会有时序问题, 比如根View还没创建好就开始构建子组件了
-        addObserver(proxy)
-    }
-
-    private fun addObserver(proxy: LifeCycleProxy) {
         proxy.lifecycle?.addObserver(PageLifecycleObserver(this))
     }
 
@@ -103,7 +98,7 @@ abstract class Page<S : State> : LogicPage<S> {
     }
 
     override fun onStateDetected(state: S) {
-        state.innerSetProp("currentOrientation", lastOrientation)
+        state.innerSetProp(State.CURRENT_ORIENTATION_NAME, lastOrientation)
     }
 
     /**
@@ -128,6 +123,16 @@ abstract class Page<S : State> : LogicPage<S> {
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
+    private fun stopUIUpdate() {
+        (environment.store as PageStore<S>?)!!.onPageHidden()
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun startUIUpdate() {
+        (environment.store as PageStore<S>?)!!.onPageVisible()
+    }
+
     /**
      * 清理数据, 必要时外部实现
      */
@@ -143,16 +148,6 @@ abstract class Page<S : State> : LogicPage<S> {
         super.onCreate()
         logger.d(ILogger.PERF_TAG, "page: <" + this.javaClass.simpleName + ">"
                     + " init consume: ${(SystemClock.uptimeMillis() - time)}ms")
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    private fun stopUIUpdate() {
-        (environment.store as PageStore<S>?)!!.onPageHidden()
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    private fun startUIUpdate() {
-        (environment.store as PageStore<S>?)!!.onPageVisible()
     }
 
     /**

@@ -15,23 +15,8 @@ class UIAtom<S : State> : Atom<S>() {
     }
 
     fun doAtomChange(state: S, changedKeys: List<String>?, holder: ComponentViewHolder?) {
-        val isChanged = isChanged(changedKeys)
+        val isChanged = isChanged(changedKeys, state)
         if (isChanged) {
-            if (newProps != null && oldProps != null) {
-                for (i in 0 until newProps!!.size) {
-                    oldProps!![i] = newProps!![i]
-                }
-            }
-
-            if (newProps != null && keyList != null) {
-                for (i in 0 until newProps!!.size) {
-                    val key: String = keyList!![i]
-                    val prop = state.dataMap[key]
-                    if (prop != null) {
-                        newProps!![i] = prop.value()!!
-                    }
-                }
-            }
             onChanged?.update(state, oldProps, holder)
         }
     }

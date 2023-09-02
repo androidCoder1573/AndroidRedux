@@ -23,25 +23,21 @@ abstract class Connector<CS : State, PS : State> {
     /**
      * 当前组件关联的父组件的State
      */
-    var pState: State? = null
+    internal var pState: State? = null
 
     /**
      * 通过此接口获取View的占坑id或者对话框这类的布局id
-     *
-     * @return int
      */
     abstract val viewContainerIdForV: Int
 
     /**
      * 通过此接口获取View的占坑id或者对话框这类的布局id
-     *
-     * @return int
      */
     abstract val viewContainerIdForH: Int
 
     private var collector: InterceptorCollector<CS>? = null
 
-    fun setParentState(parentState: State) {
+    internal fun setParentState(parentState: State) {
         this.pState = parentState
     }
 

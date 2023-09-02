@@ -10,10 +10,10 @@ import com.cyworks.redux.types.DepProps
 abstract class Atom<S : State> {
     internal var dep: DepProps? = null
 
-    protected var keyList: Array<String>? = null
+    private var keyList: Array<String>? = null
 
     protected var oldProps: Array<Any>? = null
-    protected var newProps: Array<Any>? = null
+    private var newProps: Array<Any>? = null
 
     /**
      * 初始化当前Atom依赖的属性列表
@@ -22,18 +22,39 @@ abstract class Atom<S : State> {
         this.dep = dep
     }
 
-    protected fun isChanged(changedKeys: List<String>?): Boolean {
-        if (changedKeys.isNullOrEmpty() || keyList == null || keyList!!.isEmpty()) {
+    protected fun isChanged(changedKeys: List<String>?, s: State): Boolean {
+        var changed = false
+
+        if (keyList == null || keyList!!.isEmpty() || changedKeys.isNullOrEmpty()) {
             return false
         }
 
         for (key in keyList!!) {
             if (changedKeys.contains(key)) {
-                return true
+                changed = true
+                break
             }
         }
 
-        return false
+        if (changed) {
+            if (newProps != null && oldProps != null) {
+                for (i in 0 until newProps!!.size) {
+                    oldProps!![i] = newProps!![i]
+                }
+            }
+
+            if (newProps != null && keyList != null) {
+                for (i in 0 until newProps!!.size) {
+                    val key: String = keyList!![i]
+                    val prop = s.dataMap[key]
+                    if (prop != null) {
+                        newProps!![i] = prop.value()!!
+                    }
+                }
+            }
+        }
+
+        return changed
     }
 
     internal fun addKeyList(list: ArrayList<String>) {

@@ -1,6 +1,7 @@
 package com.cyworks.redux.component
 
 import android.os.Bundle
+import androidx.annotation.CallSuper
 import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.atom.StatePropsWatcher
@@ -58,7 +59,7 @@ abstract class Logic<S : State>(p: Bundle?) {
     /**
      * 用于监听本组件的属性变化
      */
-    internal val propsWatcher: StatePropsWatcher<S>
+    val propsWatcher: StatePropsWatcher<S> = StatePropsWatcher()
 
     protected var logicModule: LogicModule<S> = object : LogicModule<S> {
         override fun addLocalEffects(collect: EffectCollector<S>) {}
@@ -77,7 +78,6 @@ abstract class Logic<S : State>(p: Bundle?) {
      * 初始Effect以及一些依赖
      */
     init {
-        propsWatcher = StatePropsWatcher()
         initCollect()
     }
 
@@ -104,14 +104,8 @@ abstract class Logic<S : State>(p: Bundle?) {
         // sub class impl
     }
 
-    /**
-     * 标记某些属性不会对UI产生影响
-     */
-    open fun markPropsNotUpdateUI(): List<String>? {
-        return null
-    }
-
-    open fun clear() {
+    @CallSuper
+    open fun destroy() {
         if (interceptorDispose != null && interceptorDispose!!.size > 0) {
             interceptorDispose?.forEach {
                 it()

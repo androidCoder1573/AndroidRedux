@@ -9,6 +9,7 @@ import com.cyworks.redux.types.CreateGlobalState
 import com.cyworks.redux.types.Effect
 import com.cyworks.redux.types.Reducer
 import com.cyworks.redux.util.ThreadUtil
+import kotlin.reflect.full.memberProperties
 
 /**
  * 带Effect的Store，为全局Store优化的产物，增加Effect处理能力，方便全局store处理异步请求。
@@ -33,7 +34,7 @@ open class GlobalStore<S : State> : Store<S> {
         effect = effectCollector.effect
         state = creator.create()
         state.stateType = StateType.GLOBAL_TYPE
-        state.detectField()
+        state.detectField(state.javaClass.kotlin.memberProperties)
     }
 
     /**

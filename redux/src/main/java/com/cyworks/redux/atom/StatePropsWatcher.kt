@@ -5,8 +5,7 @@ import com.cyworks.redux.state.State
 import com.cyworks.redux.types.DepProps
 import com.cyworks.redux.types.OnLogicAtomChanged
 
-class StatePropsWatcher<S : State> {
-    private val atomList = ArrayList<LogicAtom<S>>()
+class StatePropsWatcher<S : State> : PropsWatcher<S, LogicAtom<S>>() {
 
     fun watch(dep: DepProps, changed: OnLogicAtomChanged<S>) {
         val atom = LogicAtom<S>()
@@ -19,13 +18,9 @@ class StatePropsWatcher<S : State> {
      * 当数据有更新时，通过此方法触发每个Atom进行更新
      * @param state 当前最新的State
      */
-    fun update(state: S, ctx: ReduxContext<S>) {
+    fun update(state: S, changedKeys: List<String>?, ctx: ReduxContext<S>) {
         for (atom in atomList) {
-            atom.doAtomChange(state, ctx)
+            atom.doAtomChange(state, changedKeys, ctx)
         }
-    }
-
-    fun clear() {
-        atomList.clear()
     }
 }

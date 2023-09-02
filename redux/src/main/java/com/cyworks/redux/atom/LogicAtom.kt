@@ -11,17 +11,10 @@ class LogicAtom<S : State> : Atom<S>() {
         this.onChanged = onAtomChanged
     }
 
-    fun doAtomChange(state: S, ctx: ReduxContext<S>?) {
-        val changedProps = dep?.let { it() }
-        if (changedProps.isNullOrEmpty()) {
-            return
+    fun doAtomChange(state: S, changedKeys: List<String>?, ctx: ReduxContext<S>?) {
+        val isChanged = isChanged(changedKeys, state)
+        if (isChanged) {
+            onChanged?.update(state, oldProps, ctx)
         }
-
-//        val isChanged = !isEqual(changedProps, watchedProps)
-//        if (isChanged) {
-//            val oldDeps = watchedProps
-//            watchedProps = changedProps
-//            onChanged?.update(state, oldDeps, ctx)
-//        }
     }
 }

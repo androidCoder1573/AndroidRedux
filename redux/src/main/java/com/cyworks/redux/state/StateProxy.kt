@@ -35,7 +35,7 @@ class StateProxy {
 
     /**
      * 获取组件私有数据变化的情况。
-     * @return ChangedProp列表
+     * @return 变化的私有属性列表
      */
     val changedPrivateProps: List<ReactiveProp<Any>>?
         get() {
@@ -56,7 +56,7 @@ class StateProxy {
 
     /**
      * 获取reducer执行完成后数据变化的情况。
-     * @return ChangedProp列表
+     * @return 变化的公共属性列表
      */
     val changedPublicProps: List<ReactiveProp<Any>>?
         get() {

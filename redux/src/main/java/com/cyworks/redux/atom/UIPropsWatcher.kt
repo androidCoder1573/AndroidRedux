@@ -8,12 +8,7 @@ import com.cyworks.redux.ui.ComponentViewHolder
 /**
  * 用于UI Updater中收集Atom，将UI更新颗粒化。
  */
-class UIPropsWatcher<S : State> {
-    /**
-     * 原子化UI的更新列表
-     */
-    private val atomList = ArrayList<UIAtom<S>>()
-
+class UIPropsWatcher<S : State> : PropsWatcher<S, UIAtom<S>>() {
     fun watch(dep: DepProps, changed: OnUIAtomChanged<S>) {
         val atom = UIAtom<S>()
         atom.setDepProps(dep)
@@ -29,20 +24,5 @@ class UIPropsWatcher<S : State> {
         for (atom in atomList) {
             atom.doAtomChange(state, changedKeys, holder)
         }
-    }
-
-    internal fun generateKeyList(state: S) {
-        for (atom in atomList) {
-            val dep = atom.dep
-            state.startCollectAtomKey()
-            dep?.let { it() }
-            state.endCollectAtomKey()
-            val list: ArrayList<String> = state.atomKeyList()
-            atom.addKeyList(list)
-        }
-    }
-
-    fun clear() {
-        atomList.clear()
     }
 }

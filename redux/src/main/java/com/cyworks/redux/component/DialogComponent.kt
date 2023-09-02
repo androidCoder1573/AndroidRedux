@@ -88,7 +88,7 @@ abstract class DialogComponent<S : State>(p: Bundle?) : BaseComponent<S>(true, p
      * @return 是否可以处理屏幕旋转
      */
     private fun needHandleOrientation(propKeys: ArrayList<String>): Boolean {
-        val orientationKey = "currentOrientation"
+        val orientationKey = State.CURRENT_ORIENTATION_NAME
         if (!propKeys.contains(orientationKey)) {
             return false
         }
@@ -141,8 +141,8 @@ abstract class DialogComponent<S : State>(p: Bundle?) : BaseComponent<S>(true, p
     }
 
     @CallSuper
-    override fun clear() {
-        super.clear()
+    override fun destroy() {
+        super.destroy()
         closeDialog()
         dialogInterface = null
     }

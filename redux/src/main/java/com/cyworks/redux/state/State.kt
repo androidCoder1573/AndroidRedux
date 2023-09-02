@@ -23,7 +23,7 @@ abstract class State {
     /**
      * 用于存放组件响应式数据的Map, 框架内部创建并使用，开发者无感知
      * key: 某个属性对应的key
-     * value: PropValue, 某个属性对应的值
+     * value: ReactiveProp, 属性对应的值
      */
     internal val dataMap = HashMap<String, ReactiveProp<Any>>()
 
@@ -51,7 +51,8 @@ abstract class State {
     /**
      * 当前state的token，用于标记一个state
      */
-    internal val token: JvmType.Object = JvmType.Object("${System.currentTimeMillis()}")
+    internal val token: JvmType.Object
+    = JvmType.Object("${this.javaClass.name}_${System.currentTimeMillis()}")
 
     /**
      * 当前state的类型，用于后续属性依赖的来源
@@ -206,7 +207,7 @@ abstract class State {
         @Suppress("UNCHECKED_CAST")
         private fun checkDataMap(key: String, value: V, set: PropertySet<V>) {
             if (stateType == StateType.GLOBAL_TYPE
-                && (key == "currentOrientation" || key == "isShowUI")) {
+                && (key == CURRENT_ORIENTATION_NAME || key == IS_SHOW_UI_NAME)) {
                 return
             }
 
@@ -226,7 +227,7 @@ abstract class State {
             val name = property.name
 
             if (stateType == StateType.GLOBAL_TYPE
-                && (name == "currentOrientation" || name == "isShowUI")) {
+                && (name == CURRENT_ORIENTATION_NAME || name == IS_SHOW_UI_NAME)) {
                 return this.value
             }
 
@@ -244,7 +245,7 @@ abstract class State {
             val name = property.name
 
             if (stateType == StateType.GLOBAL_TYPE
-                && (name == "currentOrientation" || name == "isShowUI")) {
+                && (name == CURRENT_ORIENTATION_NAME || name == IS_SHOW_UI_NAME)) {
                 this.value = value
                 return
             }
@@ -323,6 +324,9 @@ abstract class State {
          * 将依赖全局store的state的类名添加进来并用此标记
          */
         private const val DEPENDANT_STATE_FLAG = 1
+
+        const val CURRENT_ORIENTATION_NAME = "currentOrientation"
+        const val IS_SHOW_UI_NAME = "isShowUI"
 
         @JvmStatic
         fun <S : State> copyState(state: S): S {

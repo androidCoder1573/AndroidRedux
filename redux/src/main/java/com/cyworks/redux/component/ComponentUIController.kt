@@ -8,7 +8,6 @@ import com.cyworks.redux.action.Action
 import com.cyworks.redux.atom.UIPropsWatcher
 import com.cyworks.redux.dependant.Dependant
 import com.cyworks.redux.lifecycle.LifeCycleAction
-import com.cyworks.redux.state.ReflectStateManager
 import com.cyworks.redux.state.ReflectTask
 import com.cyworks.redux.state.State
 import com.cyworks.redux.ui.ComponentViewHolder
@@ -338,7 +337,7 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
 
     private fun setShow(show: Boolean) {
         isShow = show
-        context.state.innerSetProp("isShowUI", isShow)
+        context.state.innerSetProp(State.IS_SHOW_UI_NAME, isShow)
     }
 
     /**
@@ -463,12 +462,12 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
         }
 
         val env = copyEnvironment()
-        env.task = ReflectTask(map.size)
+        env.task = ReflectTask(map.size, environment.taskManager?.executor!!)
 
         for (dependant in map.values) {
             dependant.installComponent(env)
         }
-        ReflectStateManager.instance.putTask(env.task!!)
+        environment.taskManager?.putTask(env.task!!)
     }
 
     private fun copyEnvironment(): Environment {

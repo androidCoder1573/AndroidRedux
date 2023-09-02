@@ -114,6 +114,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     private var pendingLifecycleActionList: ArrayList<Action<Any>>? = null
 
     private val changedProps: ArrayList<ReactiveProp<Any>> = ArrayList()
+    private val changedKeys: ArrayList<String> = ArrayList()
 
     private val stateProxy = StateProxy()
 
@@ -335,18 +336,23 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      * @param props 变化的属性列表 [ReactiveProp]
      */
     internal fun onStateChange(props: List<ReactiveProp<Any>>) {
+        changedKeys.clear()
+
         for (prop in props) {
             val key = prop.key
-            putChangedProp(key, prop)
-            logger.d(ILogger.ACTION_TAG, "current changed prop is"
-                    + " <" + key + "> in <" + logic?.javaClass?.simpleName + ">"
-            )
+            if (key != null) {
+                changedKeys.add(key)
+                putChangedProp(key, prop)
+                logger.d(ILogger.ACTION_TAG, "current changed prop is"
+                        + " <" + key + "> in <" + logic?.javaClass?.simpleName + ">"
+                )
+            }
         }
 
         requestVsync()
 
         // 通知属性订阅者，状态发生了变化
-        logic?.propsWatcher?.update(state, this)
+        logic?.propsWatcher?.update(state, changedKeys, this)
     }
 
     /**

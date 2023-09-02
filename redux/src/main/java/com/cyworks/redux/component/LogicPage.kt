@@ -16,8 +16,8 @@ import com.cyworks.redux.interceptor.InterceptorManager
 import com.cyworks.redux.interceptor.InterceptorPayload
 import com.cyworks.redux.lifecycle.LifeCycleProxy
 import com.cyworks.redux.logic.EffectCollector
-import com.cyworks.redux.state.ReflectStateManager
 import com.cyworks.redux.state.ReflectTask
+import com.cyworks.redux.state.ReflectTaskManager
 import com.cyworks.redux.state.State
 import com.cyworks.redux.state.StateType
 import com.cyworks.redux.store.PageStore
@@ -26,7 +26,6 @@ import com.cyworks.redux.types.Interceptor
 import com.cyworks.redux.util.Environment
 import com.cyworks.redux.util.IPlatform
 import kotlin.reflect.full.memberProperties
-
 
 /**
  * Page最重要的功能：负责创建Store以及组织页面的Effect调度。
@@ -62,6 +61,7 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
     init {
         environment = Environment.of()
         environment.lifeCycleProxy  = proxy
+        environment.taskManager = ReflectTaskManager()
         initDependencies()
 
         // 开始添加拦截器
@@ -117,15 +117,15 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
      * 创建页面的ReduxContext，依赖一个初始的PureState
      */
     private fun createContext() {
-        // 生成state
+        // 创建state
         val state = onCreateState(props)
         state.stateType = StateType.PAGE_TYPE
 
         // 反射解析属性
         reflect(state)
 
-        // 创建Store
-        createStore(state)
+        // 创建当前页面所用的Store，只在Page中创建页面Store
+        environment.store = PageStore(state)
 
         // 创建Context
         context = ReduxContextBuilder<S>()
@@ -136,34 +136,27 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
     }
 
     private fun reflect(state: S) {
-        val rootTask = ReflectTask(1)
+        val rootTask = ReflectTask(1, environment.taskManager?.executor!!)
 
-        val detectRunnable = Runnable {
-            val memberList = state.javaClass.kotlin.memberProperties
-            // 提交到主线程
-            ReduxManager.instance.submitInMainThread {
-                state.detectField(memberList)
-                // 负责处理额外的事情
-                onStateDetected(state)
-                context.setStateReady()
-                // 检查下一个任务
-                ReflectStateManager.instance.tryRunNextTask(rootTask, state.token)
-                // 订阅属性
-                logicModule.subscribeProps(context.state, propsWatcher)
+        val detectRunnable = object : Runnable {
+            override fun run() {
+                val memberList = state.javaClass.kotlin.memberProperties
+                // 提交到主线程
+                ReduxManager.instance.submitInMainThread {
+                    state.detectField(memberList)
+                    // 负责处理额外的事情
+                    onStateDetected(state)
+                    context.setStateReady()
+                    // 检查下一个任务
+                    environment.taskManager?.tryRunNextTask(rootTask, state.token)
+                    // 订阅属性
+                    logicModule.subscribeProps(context.state, propsWatcher)
+                }
             }
         }
 
         rootTask.add(state.token, detectRunnable)
-
-        ReflectStateManager.instance.putTask(rootTask)
-    }
-
-    /**
-     * 创建当前页面所用的Store，只在Page中创建页面Store
-     */
-    private fun createStore(state: S) {
-        val store: PageStore<State> = PageStore(state)
-        environment.store = store
+        environment.taskManager?.putTask(rootTask)
     }
 
     /**
@@ -177,13 +170,13 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
 
         // 子组件需要从父组件那边继承一些信息
         val env = copyEnvToChild()
-        env.task = ReflectTask(map.size)
+        env.task = ReflectTask(map.size, environment.taskManager?.executor!!)
 
         // 安装子组件
         for (dependant in map.values) {
             dependant.install(env)
         }
-        ReflectStateManager.instance.putTask(env.task!!)
+        environment.taskManager?.putTask(env.task!!)
     }
 
     protected abstract fun copyEnvToChild(): Environment
@@ -209,7 +202,6 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
         return effect
     }
 
-    @Suppress("UNCHECKED_CAST")
     private fun makeInstallExtraFeatureEffect(): Effect<S> {
         // 安装额外的子组件的Effect
         val effect: Effect<S> = object : Effect<S> {
@@ -218,6 +210,7 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
                     return
                 }
 
+                @Suppress("UNCHECKED_CAST")
                 val extraFeatures: HashMap<String, Dependant<out State, S>>? =
                     (action.payload as ExtraDependants<S>).extra
                 if (extraFeatures.isNullOrEmpty()) {
@@ -229,7 +222,6 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
                     installExtraDependant(extraFeatures)
                     return
                 }
-
                 ReduxManager.instance.submitInMainThread { installExtraDependant(extraFeatures) }
             }
         }
@@ -245,7 +237,7 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
 
         // 子组件需要从父组件继承一些信息
         val env = copyEnvToChild()
-
+        env.task = ReflectTask(extraDependants.size, environment.taskManager?.executor!!)
         for (key in extraDependants.keys) {
             if (map?.containsKey(key) == true) {
                 continue
@@ -265,6 +257,7 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
             return
         }
 
+        environment.taskManager?.putTask(env.task!!)
         // 重新收集拦截器
         initInterceptor()
     }
@@ -292,6 +285,4 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
      * 配置当前页面的Feature(依赖)集合PageDependantCollect，需要外部设置
      */
     abstract fun addDependencies(collect: DependentCollector<S>?)
-
-    protected open fun destroy() {}
 }

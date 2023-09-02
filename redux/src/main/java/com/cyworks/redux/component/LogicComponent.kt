@@ -10,7 +10,6 @@ import com.cyworks.redux.dependant.DependentCollector
 import com.cyworks.redux.interceptor.InterceptorCollector
 import com.cyworks.redux.interceptor.InterceptorManager
 import com.cyworks.redux.logic.EffectCollector
-import com.cyworks.redux.state.ReflectStateManager
 import com.cyworks.redux.state.State
 import com.cyworks.redux.state.StateType
 import com.cyworks.redux.store.GlobalStoreSubscribe
@@ -76,7 +75,7 @@ abstract class LogicComponent<S : State>(p: Bundle?) : Logic<S>(p) {
 
     /**
      * 增加组件的依赖，子类如果有子组件，需要实现此方法
-     * @param collect DependentCollect
+     * @param collect [DependentCollector]
      */
     protected open fun addDependencies(collect: DependentCollector<S>?) {
         // sub class impl
@@ -139,7 +138,7 @@ abstract class LogicComponent<S : State>(p: Bundle?) : Logic<S>(p) {
 
     /**
      * 创建平台相关操作
-     * @return IPlatform
+     * @return [IPlatform]
      */
     protected open fun createPlatform(): IPlatform? {
         return null
@@ -154,7 +153,7 @@ abstract class LogicComponent<S : State>(p: Bundle?) : Logic<S>(p) {
 
     @CallSuper
     protected fun createContext() {
-        // 生成初始State
+        // 创建State
         val state = onCreateState(props)
         state.stateType = StateType.COMPONENT_TYPE
 
@@ -186,7 +185,7 @@ abstract class LogicComponent<S : State>(p: Bundle?) : Logic<S>(p) {
                 onStateMerged(state)
                 context.setStateReady()
                 // 检查下一个任务
-                ReflectStateManager.instance.tryRunNextTask(environment.task, state.token)
+                environment.taskManager?.tryRunNextTask(environment.task, state.token)
                 // 订阅属性
                 logicModule.subscribeProps(context.state, propsWatcher)
             }
@@ -240,7 +239,8 @@ abstract class LogicComponent<S : State>(p: Bundle?) : Logic<S>(p) {
     internal abstract fun install(env: Environment, connector: Connector<S, State>?)
 
     @CallSuper
-    override fun clear() {
+    override fun destroy() {
+        super.destroy()
         globalStoreSubscribe!!.clear()
         if (dependencies != null) {
             dependencies?.clear()

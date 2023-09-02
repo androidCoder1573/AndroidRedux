@@ -4,6 +4,7 @@ import android.view.View
 import com.cyworks.redux.DispatchBus
 import com.cyworks.redux.lifecycle.LifeCycleProxy
 import com.cyworks.redux.state.ReflectTask
+import com.cyworks.redux.state.ReflectTaskManager
 import com.cyworks.redux.state.State
 import com.cyworks.redux.store.Store
 import com.cyworks.redux.types.Dispatch
@@ -41,6 +42,8 @@ class Environment private constructor() {
      * 当前组件的父View
      */
     internal var parentView: View? = null
+
+    internal var taskManager: ReflectTaskManager? = null
 
     /**
      * 用于异步获取反射数据
@@ -80,6 +83,7 @@ class Environment private constructor() {
             copy.lifeCycleProxy = env.lifeCycleProxy
             copy.store = env.store
             copy.pageDispatchBus = env.pageDispatchBus
+            copy.taskManager = env.taskManager
             return copy
         }
     }
