@@ -460,21 +460,19 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      */
     fun setStateReady() {
         isStateReady = true
+
         if (pendingRunnable != null) {
             pendingRunnable!!.forEach {
                 it.run()
             }
-            pendingRunnable!!.clear()
+            pendingRunnable = null
         }
-        if (pendingLifecycleActionList == null) {
-            return
-        }
-        val size = pendingLifecycleActionList!!.size
-        if (size > 0) {
+
+        if (pendingLifecycleActionList != null) {
             pendingLifecycleActionList!!.forEach {
                 onLifecycle(it)
             }
-            pendingLifecycleActionList!!.clear()
+            pendingLifecycleActionList = null
         }
     }
 
