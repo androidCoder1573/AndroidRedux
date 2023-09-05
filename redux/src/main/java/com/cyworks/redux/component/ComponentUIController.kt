@@ -2,6 +2,7 @@ package com.cyworks.redux.component
 
 import android.content.res.Configuration
 import android.view.View
+import androidx.collection.ArrayMap
 import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.action.Action
@@ -142,7 +143,7 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
         // attachAdapter()
 
         // 处理子组件
-        val map: HashMap<String, Dependant<out State, S>>? = proxy.childrenDepMap
+        val map: ArrayMap<String, Dependant<out State, S>>? = proxy.childrenDepMap
         if (map.isNullOrEmpty()) {
             return
         }
@@ -182,7 +183,7 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
         // detachAdapter()
 
         // 处理子组件
-        val map: HashMap<String, Dependant<out State, S>>? = proxy.childrenDepMap
+        val map: ArrayMap<String, Dependant<out State, S>>? = proxy.childrenDepMap
         if (!map.isNullOrEmpty()) {
             for (dependant in map.values) {
                 if (dependant.logic is BaseComponent<*>) {
@@ -211,7 +212,7 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
         // attachAdapter()
 
         // 处理子组件
-        val map: HashMap<String, Dependant<out State, S>>? = proxy.childrenDepMap
+        val map: ArrayMap<String, Dependant<out State, S>>? = proxy.childrenDepMap
         if (map.isNullOrEmpty()) {
             return
         }
@@ -257,7 +258,7 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
         // detachAdapter()
 
         // 处理子组件
-        val map: HashMap<String, Dependant<out State, S>>? = proxy.childrenDepMap
+        val map: ArrayMap<String, Dependant<out State, S>>? = proxy.childrenDepMap
         if (!map.isNullOrEmpty()) {
             for (dependant in map.values) {
                 if (dependant.logic is BaseComponent<*>) {
@@ -455,7 +456,7 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
      * 每个组件下可能也会挂子组件，通过此方法初始化组件下挂载的子组件
      */
     private fun installSubComponents() {
-        val map: HashMap<String, Dependant<out State, S>>? = proxy.childrenDepMap
+        val map: ArrayMap<String, Dependant<out State, S>>? = proxy.childrenDepMap
         if (map.isNullOrEmpty()) {
             return
         }

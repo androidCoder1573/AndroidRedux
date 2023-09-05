@@ -2,6 +2,7 @@ package com.cyworks.redux.component
 
 import android.os.Bundle
 import androidx.annotation.CallSuper
+import androidx.collection.ArrayMap
 import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.atom.StatePropsWatcher
@@ -72,7 +73,7 @@ abstract class Logic<S : State>(p: Bundle?) {
     /**
      * 获取依赖的子组件集合
      */
-    internal abstract val childrenDepMap: HashMap<String, Dependant<out State, S>>?
+    internal abstract val childrenDepMap: ArrayMap<String, Dependant<out State, S>>?
 
     /**
      * 初始Effect以及一些依赖

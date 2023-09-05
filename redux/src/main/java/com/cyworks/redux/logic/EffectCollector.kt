@@ -1,5 +1,6 @@
 package com.cyworks.redux.logic
 
+import androidx.collection.ArrayMap
 import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.action.ActionType
@@ -20,7 +21,7 @@ class EffectCollector<S : State> {
     /**
      * Effect 集合
      */
-    private val functions = HashMap<ActionType, Effect<S>>()
+    private val functions = ArrayMap<ActionType, Effect<S>>()
 
     @Suppress("UNCHECKED_CAST")
     private val innerEffect = Effect { action, ctx ->

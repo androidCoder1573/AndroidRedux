@@ -1,5 +1,6 @@
 package com.cyworks.redux.interceptor
 
+import androidx.collection.ArrayMap
 import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.action.ActionType
@@ -11,10 +12,10 @@ import com.cyworks.redux.types.Interceptor
  * Interceptor收集器, 这里的状态是当前组件的状态
  */
 class InterceptorCollector<S: State>(private val contextWrapper: ComponentContextWrapper<S>) {
-    internal val interceptorMap: HashMap<ActionType, InterceptorBean<S>> = HashMap()
+    internal val interceptorMap: ArrayMap<ActionType, InterceptorBean<S>> = ArrayMap()
 
     val isEmpty: Boolean
-        get() = interceptorMap.isEmpty()
+        get() = interceptorMap.isEmpty
 
     /**
      * 获取合并之后的Interceptor

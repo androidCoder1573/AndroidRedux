@@ -3,6 +3,7 @@ package com.cyworks.redux.component
 import android.os.Bundle
 import android.os.Looper
 import androidx.annotation.CallSuper
+import androidx.collection.ArrayMap
 import com.cyworks.redux.DispatchBus
 import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.ReduxContextBuilder
@@ -53,7 +54,7 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
      */
     private var dependencies: DependentCollector<S>? = null
 
-    override val childrenDepMap: HashMap<String, Dependant<out State, S>>?
+    override val childrenDepMap: ArrayMap<String, Dependant<out State, S>>?
         get() = if (dependencies == null) {
             null
         } else dependencies!!.dependantMap
@@ -79,7 +80,7 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
     }
 
     private fun initInterceptor() {
-        val map: HashMap<String, Dependant<out State, S>>? = dependencies?.dependantMap
+        val map: ArrayMap<String, Dependant<out State, S>>? = dependencies?.dependantMap
         if (map.isNullOrEmpty()) {
             return
         }
@@ -163,7 +164,7 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
      * 安装子组件
      */
     private fun installSubComponents() {
-        val map: HashMap<String, Dependant<out State, S>>? = dependencies?.dependantMap
+        val map: ArrayMap<String, Dependant<out State, S>>? = dependencies?.dependantMap
         if (map.isNullOrEmpty()) {
             return
         }
@@ -211,7 +212,7 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
                 }
 
                 @Suppress("UNCHECKED_CAST")
-                val extraFeatures: HashMap<String, Dependant<out State, S>>? =
+                val extraFeatures: ArrayMap<String, Dependant<out State, S>>? =
                     (action.payload as ExtraDependants<S>).extra
                 if (extraFeatures.isNullOrEmpty()) {
                     return
@@ -229,11 +230,11 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
         return effect
     }
 
-    private fun installExtraDependant(extraDependants: HashMap<String, Dependant<out State, S>>) {
+    private fun installExtraDependant(extraDependants: ArrayMap<String, Dependant<out State, S>>) {
         var hasNewDep = false // 防止多次调用重复安装
 
         // 当前Feature集合，这里保存的都是已经安装过的
-        val map: HashMap<String, Dependant<out State, S>>? = dependencies?.dependantMap
+        val map: ArrayMap<String, Dependant<out State, S>>? = dependencies?.dependantMap
 
         // 子组件需要从父组件继承一些信息
         val env = copyEnvToChild()

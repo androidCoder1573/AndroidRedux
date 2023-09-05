@@ -1,5 +1,6 @@
 package com.cyworks.redux.logic
 
+import androidx.collection.ArrayMap
 import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.action.ActionType
@@ -7,7 +8,7 @@ import com.cyworks.redux.state.State
 import com.cyworks.redux.types.Interceptor
 
 class PageInterceptorCollect<S : State> {
-    private val functions: HashMap<ActionType, Interceptor<S>> = HashMap()
+    private val functions: ArrayMap<ActionType, Interceptor<S>> = ArrayMap()
 
     @Suppress("UNCHECKED_CAST")
     private val pageInterceptor: Interceptor<S> = Interceptor { action, ctx ->

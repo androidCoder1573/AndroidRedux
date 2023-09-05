@@ -1,6 +1,7 @@
 package com.cyworks.redux
 
 import android.os.Looper
+import androidx.collection.ArrayMap
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.action.InnerActionTypes
 import com.cyworks.redux.component.DialogComponent
@@ -90,7 +91,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     /**
      * 存放当前组件已更新的属性，在下一次vsync信号过来时，用于UI更新
      */
-    private var pendingChangedProps: HashMap<String, ReactiveProp<Any>>? = null
+    private var pendingChangedProps: ArrayMap<String, ReactiveProp<Any>>? = null
 
     /**
      * 保存一些父组件相关的数据
@@ -408,7 +409,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
 
     private fun putChangedProp(key: String?, reactiveProp: ReactiveProp<Any>) {
         if (pendingChangedProps == null) {
-            pendingChangedProps = HashMap()
+            pendingChangedProps = ArrayMap()
         }
 
         if (key != null) {

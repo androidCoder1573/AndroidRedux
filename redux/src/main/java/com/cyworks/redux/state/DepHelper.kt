@@ -1,10 +1,11 @@
 package com.cyworks.redux.state
 
+import androidx.collection.ArrayMap
+import androidx.collection.ArraySet
 import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.prop.ReactiveProp
 import com.cyworks.redux.util.ILogger
 import kotlin.reflect.KProperty1
-import kotlin.reflect.full.memberProperties
 
 class DepHelper {
     /**
@@ -35,23 +36,23 @@ class DepHelper {
     /**
      * 标记State中哪些属性需要排除
      */
-    private val excludePropMap = HashMap<String, Int>()
+    private val excludePropMap = ArrayMap<String, String>()
 
-    private val keyList = ArrayList<String>()
+    private val keyList = ArraySet<String>()
 
     private var isCollectAtomKey = false
 
     init {
-        excludePropMap["dataMap"] = 1
-        excludePropMap["propertyMap"] = 1
-        excludePropMap["depGlobalStateMap"] = 1
-        excludePropMap["stateProxy"] = 1
-        excludePropMap["depHelper"] = 1
-        excludePropMap["stateType"] = 1
-        excludePropMap["logger"] = 1
-        excludePropMap["privatePropChanged"] = 1
-        excludePropMap["publicPropChanged"] = 1
-        excludePropMap["token"] = 1
+        excludePropMap["dataMap"] = "1"
+        excludePropMap["propertyMap"] = "1"
+        excludePropMap["depGlobalStateMap"] = "1"
+        excludePropMap["stateProxy"] = "1"
+        excludePropMap["depHelper"] = "1"
+        excludePropMap["stateType"] = "1"
+        excludePropMap["logger"] = "1"
+        excludePropMap["privatePropChanged"] = "1"
+        excludePropMap["publicPropChanged"] = "1"
+        excludePropMap["token"] = "1"
     }
 
     fun detectField(list: Collection<KProperty1<out State, *>>, state: State) {

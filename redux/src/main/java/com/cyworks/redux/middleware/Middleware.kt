@@ -17,10 +17,6 @@ interface Middleware {
      * 获取当前页面页面所有的State，并以Map的方式返回
      */
     interface PageStateProvider {
-        /**
-         * 获取当前页面的所有State
-         * @return State HashMap
-         */
         fun provider(): HashMap<String, State>?
     }
 }

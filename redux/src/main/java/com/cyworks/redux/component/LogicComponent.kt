@@ -2,6 +2,7 @@ package com.cyworks.redux.component
 
 import android.os.Bundle
 import androidx.annotation.CallSuper
+import androidx.collection.ArrayMap
 import com.cyworks.redux.ReduxContextBuilder
 import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.action.InnerActionTypes
@@ -56,7 +57,7 @@ abstract class LogicComponent<S : State>(p: Bundle?) : Logic<S>(p) {
      */
     private var dependencies: DependentCollector<S>? = null
 
-    final override val childrenDepMap: HashMap<String, Dependant<out State, S>>?
+    final override val childrenDepMap: ArrayMap<String, Dependant<out State, S>>?
         get() = if (dependencies == null) {
             null
         } else dependencies!!.dependantMap

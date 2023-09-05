@@ -1,6 +1,7 @@
 package com.cyworks.redux.state
 
 import android.content.res.Configuration
+import android.util.ArrayMap
 import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.prop.ReactiveProp
 import com.cyworks.redux.types.PropertySet
@@ -25,21 +26,21 @@ abstract class State {
      * key: 某个属性对应的key
      * value: ReactiveProp, 属性对应的值
      */
-    internal val dataMap = HashMap<String, ReactiveProp<Any>>()
+    internal val dataMap = ArrayMap<String, ReactiveProp<Any>>()
 
     /**
      * 当框架内部修改响应式数据的时候，为了不触发依赖收集，将设置函数保存下来
      * key: 某个属性对应的key
      * value: 修改属性的函数
      */
-    private val propertyMap = HashMap<String, PropertySet<Any>>()
+    private val propertyMap = ArrayMap<String, PropertySet<Any>>()
 
     /**
      * 用于加快查询设置的map，主要用于绑定全局store上
      * key: 依赖状态对应的类名
      * value: 如果有则写入1
      */
-    private val depGlobalStateMap = HashMap<JvmType.Object, Int>()
+    private val depGlobalStateMap = ArrayMap<JvmType.Object, String>()
 
     /**
      * 当State中某些属性变化时记录这些属性的变化，方便后续处理
@@ -323,7 +324,7 @@ abstract class State {
         /**
          * 将依赖全局store的state的类名添加进来并用此标记
          */
-        private const val DEPENDANT_STATE_FLAG = 1
+        private const val DEPENDANT_STATE_FLAG = "1"
 
         const val CURRENT_ORIENTATION_NAME = "currentOrientation"
         const val IS_SHOW_UI_NAME = "isShowUI"

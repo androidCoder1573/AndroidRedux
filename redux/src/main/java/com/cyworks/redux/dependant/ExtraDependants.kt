@@ -1,7 +1,7 @@
 package com.cyworks.redux.dependant
 
+import androidx.collection.ArrayMap
 import com.cyworks.redux.state.State
-import java.util.HashMap
 
 /**
  * 目前存在这样的需求：如果开发者想要延迟安装一些组件，可以在某些时机发送
@@ -11,7 +11,7 @@ class ExtraDependants<S : State> {
     /**
      * 保存额外Dep
      */
-    var extra: HashMap<String, Dependant<out State, S>>? = null
+    var extra: ArrayMap<String, Dependant<out State, S>>? = null
 
     /**
      * 给page添加一个额外的dep
@@ -19,7 +19,7 @@ class ExtraDependants<S : State> {
      */
     fun addExtDependant(dependant: Dependant<out State, S>) {
         if (extra == null) {
-            extra = HashMap<String, Dependant<out State, S>>()
+            extra = ArrayMap<String, Dependant<out State, S>>()
         }
 
         val key = dependant.hashCode().toString()

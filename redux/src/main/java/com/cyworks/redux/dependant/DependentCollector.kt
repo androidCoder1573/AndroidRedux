@@ -1,5 +1,6 @@
 package com.cyworks.redux.dependant
 
+import androidx.collection.ArrayMap
 import com.cyworks.redux.state.State
 
 /**
@@ -16,7 +17,7 @@ class DependentCollector<PS : State> {
     /**
      * 组件依赖器集合
      */
-    private var dependants: HashMap<String, Dependant<out State, PS>>? = null
+    private var dependants: ArrayMap<String, Dependant<out State, PS>>? = null
 
     /**
      * 当前组件持有的Adapter，一个组件只能持有一个Adapter，组件粒度按列表划分
@@ -30,7 +31,7 @@ class DependentCollector<PS : State> {
 //            rootAdapterDependant = dependant
 //        }
 
-    internal val dependantMap: HashMap<String, Dependant<out State, PS>>?
+    internal val dependantMap: ArrayMap<String, Dependant<out State, PS>>?
         get() = dependants
 
     /**
@@ -40,7 +41,7 @@ class DependentCollector<PS : State> {
      */
     fun addDependant(dependant: Dependant<out State, PS>) {
         if (dependants == null) {
-            dependants = HashMap()
+            dependants = ArrayMap()
         }
         val key = "" + dependant.hashCode()
         if (dependants!!.containsKey(key)) {

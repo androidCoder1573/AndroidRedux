@@ -1,5 +1,6 @@
 package com.cyworks.redux.state
 
+import android.util.ArrayMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
 import java.util.concurrent.LinkedBlockingQueue
@@ -8,14 +9,10 @@ import java.util.concurrent.TimeUnit
 import kotlin.reflect.jvm.internal.impl.load.kotlin.JvmType
 
 class ReflectTaskManager {
-    /**
-     * 执行State检测的线程池
-     */
+    /** 执行State检测的线程池 */
     val executor: ThreadPoolExecutor = ThreadPoolExecutor(
-            0,
-            5,
-            0,
-            TimeUnit.SECONDS, LinkedBlockingQueue())
+        CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_SECONDS,
+        TimeUnit.SECONDS, LinkedBlockingQueue())
 
     private var root: ReflectTask? = null
     private var finish = false
@@ -62,6 +59,13 @@ class ReflectTaskManager {
         root?.next = null
         root?.finish()
     }
+
+    companion object {
+        private val CPU_COUNT = Runtime.getRuntime().availableProcessors()
+        private const val CORE_POOL_SIZE = 0
+        private val MAXIMUM_POOL_SIZE = CPU_COUNT * 2 + 1
+        private const val KEEP_ALIVE_SECONDS = 0L
+    }
 }
 
 open class ReflectTask(private var num: Int, private val executor: ExecutorService) {
@@ -70,7 +74,7 @@ open class ReflectTask(private var num: Int, private val executor: ExecutorServi
     private var hasCallSubmit = false
     private var finish = false
 
-    val list: HashMap<JvmType.Object, Runnable> = HashMap()
+    val list: ArrayMap<JvmType.Object, Runnable> = ArrayMap()
     private val futureList = ArrayList<Future<*>>()
 
     fun finish() {

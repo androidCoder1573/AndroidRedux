@@ -1,5 +1,6 @@
 package com.cyworks.redux.store
 
+import androidx.collection.ArrayMap
 import com.cyworks.redux.state.State
 import com.cyworks.redux.types.Dispose
 import com.cyworks.redux.types.IPropsChanged
@@ -13,7 +14,7 @@ class GlobalStoreSubscribe<CS : State> internal constructor(callback: IPropsChan
     /**
      * 内部维护组件对全局store的依赖，用Any防止类型不匹配
      */
-    private val globalStoreBinderMap = HashMap<GlobalStore<out State>, ICombineGlobalState<CS, Any>>()
+    private val globalStoreBinderMap = ArrayMap<GlobalStore<out State>, ICombineGlobalState<CS, Any>>()
 
     /**
      * 保存dispose，用于清理操作，这里单个组件可能依赖多个全局store

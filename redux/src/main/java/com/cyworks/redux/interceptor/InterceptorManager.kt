@@ -1,5 +1,6 @@
 package com.cyworks.redux.interceptor
 
+import androidx.collection.ArrayMap
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.action.ActionType
 import com.cyworks.redux.adapter.ReduxAdapter
@@ -12,7 +13,7 @@ class InterceptorManager {
      * Interceptor 集合, map存储
      * key: [ActionType]
      */
-    private var funcMap = HashMap<ActionType, ArrayList<InterceptorBean<State>>>()
+    private var funcMap = ArrayMap<ActionType, ArrayList<InterceptorBean<State>>>()
 
     val adapters = ArrayList<ReduxAdapter<State>>()
 

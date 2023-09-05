@@ -1,5 +1,6 @@
 package com.cyworks.redux.prop
 
+import androidx.collection.ArrayMap
 import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.state.State
 import com.cyworks.redux.state.StateProxy
@@ -52,7 +53,7 @@ class ReactiveProp<T>(
     /**
      * 对当前属性的依赖集合
      */
-    private var depMap: HashMap<JvmType.Object, ReactiveProp<T>>? = null
+    private var depMap: ArrayMap<JvmType.Object, ReactiveProp<T>>? = null
 
     /**
      * 当前属性依赖的父属性
@@ -244,7 +245,7 @@ class ReactiveProp<T>(
 
     private fun addChild(child: ReactiveProp<T>): Dispose {
         if (depMap == null) {
-            depMap = HashMap()
+            depMap = ArrayMap()
         }
 
         val key = child.stateToken()

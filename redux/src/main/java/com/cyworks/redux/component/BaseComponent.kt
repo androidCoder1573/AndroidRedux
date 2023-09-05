@@ -3,6 +3,7 @@ package com.cyworks.redux.component
 import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.annotation.CallSuper
+import androidx.collection.ArrayMap
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
@@ -21,7 +22,7 @@ import com.cyworks.redux.util.IPlatform
 import com.cyworks.redux.util.Platform
 
 data class ComponentProxy<S : State>(
-    val childrenDepMap: HashMap<String, Dependant<out State, S>>?,
+    val childrenDepMap: ArrayMap<String, Dependant<out State, S>>?,
     val token: String,
     val lazyBindUI: Boolean,
     val viewModule: ViewModule<S>,

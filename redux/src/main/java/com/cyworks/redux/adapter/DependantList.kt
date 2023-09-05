@@ -1,5 +1,6 @@
 package com.cyworks.redux.adapter
 
+import androidx.collection.ArrayMap
 import com.cyworks.redux.dependant.Dependant
 import com.cyworks.redux.interceptor.InterceptorManager
 import com.cyworks.redux.state.State
@@ -20,7 +21,7 @@ class DependantList<PS : State> {
 
     private var builder: DependantCreator<PS>? = null
 
-    private var depMap = HashMap<Int, ListDependant<PS>>()
+    private var depMap = ArrayMap<Int, ListDependant<PS>>()
 
     constructor(builder: DependantCreator<PS>) {
         this.builder = builder
