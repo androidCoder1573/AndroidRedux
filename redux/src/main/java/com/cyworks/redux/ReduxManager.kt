@@ -77,7 +77,7 @@ class ReduxManager private constructor() {
      */
     private val executor = ThreadPoolExecutor(1, 1, 0,
         TimeUnit.SECONDS, LinkedBlockingQueue(),
-        ThreadFactory { Thread("Live_Redux_bg_thread") })
+        ThreadFactory { Thread("Android_Redux_BG_Thread") })
 
     /**
      * 用于在主线程上执行一些操作

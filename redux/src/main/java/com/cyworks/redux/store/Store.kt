@@ -30,7 +30,7 @@ import kotlin.reflect.jvm.internal.impl.load.kotlin.JvmType
  * Android-Redux如何解决这两个问题呢？
  * 1、针对state过大，Android-redux通过状态分治将状态分散在各个组件中，
  * 而且提供了组件级别的私有状态(没有被以来的属性默认是私有的，不会影响其他组件)
- * 2、针对状态更新时无法确知哪些状态发生变化，live-redux提供了状态精准更新的能力；
+ * 2、针对状态更新时无法确知哪些状态发生变化，Android-Redux提供了状态精准更新的能力；
  *
  * 为什么终端上的Redux需要精准更新界面？
  * 如果无法精准更新UI，意味着每次都要对State进行diff，Java对复杂的对象：比如列表，map等，不仅对开发者来说负担比较重，
