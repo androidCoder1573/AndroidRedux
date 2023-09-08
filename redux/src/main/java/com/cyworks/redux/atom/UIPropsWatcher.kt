@@ -20,7 +20,7 @@ class UIPropsWatcher<S : State> : PropsWatcher<S, UIAtom<S>>() {
      * 当数据有更新时，通过此方法触发每个Atom进行更新
      * @param state 当前最新的State
      */
-    internal fun update(state: S, changedKeys: List<String>?, holder: ComponentViewHolder?) {
+    internal fun update(state: S, changedKeys: HashSet<String>?, holder: ComponentViewHolder?) {
         for (atom in atomList) {
             atom.doAtomChange(state, changedKeys, holder)
         }

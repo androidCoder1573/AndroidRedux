@@ -22,7 +22,7 @@ abstract class Atom<S : State> {
         this.dep = dep
     }
 
-    protected fun isChanged(changedKeys: List<String>?, s: State): Boolean {
+    protected fun isChanged(changedKeys: HashSet<String>?, s: State): Boolean {
         var changed = false
 
         if (keyList == null || keyList!!.isEmpty() || changedKeys.isNullOrEmpty()) {

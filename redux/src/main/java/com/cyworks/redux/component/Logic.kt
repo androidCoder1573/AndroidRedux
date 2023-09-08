@@ -55,12 +55,10 @@ abstract class Logic<S : State>(p: Bundle?) {
      */
     protected var interceptorDispose: ArrayList<Dispose>? = null
 
-    protected var pendingInterceptorList: ArrayList<InterceptorBean<S>> = ArrayList()
-
     /**
      * 用于监听本组件的属性变化
      */
-    val propsWatcher: StatePropsWatcher<S> = StatePropsWatcher()
+    internal val propsWatcher: StatePropsWatcher<S> = StatePropsWatcher()
 
     protected var logicModule: LogicModule<S> = object : LogicModule<S> {
         override fun addLocalEffects(collect: EffectCollector<S>) {}
@@ -95,10 +93,6 @@ abstract class Logic<S : State>(p: Bundle?) {
         // 检查Effect的注册, 并注入一些框架内部的Action
         checkEffect(effectCollector)
         effect = effectCollector.effect
-    }
-
-    fun addPendingInterceptor(bean: InterceptorBean<S>) {
-        pendingInterceptorList.add(bean)
     }
 
     open fun mergeInterceptor(manager: InterceptorManager, selfDep: Dependant<S, State>) {

@@ -417,7 +417,7 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
      * @param state 当前最新的State
      * @param holder 当前UI组件的View Holder
      */
-    fun callUIUpdate(state: S, changedKeys: List<String>?, holder: ComponentViewHolder?) {
+    fun callUIUpdate(state: S, changedKeys: HashSet<String>?, holder: ComponentViewHolder?) {
         uiPropsWatcher?.update(state, changedKeys, holder)
     }
 

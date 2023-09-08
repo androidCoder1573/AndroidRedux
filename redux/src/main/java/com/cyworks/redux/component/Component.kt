@@ -12,7 +12,7 @@ import com.cyworks.redux.ui.UIChangedType
  * 一个UI组件的基类，主要针对组件的显示/隐藏，屏幕方向切换做了一些特殊处理
  */
 abstract class Component<S : State>(lazyBindUI: Boolean, p: Bundle?) : BaseComponent<S>(lazyBindUI, p) {
-    private val changedPropKeys: ArrayList<String> = ArrayList()
+    private val changedPropKeys: HashSet<String> = HashSet()
 
     val currentView: View?
         get() = uiController.currentView
@@ -64,7 +64,7 @@ abstract class Component<S : State>(lazyBindUI: Boolean, p: Bundle?) : BaseCompo
      * @param propKeys 当前组件变化的属性列表
      * @return 是否需要处理可见性变化
      */
-    private fun visibilityChanged(propKeys: ArrayList<String>): Boolean {
+    private fun visibilityChanged(propKeys: HashSet<String>): Boolean {
         val show: Boolean = context.state.isShowUI
         if (!propKeys.contains(State.IS_SHOW_UI_NAME)) {
             // 当前变化的属性不包含可见性变化的属性
@@ -95,7 +95,7 @@ abstract class Component<S : State>(lazyBindUI: Boolean, p: Bundle?) : BaseCompo
      * @param propKeys 当前状态变化的属性对应key
      * @return 是否可以处理屏幕旋转
      */
-    private fun needHandleOrientation(propKeys: ArrayList<String>): Boolean {
+    private fun needHandleOrientation(propKeys: HashSet<String>): Boolean {
         val orientationKey = State.CURRENT_ORIENTATION_NAME
         if (!propKeys.contains(orientationKey)) {
             return false

@@ -26,7 +26,7 @@ abstract class DialogComponent<S : State>(p: Bundle?) : BaseComponent<S>(true, p
     private var dialogInstance: ILRDialog? = null
 
     // 将变化的属性的key抽离到一个列表中
-    private val changedPropKeys: ArrayList<String> = ArrayList()
+    private val changedPropKeys: HashSet<String> = HashSet()
 
     /**
      * 框架注入的对话框控制接口
@@ -87,7 +87,7 @@ abstract class DialogComponent<S : State>(p: Bundle?) : BaseComponent<S>(true, p
      * @param propKeys 当前状态变化的属性对应key
      * @return 是否可以处理屏幕旋转
      */
-    private fun needHandleOrientation(propKeys: ArrayList<String>): Boolean {
+    private fun needHandleOrientation(propKeys: HashSet<String>): Boolean {
         val orientationKey = State.CURRENT_ORIENTATION_NAME
         if (!propKeys.contains(orientationKey)) {
             return false

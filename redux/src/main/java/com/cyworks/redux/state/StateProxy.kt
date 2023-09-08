@@ -1,6 +1,7 @@
 package com.cyworks.redux.state
 
 import com.cyworks.redux.prop.ReactiveProp
+import java.util.LinkedList
 
 /**
  * 主要用于记录State的变化，具有几个功能：
@@ -16,14 +17,10 @@ class StateProxy {
      * 每次执行reducer并不一定只更新一个属性， 用一个表来记录哪些数据发生了变化，
      * 当store更新界面的时候会统一提取这个表中的数据，进行统一更新
      */
-    private val changeQueue: MutableList<ReactiveProp<Any>>
+    private val changeQueue: LinkedList<ReactiveProp<Any>> = LinkedList()
 
     private val privateChangedQueue = ArrayList<ReactiveProp<Any>>()
     private val publishChangedQueue = ArrayList<ReactiveProp<Any>>()
-
-    init {
-        changeQueue = ArrayList()
-    }
 
     /**
      * 记录变化的属性，用于store通知时进行判断。

@@ -14,7 +14,7 @@ class UIAtom<S : State> : Atom<S>() {
         this.onChanged = onAtomChanged
     }
 
-    fun doAtomChange(state: S, changedKeys: List<String>?, holder: ComponentViewHolder?) {
+    fun doAtomChange(state: S, changedKeys: HashSet<String>?, holder: ComponentViewHolder?) {
         val isChanged = isChanged(changedKeys, state)
         if (isChanged) {
             onChanged?.update(state, oldProps, holder)
