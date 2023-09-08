@@ -22,6 +22,12 @@ enum class StateType {
  */
 abstract class State {
     /**
+     * 当前state的token，用于标记一个state
+     */
+    internal val token: JvmType.Object
+            = JvmType.Object("${this.javaClass.name}_${System.currentTimeMillis()}")
+
+    /**
      * 用于存放组件响应式数据的Map, 框架内部创建并使用，开发者无感知
      * key: 某个属性对应的key
      * value: ReactiveProp, 属性对应的值
@@ -48,12 +54,6 @@ abstract class State {
     private var stateProxy: StateProxy? = null
 
     private val depHelper = DepHelper()
-
-    /**
-     * 当前state的token，用于标记一个state
-     */
-    internal val token: JvmType.Object
-    = JvmType.Object("${this.javaClass.name}_${System.currentTimeMillis()}")
 
     /**
      * 当前state的类型，用于后续属性依赖的来源
@@ -123,6 +123,10 @@ abstract class State {
      * @param proxy [StateProxy]
      */
     internal fun setStateProxy(proxy: StateProxy?) {
+        if (proxy == null && stateProxy == null) {
+            return
+        }
+
         stateProxy = proxy
         for (prop in dataMap.values) {
             prop.setStateProxy(proxy)
@@ -178,7 +182,7 @@ abstract class State {
     /**
      * detach 时清除依赖的属性
      */
-    internal fun detach() {
+    private fun detach() {
         if (dataMap.isEmpty()) {
             return
         }
@@ -212,16 +216,13 @@ abstract class State {
                 return
             }
 
-            if (propertyMap[key] == null) {
-                propertyMap[key] = set as PropertySet<Any>
-            }
-            if (dataMap[key] == null) {
-                logger.d("State",
-                    "create ui ReactiveProp $key, state: ${this@State.javaClass.name}")
-                val prop = ReactiveProp(value, this@State, true, updateValueByInit)
-                prop.key = key
-                dataMap[key] = prop as ReactiveProp<Any>
-            }
+            logger.d("State",
+                "create ui ReactiveProp $key, state: ${this@State.javaClass.name}")
+
+            propertyMap[key] = set as PropertySet<Any>
+            val prop = ReactiveProp(value, this@State, true, updateValueByInit)
+            prop.key = key
+            dataMap[key] = prop as ReactiveProp<Any>
         }
 
         override fun getValue(thisRef: Any?, property: KProperty<*>): V {
@@ -233,9 +234,13 @@ abstract class State {
             }
 
             depHelper.recordDepPropKey(name)
-            checkDataMap(name, value) {
-                value = it
+
+            if (propertyMap[name] == null) {
+                checkDataMap(name, value) {
+                    value = it
+                }
             }
+
             return value
         }
 
@@ -251,8 +256,10 @@ abstract class State {
                 return
             }
 
-            checkDataMap(name, this.value) {
-                this.value = it
+            if (propertyMap[name] == null) {
+                checkDataMap(name, value) {
+                    this.value  = it
+                }
             }
 
             val prop = dataMap[name]
@@ -276,14 +283,10 @@ abstract class State {
 
         @Suppress("UNCHECKED_CAST")
         private fun checkDataMap(key: String, value: V, set: PropertySet<V>) {
-            if (propertyMap[key] == null) {
-                propertyMap[key] = set as PropertySet<Any>
-            }
-            if (dataMap[key] == null) {
-                val prop = ReactiveProp(value, this@State, false, updateValueByInit)
-                prop.key = key
-                dataMap[key] = prop as ReactiveProp<Any>
-            }
+            propertyMap[key] = set as PropertySet<Any>
+            val prop = ReactiveProp(value, this@State, false, updateValueByInit)
+            prop.key = key
+            dataMap[key] = prop as ReactiveProp<Any>
         }
 
         /**
@@ -292,8 +295,10 @@ abstract class State {
         override fun getValue(thisRef: Any?, property: KProperty<*>): V {
             val key = property.name
             depHelper.recordDepPropKey(key)
-            checkDataMap(key, value) {
-                value = it
+            if (propertyMap[key] == null) {
+                checkDataMap(key, value) {
+                    this.value  = it
+                }
             }
             return value
         }
@@ -303,8 +308,10 @@ abstract class State {
          */
         override fun setValue(thisRef: Any?, property: KProperty<*>, value: V) {
             val name = property.name
-            checkDataMap(name, this.value) {
-                this.value = it
+            if (propertyMap[name] == null) {
+                checkDataMap(name, value) {
+                    this.value  = it
+                }
             }
 
             val prop = dataMap[name]

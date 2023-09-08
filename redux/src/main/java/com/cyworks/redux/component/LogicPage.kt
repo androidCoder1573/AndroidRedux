@@ -139,20 +139,18 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
     private fun reflect(state: S) {
         val rootTask = ReflectTask(1, environment.taskManager?.executor!!)
 
-        val detectRunnable = object : Runnable {
-            override fun run() {
-                val memberList = state.javaClass.kotlin.memberProperties
-                // 提交到主线程
-                ReduxManager.instance.submitInMainThread {
-                    state.detectField(memberList)
-                    // 负责处理额外的事情
-                    onStateDetected(state)
-                    context.setStateReady()
-                    // 检查下一个任务
-                    environment.taskManager?.tryRunNextTask(rootTask, state.token)
-                    // 订阅属性
-                    logicModule.subscribeProps(context.state, propsWatcher)
-                }
+        val detectRunnable = Runnable {
+            val memberList = state.javaClass.kotlin.memberProperties
+            // 提交到主线程
+            ReduxManager.instance.submitInMainThread {
+                state.detectField(memberList)
+                // 负责处理额外的事情
+                onStateDetected(state)
+                context.setStateReady()
+                // 检查下一个任务
+                environment.taskManager?.tryRunNextTask(rootTask, state.token)
+                // 订阅属性
+                logicModule.subscribeProps(context.state, propsWatcher)
             }
         }
 
@@ -235,19 +233,22 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
 
         // 当前Feature集合，这里保存的都是已经安装过的
         val map: ArrayMap<String, Dependant<out State, S>>? = dependencies?.dependantMap
+        if (map == null || map.size < 1) {
+            return
+        }
 
         // 子组件需要从父组件继承一些信息
         val env = copyEnvToChild()
         env.task = ReflectTask(extraDependants.size, environment.taskManager?.executor!!)
         for (key in extraDependants.keys) {
-            if (map?.containsKey(key) == true) {
+            if (map.containsKey(key)) {
                 continue
             }
 
             hasNewDep = true
             val dependant: Dependant<out State, S>? = extraDependants[key]
             if (dependant != null) {
-                map?.set(key, dependant)
+                map[key] = dependant
                 // 安装子组件
                 dependant.install(env)
             }

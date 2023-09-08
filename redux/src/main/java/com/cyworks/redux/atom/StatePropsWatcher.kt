@@ -18,7 +18,7 @@ class StatePropsWatcher<S : State> : PropsWatcher<S, LogicAtom<S>>() {
      * 当数据有更新时，通过此方法触发每个Atom进行更新
      * @param state 当前最新的State
      */
-    fun update(state: S, changedKeys: List<String>?, ctx: ReduxContext<S>) {
+    fun update(state: S, changedKeys: HashSet<String>?, ctx: ReduxContext<S>) {
         for (atom in atomList) {
             atom.doAtomChange(state, changedKeys, ctx)
         }

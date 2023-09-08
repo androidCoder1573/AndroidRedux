@@ -36,14 +36,13 @@ class DependentCollector<PS : State> {
 
     /**
      * 给组件添加一个子组件依赖
-     *
      * @param dependant [Dependant]
      */
     fun addDependant(dependant: Dependant<out State, PS>) {
         if (dependants == null) {
             dependants = ArrayMap()
         }
-        val key = "" + dependant.hashCode()
+        val key = dependant.hashCode().toString()
         if (dependants!!.containsKey(key)) {
             return
         }

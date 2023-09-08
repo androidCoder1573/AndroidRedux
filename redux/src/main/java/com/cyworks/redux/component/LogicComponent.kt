@@ -68,6 +68,10 @@ abstract class LogicComponent<S : State>(p: Bundle?) : Logic<S>(p) {
     private var interceptorManager: InterceptorManager? = null
 
     init {
+        initDependencies()
+    }
+
+    private fun initDependencies() {
         if (dependencies == null) {
             dependencies = DependentCollector()
         }

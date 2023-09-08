@@ -3,11 +3,6 @@ package com.cyworks.redux
 import android.util.Log
 import com.cyworks.redux.util.ILogger
 import com.cyworks.redux.util.MainThreadExecutor
-import java.util.concurrent.Future
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.ThreadFactory
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 
 /**
  * 保存一些Redux运行过程中的全局对象
@@ -23,24 +18,34 @@ class ReduxManager private constructor() {
      */
     val appBus = DispatchBus()
 
+    private var enableLog = false
+
     /**
      * 框架内部logger
      */
     private val defaultLogger: ILogger = object : ILogger {
         override fun v(tag: String, msg: String?) {
-            Log.v(tag, msg ?: "")
+            if (enableLog) {
+                Log.v(tag, msg ?: "")
+            }
         }
 
         override fun d(tag: String, msg: String?) {
-            Log.d(tag, msg ?: "")
+            if (enableLog) {
+                Log.d(tag, msg ?: "")
+            }
         }
 
         override fun i(tag: String, msg: String?) {
-            Log.i(tag, msg ?: "")
+            if (enableLog) {
+                Log.i(tag, msg ?: "")
+            }
         }
 
         override fun w(tag: String, msg: String?) {
-            Log.w(tag, msg ?: "")
+            if (enableLog) {
+                Log.w(tag, msg ?: "")
+            }
         }
 
         override fun e(tag: String, msg: String?) {
@@ -61,40 +66,54 @@ class ReduxManager private constructor() {
      */
     var logger: ILogger = defaultLogger
         set(l) {
-            if (l != null) {
-                field = l
+            val log = object : ILogger {
+                override fun v(tag: String, msg: String?) {
+                    if (enableLog) {
+                        l.v(tag, msg ?: "")
+                    }
+                }
+
+                override fun d(tag: String, msg: String?) {
+                    if (enableLog) {
+                        l.d(tag, msg ?: "")
+                    }
+                }
+
+                override fun i(tag: String, msg: String?) {
+                    if (enableLog) {
+                        l.i(tag, msg ?: "")
+                    }
+                }
+
+                override fun w(tag: String, msg: String?) {
+                    if (enableLog) {
+                        l.w(tag, msg ?: "")
+                    }
+                }
+
+                override fun e(tag: String, msg: String?) {
+                    l.e(tag, msg ?: "")
+                }
+
+                override fun printStackTrace(tag: String, msg: String?, e: Throwable) {
+                    l.e(tag, msg ?: ("" + e.toString()))
+                }
+
+                override fun printStackTrace(tag: String, e: Throwable) {
+                    l.e(tag, e.toString())
+                }
             }
+
+            field = log
         }
-
-    /**
-     * 初始化页面/组件的时候，是否启用异步模式
-     */
-    var asyncMode = false
-        private set
-
-    /**
-     * 执行State检测的线程池
-     */
-    private val executor = ThreadPoolExecutor(1, 1, 0,
-        TimeUnit.SECONDS, LinkedBlockingQueue(),
-        ThreadFactory { Thread("Android_Redux_BG_Thread") })
 
     /**
      * 用于在主线程上执行一些操作
      */
     private var mainThreadExecutor: MainThreadExecutor? = null
 
-    fun setAsyncMode() {
-        asyncMode = true
-    }
-
-    /**
-     * 提交一个任务, 在子线程中运行
-     * @param runnable Runnable
-     * @return Future
-     */
-    fun submitInSubThread(runnable: Runnable): Future<*> {
-        return executor.submit(runnable)
+    fun enableDebugLog(enable: Boolean) {
+        enableLog = enable
     }
 
     /**

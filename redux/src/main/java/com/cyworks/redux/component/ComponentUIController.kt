@@ -72,12 +72,13 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
 
     init {
         innerViewModule = object : ViewModule<S> {
+            val viewModule = proxy.viewModuleProvider.provider()
             override fun getView(context: ReduxContext<S>, parent: View): View? {
-                return proxy.viewModule.getView(context, parent)
+                return viewModule.getView(context, parent)
             }
 
             override fun subscribeProps(state: S, watcher: UIPropsWatcher<S>?) {
-                proxy.viewModule.subscribeProps(state, watcher)
+                viewModule.subscribeProps(state, watcher)
             }
         }
     }

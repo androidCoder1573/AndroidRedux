@@ -1,12 +1,11 @@
 package com.cyworks.redux.types
 
 import androidx.annotation.MainThread
-import com.cyworks.redux.dependant.Dependant
 import com.cyworks.redux.ReduxContext
-import com.cyworks.redux.state.State
 import com.cyworks.redux.action.Action
-import com.cyworks.redux.interceptor.InterceptorBean
+import com.cyworks.redux.dependant.Dependant
 import com.cyworks.redux.prop.ReactiveProp
+import com.cyworks.redux.state.State
 import com.cyworks.redux.ui.ComponentViewHolder
 
 /**
@@ -92,8 +91,6 @@ interface ComponentContextWrapper<S: State> {
      * @return ReduxContext
      */
     fun getCtx(): ReduxContext<State>
-
-    fun addPendingInterceptor(bean: InterceptorBean<S>)
 }
 
 /**

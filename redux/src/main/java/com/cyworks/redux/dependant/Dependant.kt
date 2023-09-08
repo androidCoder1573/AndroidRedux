@@ -5,7 +5,6 @@ import com.cyworks.redux.component.BaseComponent
 import com.cyworks.redux.component.Connector
 import com.cyworks.redux.component.Logic
 import com.cyworks.redux.component.LogicComponent
-import com.cyworks.redux.interceptor.InterceptorBean
 import com.cyworks.redux.interceptor.InterceptorCollector
 import com.cyworks.redux.interceptor.InterceptorManager
 import com.cyworks.redux.state.State
@@ -63,26 +62,16 @@ class Dependant<CS : State, PS : State>(
                 @Suppress("UNCHECKED_CAST")
                 return logic.context as ReduxContext<State>
             }
-
-            override fun addPendingInterceptor(bean: InterceptorBean<CS>) {
-                logic.addPendingInterceptor(bean)
-            }
         })
     }
 
     private fun createDefaultConnector(): Connector<CS, PS> {
         return object : Connector<CS, PS>() {
-            override fun dependParentState(childState: CS, parentState: PS) {
-                // do nothing
-            }
+            override fun dependParentState(childState: CS, parentState: PS) {}
 
-            override fun dependGlobalState(watcher: GlobalStoreSubscribe<CS>) {
-                // do nothing
-            }
+            override fun dependGlobalState(watcher: GlobalStoreSubscribe<CS>) {}
 
-            override fun interceptorCollect(collect: InterceptorCollector<CS>) {
-                // do nothing
-            }
+            override fun interceptorCollect(collect: InterceptorCollector<CS>) { }
 
             override val viewContainerIdForV: Int
                 get() = -1

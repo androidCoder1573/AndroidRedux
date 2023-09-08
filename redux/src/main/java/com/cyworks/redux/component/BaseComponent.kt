@@ -21,11 +21,15 @@ import com.cyworks.redux.util.ILogger
 import com.cyworks.redux.util.IPlatform
 import com.cyworks.redux.util.Platform
 
+interface ViewModuleProvider<S : State> {
+    fun provider(): ViewModule<S>
+}
+
 data class ComponentProxy<S : State>(
     val childrenDepMap: ArrayMap<String, Dependant<out State, S>>?,
     val token: String,
     val lazyBindUI: Boolean,
-    val viewModule: ViewModule<S>,
+    val viewModuleProvider: ViewModuleProvider<S>,
 )
 
 /**
@@ -69,7 +73,11 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean, p: Bundle?) : Logic
             childrenDepMap,
             this.javaClass.name,
             lazyBindUI,
-            createViewModule()
+            object : ViewModuleProvider<S> {
+                override fun provider(): ViewModule<S> {
+                    return createViewModule()
+                }
+            }
         )
         uiController = ComponentUIController(componentProxy)
     }
@@ -106,12 +114,11 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean, p: Bundle?) : Logic
     override fun createPlatform(): IPlatform? {
         val lifeCycleProxy: LifeCycleProxy? = environment.lifeCycleProxy
         if (lifeCycleProxy == null) {
-            logger.e("base component", "createPlatform: lifeCycleProxy is null")
+            logger.e("component", "can not create platform when lifeCycleProxy null")
             return null
         }
 
         val platform = Platform(lifeCycleProxy, environment.parentView)
-
         if (connector != null) {
             platform.setStubId(connector!!.viewContainerIdForV, connector!!.viewContainerIdForH)
         }
@@ -132,7 +139,7 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean, p: Bundle?) : Logic
         uiController.onStateMerged(componentState)
     }
 
-    protected fun registerLifecycle() {
+    private fun registerLifecycle() {
         // todo 都从统一的地方拿启动参数是否合理
         val lifeCycleProxy: LifeCycleProxy? = environment.lifeCycleProxy
 

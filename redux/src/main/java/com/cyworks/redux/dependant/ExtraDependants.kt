@@ -4,8 +4,8 @@ import androidx.collection.ArrayMap
 import com.cyworks.redux.state.State
 
 /**
- * 目前存在这样的需求：如果开发者想要延迟安装一些组件，可以在某些时机发送
- * INSTALL_EXTRA_FEATURE_ACTION
+ * 目前存在这样的需求：如果开发者想要延迟安装一些组件，可以在某些时机发送Action
+ * InnerActionTypes.INSTALL_EXTRA_FEATURE_ACTION_TYPE
  */
 class ExtraDependants<S : State> {
     /**

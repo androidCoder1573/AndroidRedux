@@ -25,7 +25,7 @@ abstract class Atom<S : State> {
     protected fun isChanged(changedKeys: HashSet<String>?, s: State): Boolean {
         var changed = false
 
-        if (keyList == null || keyList!!.isEmpty() || changedKeys.isNullOrEmpty()) {
+        if (keyList == null || keyList!!.isEmpty() || changedKeys == null || changedKeys.size < 1) {
             return false
         }
 
@@ -43,7 +43,7 @@ abstract class Atom<S : State> {
                 }
             }
 
-            if (newProps != null && keyList != null) {
+            if (newProps != null) {
                 for (i in 0 until newProps!!.size) {
                     val key: String = keyList!![i]
                     val prop = s.dataMap[key]

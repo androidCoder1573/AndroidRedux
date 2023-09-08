@@ -46,6 +46,13 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     val platform: IPlatform
 
     /**
+     * 保存一些父组件相关的数据
+     */
+    private var environment: Environment? = null
+
+    private val stateProxy = StateProxy()
+
+    /**
      * 组件对应的State
      */
     var state: S
@@ -88,19 +95,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      */
     private var dispatchDispose: Dispose? = null
 
-    /**
-     * 存放当前组件已更新的属性，在下一次vsync信号过来时，用于UI更新
-     */
-    private var pendingChangedProps: ArrayMap<String, ReactiveProp<Any>>? = null
-
-    /**
-     * 保存一些父组件相关的数据
-     */
-    private var environment: Environment? = null
-
     private val logger: ILogger = ReduxManager.instance.logger
-
-    private var isDestroy = false
 
     /**
      * 是否检测状态完成
@@ -115,16 +110,20 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     private var pendingLifecycleActionList: ArrayList<Action<Any>>? = null
     private var pendingRunnable: ArrayList<Runnable>? = null
 
+    /**
+     * 存放当前组件已更新的属性，在下一次vsync信号过来时，用于UI更新
+     */
+    private var pendingChangedProps = ArrayMap<String, ReactiveProp<Any>>()
     private val changedProps: ArrayList<ReactiveProp<Any>> = ArrayList()
-    private val changedKeys: ArrayList<String> = ArrayList()
-
-    private val stateProxy = StateProxy()
+    private val changedKeys: HashSet<String> = HashSet()
 
     /**
      * 如果开发这不想使用Action驱动，可以通过传统的方式书写逻辑代码，需继承IController
      */
     private var originController: IController? = null
     private var controllerProxy: IController? = null
+
+    private var isDestroy = false
 
     /**
      * 可分发effect的dispatch
@@ -217,7 +216,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         initPageDispatch()
 
         if (originController != null) {
-            controllerProxy = ProxyCreator.createProxy(originController!!, this.javaClass.classLoader)
+            controllerProxy = ProxyCreator.createProxy(originController!!)
         }
 
         // 获取组件的初始state
@@ -287,10 +286,12 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
 
         // 接收Vsync信号，优化刷新性能
         uiUpdaterDispose = (store as PageStore<out State>).addUIUpdater {
-            if (pendingChangedProps != null && pendingChangedProps!!.isNotEmpty()) {
+            if (pendingChangedProps.size > 0) {
                 changedProps.clear()
-                changedProps.addAll(pendingChangedProps!!.values)
-                pendingChangedProps!!.clear()
+                for (entry in pendingChangedProps.entries) {
+                    changedProps.add(entry.value)
+                }
+                pendingChangedProps.clear()
                 componentStateChangeListener!!.onChange(state, changedProps)
             }
         }
@@ -374,10 +375,10 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         }
 
         val map = state.dataMap
-        for (key in map.keys) {
-            val reactiveProp = map[key]
-            if (reactiveProp != null && reactiveProp.isUpdateWithInitValue) {
-                putChangedProp(key, reactiveProp)
+        for (entry in map.entries) {
+            val prop = entry.value
+            if (prop != null && prop.isUpdateWithInitValue) {
+                putChangedProp(entry.key, prop)
             }
         }
         requestVsync()
@@ -400,20 +401,16 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         }
 
         val map = state.dataMap
-        for (key in map.keys) {
-            val prop = map[key]
-            prop?.let { putChangedProp(key, it) }
+        for (entry in map.entries) {
+            val prop = entry.value
+            prop?.let { putChangedProp(entry.key, it) }
         }
         requestVsync()
     }
 
     private fun putChangedProp(key: String?, reactiveProp: ReactiveProp<Any>) {
-        if (pendingChangedProps == null) {
-            pendingChangedProps = ArrayMap()
-        }
-
         if (key != null) {
-            pendingChangedProps?.set(key, reactiveProp)
+            pendingChangedProps[key] = reactiveProp
         }
     }
 
@@ -421,8 +418,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      * 当私有属性变化时/全局store属性变化时/本地局部刷新时，需要主动请求vsync
      */
     private fun requestVsync() {
-        val need = pendingChangedProps != null && pendingChangedProps!!.isNotEmpty()
-        if (environment?.store is PageStore<*> && need) {
+        if (environment?.store is PageStore<*>) {
             (environment!!.store as PageStore<*>).requestVsync()
         }
     }

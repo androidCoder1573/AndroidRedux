@@ -80,7 +80,7 @@ class ReactiveProp<T>(
      * @return boolean 是否是私有属性
      */
     internal val isPrivateProp: Boolean
-        get() = isPrivate && parentProp == null && (depMap == null || depMap!!.isEmpty())
+        get() = isPrivate && parentProp == null && (depMap == null || depMap!!.isEmpty)
 
     internal val isDepGlobalState: Boolean
         get() = parentProp?.fromType == PropFromType.FROM_GLOBAL_STORE

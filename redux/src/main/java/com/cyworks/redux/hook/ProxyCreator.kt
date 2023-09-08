@@ -9,20 +9,19 @@ import java.net.SocketException
 
 object ProxyCreator {
     @Suppress("UNCHECKED_CAST")
-    fun createProxy(obj: IController, loader: ClassLoader): IController {
+    fun createProxy(obj: IController): IController {
         val iPmClass = obj::class.java
         val interfaces: List<Class<*>>? = getAllInterfaces(iPmClass)
         val ifs: Array<Class<*>?> =
             if (!interfaces.isNullOrEmpty()) interfaces.toTypedArray()
             else arrayOfNulls(0)
-
-        return newProxyInstance(loader, ifs as Array<Class<*>>, ProxyInvocationHandler(obj)) as IController
+        return newProxyInstance(ifs as Array<Class<*>>, ProxyInvocationHandler(obj)) as IController
     }
 
     private fun newProxyInstance(
-        loader: ClassLoader,
         interfaces: Array<Class<*>>,
         invocationHandler: InvocationHandler): Any {
+        val loader = Thread.currentThread().contextClassLoader
         return Proxy.newProxyInstance(loader, interfaces, invocationHandler)
     }
 
@@ -60,25 +59,10 @@ object ProxyCreator {
             return false
         }
         val es = method.exceptionTypes
-        if (es == null || es.isEmpty()) {
+        if (es.isEmpty()) {
             return false
         }
 
-//bugfix,这个问题我也不知道为什么出现，先这么处理吧。
-//        java.lang.RuntimeException: Socket closed
-//        at com.morgoo.droidplugin.c.c.i.invoke(Unknown Source)
-//        at $Proxy9.accept(Native Method)
-//        at java.net.PlainSocketImpl.accept(PlainSocketImpl.java:98)
-//        at java.net.ServerSocket.implAccept(ServerSocket.java:202)
-//        at java.net.ServerSocket.accept(ServerSocket.java:127)
-//        at com.qihoo.appstore.h.b.run(Unknown Source)
-//        at java.lang.Thread.run(Thread.java:864)
-//        Caused by: java.net.SocketException: Socket closed
-//        at libcore.io.Posix.accept(Native Method)
-//        at libcore.io.BlockGuardOs.accept(BlockGuardOs.java:55)
-//        at java.lang.reflect.Method.invokeNative(Native Method)
-//        at java.lang.reflect.Method.invoke(Method.java:511)
-//        ... 7 more
         try {
             val methodName = method.name
             val va = "accept" == methodName || "sendto" == methodName

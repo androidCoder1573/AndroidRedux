@@ -8,6 +8,12 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import kotlin.reflect.jvm.internal.impl.load.kotlin.JvmType
 
+/**
+ * 用于执行反射任务，具体思路：
+ * 将page - component看成一棵树，每一层放到一个task中，当task中所有任务执行完成后，执行下一层的任务。
+ * 这样做是因为，下一层的组件状态可能会依赖上一层的组件状态，所以要一层一层的执行，
+ * 当每一层只有一个组件时，效率提升不明，但是占用主线程时常变短
+ */
 class ReflectTaskManager {
     /** 执行State检测的线程池 */
     val executor: ThreadPoolExecutor = ThreadPoolExecutor(
