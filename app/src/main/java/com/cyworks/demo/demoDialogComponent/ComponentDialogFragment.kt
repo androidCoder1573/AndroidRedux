@@ -25,10 +25,6 @@ class ComponentDialogFragment : DialogFragment(), ILRDialog {
         super.onCreate(savedInstanceState)
     }
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-    }
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -46,14 +42,14 @@ class ComponentDialogFragment : DialogFragment(), ILRDialog {
 
     override fun onStart() {
         super.onStart()
-        val dialog = dialog
-        val window = dialog!!.window
-        if (window != null) {
-            window.setBackgroundDrawableResource(R.color.transparent) // 设置window背景透明
-            val lp = window.attributes
-            lp.width = WindowManager.LayoutParams.MATCH_PARENT
-            lp.height = WindowManager.LayoutParams.MATCH_PARENT
-        }
+//        val dialog = dialog
+//        val window = dialog!!.window
+//        if (window != null) {
+//            window.setBackgroundDrawableResource(R.color.transparent) // 设置window背景透明
+//            val lp = window.attributes
+//            lp.width = WindowManager.LayoutParams.WRAP_CONTENT
+//            lp.height = WindowManager.LayoutParams.WRAP_CONTENT
+//        }
     }
 
     override fun onResume() {

@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:gravity="center_horizontal"
-    android:background="@android:color/holo_green_dark">
+    android:background="@android:color/holo_purple">
 
     <TextView
         android:id="@+id/dialog_num_text"

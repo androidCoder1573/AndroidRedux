@@ -1,5 +1,6 @@
 package com.cyworks.redux.logic
 
+import com.cyworks.redux.IController
 import com.cyworks.redux.atom.StatePropsWatcher
 import com.cyworks.redux.state.State
 
@@ -13,4 +14,6 @@ interface LogicModule<S : State> {
      * 通过这个接口来订阅自己组件下的属性变化
      */
     fun subscribeProps(state: S, watcher: StatePropsWatcher<S>)
+
+    fun <C : IController> createController(): C?
 }
