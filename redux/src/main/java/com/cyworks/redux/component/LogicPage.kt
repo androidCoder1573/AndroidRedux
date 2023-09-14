@@ -25,6 +25,7 @@ import com.cyworks.redux.store.PageStore
 import com.cyworks.redux.types.Effect
 import com.cyworks.redux.types.Interceptor
 import com.cyworks.redux.util.Environment
+import com.cyworks.redux.util.ILogger
 import com.cyworks.redux.util.IPlatform
 import kotlin.reflect.full.memberProperties
 
@@ -140,7 +141,13 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
         val rootTask = ReflectTask(1, environment.taskManager?.executor!!)
 
         val detectRunnable = Runnable {
+            val time = System.currentTimeMillis()
             val memberList = state.javaClass.kotlin.memberProperties
+            if (ReduxManager.instance.enableLog) {
+                ReduxManager.instance.logger.d(
+                    ILogger.PERF_TAG,
+                    "reflect state filed consume: ${System.currentTimeMillis() - time}ms, in State: ${state.javaClass.name}")
+            }
             // 提交到主线程
             ReduxManager.instance.submitInMainThread {
                 state.detectField(memberList)

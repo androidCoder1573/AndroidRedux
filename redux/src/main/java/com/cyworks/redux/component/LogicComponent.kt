@@ -179,7 +179,13 @@ abstract class LogicComponent<S : State>(p: Bundle?) : Logic<S>(p) {
 
     private fun reflect(state: S) {
         val detectRunnable = Runnable {
+            val time = System.currentTimeMillis()
             val memberList = state.javaClass.kotlin.memberProperties
+            if (ReduxManager.instance.enableLog) {
+                ReduxManager.instance.logger.d(
+                    ILogger.PERF_TAG,
+                    "reflect state filed consume: ${System.currentTimeMillis() - time}ms, in State: ${state.javaClass.name}")
+            }
             // 提交到主线程
             ReduxManager.instance.submitInMainThread {
                 state.detectField(memberList)

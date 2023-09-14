@@ -14,6 +14,7 @@ class MyApplication : Application() {
     }
 
     private fun initEnv() {
+        ReduxManager.instance.enableDebugLog(true)
         ReduxManager.instance.logger = (object : ILogger {
             override fun v(tag: String, msg: String?) {
                 if (msg != null) {
