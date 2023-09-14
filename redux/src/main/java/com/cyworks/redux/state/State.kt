@@ -65,7 +65,7 @@ abstract class State {
     /**
      * 获取组件私有数据变化的情况, 在子组件的reducer执行完成后调用，仅限框架内部使用。
      */
-    internal val privatePropChanged: List<ReactiveProp<Any>>?
+    internal val privatePropChangedList: List<ReactiveProp<Any>>?
         get() = if (stateProxy != null) {
             stateProxy!!.changedPrivateProps
         } else null
@@ -74,7 +74,7 @@ abstract class State {
      * 获取公开数据变化的情况，公开数据指的是依赖了父组件的数据，
      * 在子组件的reducer执行完成后调用，仅限框架内部使用。
      */
-    internal val publicPropChanged: List<ReactiveProp<Any>>?
+    internal val publicPropChangedList: List<ReactiveProp<Any>>?
         get() = if (stateProxy != null) {
             stateProxy!!.changedPublicProps
         } else null
@@ -128,7 +128,9 @@ abstract class State {
         }
 
         stateProxy = proxy
-        for (prop in dataMap.values) {
+        val size = dataMap.size
+        for (i in 0 until size) {
+            val prop = dataMap.valueAt(i)
             prop.setStateProxy(proxy)
         }
     }
@@ -216,8 +218,10 @@ abstract class State {
                 return
             }
 
-            logger.d("State",
-                "create ui ReactiveProp $key, state: ${this@State.javaClass.name}")
+            if (ReduxManager.instance.enableLog) {
+                logger.d("State",
+                    "create ui ReactiveProp $key, state: ${this@State.javaClass.name}")
+            }
 
             propertyMap[key] = set as PropertySet<Any>
             val prop = ReactiveProp(value, this@State, true, updateValueByInit)

@@ -19,7 +19,9 @@ class StatePropsWatcher<S : State> : PropsWatcher<S, LogicAtom<S>>() {
      * @param state 当前最新的State
      */
     fun update(state: S, changedKeys: HashSet<String>?, ctx: ReduxContext<S>) {
-        for (atom in atomList) {
+        val size = atomList.size
+        for (i in 0 until size) {
+            val atom = atomList[i]
             atom.doAtomChange(state, changedKeys, ctx)
         }
     }

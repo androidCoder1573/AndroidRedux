@@ -25,12 +25,17 @@ abstract class Atom<S : State> {
     protected fun isChanged(changedKeys: HashSet<String>?, s: State): Boolean {
         var changed = false
 
-        if (keyList == null || keyList!!.isEmpty() || changedKeys == null || changedKeys.size < 1) {
+        if (keyList == null || changedKeys == null || changedKeys.size < 1) {
             return false
         }
 
-        for (key in keyList!!) {
-            if (changedKeys.contains(key)) {
+        val size = keyList!!.size
+        if (size == 0) {
+            return false
+        }
+
+        for (i in 0 until size) {
+            if (changedKeys.contains(keyList!![i])) {
                 changed = true
                 break
             }

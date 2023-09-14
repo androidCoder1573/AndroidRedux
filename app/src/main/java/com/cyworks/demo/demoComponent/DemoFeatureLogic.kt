@@ -1,5 +1,6 @@
 package com.cyworks.demo.demoComponent
 
+import com.cyworks.redux.IController
 import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.atom.StatePropsWatcher
 import com.cyworks.redux.lifecycle.LifeCycleAction
@@ -40,4 +41,8 @@ class DemoFeatureLogic : LogicModule<DemoFeatureState> {
         state: DemoFeatureState,
         watcher: StatePropsWatcher<DemoFeatureState>
     ) {}
+
+    override fun <C : IController> createController(): C? {
+        return null
+    }
 }

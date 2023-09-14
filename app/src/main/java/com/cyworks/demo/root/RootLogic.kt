@@ -1,5 +1,6 @@
 package com.cyworks.demo.root
 
+import com.cyworks.redux.IController
 import com.cyworks.redux.atom.StatePropsWatcher
 import com.cyworks.redux.lifecycle.LifeCycleAction
 import com.cyworks.redux.logic.EffectCollector
@@ -22,4 +23,8 @@ class RootLogic : LogicModule<RootComponentState> {
         state: RootComponentState,
         watcher: StatePropsWatcher<RootComponentState>
     ) {}
+
+    override fun <C : IController> createController(): C? {
+        return null
+    }
 }

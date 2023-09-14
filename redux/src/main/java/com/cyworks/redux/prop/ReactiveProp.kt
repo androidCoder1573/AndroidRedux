@@ -116,15 +116,13 @@ class ReactiveProp<T>(
         // 防止开发者在非Reducer中更新UI属性
         if (stateProxy == null) {
             ReduxManager.instance.logger.e("ReactiveProp",
-                "set prop: ${this.key} can not use = operator"
-                        + " when not call updateState func, state: ${state.javaClass.name}")
+                "set prop: ${this.key} can not use = operator, when not call updateState func, state: ${state.javaClass.name}")
             return false
         }
 
         // 组件在修改state prop过程中, 不能改全局store的属性
         if (parentProp != null && parentProp!!.fromType == PropFromType.FROM_GLOBAL_STORE) {
-            ReduxManager.instance.logger.e("ReactiveProp",
-                "component can not change global state prop!!!")
+            ReduxManager.instance.logger.e("ReactiveProp", "component can not change global state prop!!!")
             return false
         }
 

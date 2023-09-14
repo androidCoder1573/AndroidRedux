@@ -1,5 +1,6 @@
 package com.cyworks.demo.demopage
 
+import com.cyworks.redux.IController
 import com.cyworks.redux.atom.StatePropsWatcher
 import com.cyworks.redux.lifecycle.LifeCycleAction.ACTION_ON_CREATE
 import com.cyworks.redux.logic.EffectCollector
@@ -27,4 +28,8 @@ class DemoPageLogic : LogicModule<DemoPageState> {
     }
 
     override fun subscribeProps(state: DemoPageState, watcher: StatePropsWatcher<DemoPageState>) {}
+
+    override fun <C : IController> createController(): C? {
+        return null
+    }
 }

@@ -135,8 +135,11 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
             }
 
             if (logic != null) {
-                logger.i("Dispatcher", "<${logic!!.javaClass.name}>"
-                        + " send effect action, <${action.type}>")
+                if (ReduxManager.instance.enableLog) {
+                    logger.i("Dispatcher", "<${logic!!.javaClass.name}>"
+                            + " send effect action, <${action.type}>")
+                }
+
                 val effect = logic?.effect
                 effect?.doAction(action, this@ReduxContext)
             }
@@ -156,8 +159,11 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
             val innerAction = Action(InnerActionTypes.INTERCEPT_ACTION_TYPE, InterceptorPayload(action))
             val bus = environment?.pageDispatchBus
             bus?.pageDispatch?.dispatch(innerAction)
-            logger.i("Dispatcher","<${logic?.javaClass?.name}>"
-                    + " send interceptor action, <${action.type}>")
+
+            if (ReduxManager.instance.enableLog) {
+                logger.i("Dispatcher","<${logic?.javaClass?.name}>"
+                        + " send interceptor action, <${action.type}>")
+            }
         }
 
         override fun dispatchToParent(action: Action<out Any>) {
@@ -165,8 +171,11 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
                 return
             }
 
-            logger.i("Dispatcher", "<${logic?.javaClass?.name}>"
-                    + " send parent effect action, <${action.type}>")
+            if (ReduxManager.instance.enableLog) {
+                logger.i("Dispatcher", "<${logic?.javaClass?.name}>"
+                        + " send parent effect action, <${action.type}>")
+            }
+
             val parentDispatch = environment?.parentDispatch
             parentDispatch?.dispatch(action)
         }
@@ -251,8 +260,10 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         val pageEffectDispatch = Dispatch { action ->
             if (action.type == InnerActionTypes.INTERCEPT_ACTION_TYPE) {
                 val realAction = (action.payload as InterceptorPayload).realAction
-                logger.i("redux context", " <${logic?.javaClass?.name}> "
-                        + "send interceptor action, real acton type <${realAction.type}>")
+                if (ReduxManager.instance.enableLog) {
+                    logger.i("redux context", " <${logic?.javaClass?.name}> "
+                            + "send interceptor action, real acton type <${realAction.type}>")
+                }
             }
             dispatcher.dispatch(action)
         }
@@ -286,11 +297,15 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
 
         // 接收Vsync信号，优化刷新性能
         uiUpdaterDispose = (store as PageStore<out State>).addUIUpdater {
-            if (pendingChangedProps.size > 0) {
+            val size = pendingChangedProps.size
+
+            if (size > 0) {
                 changedProps.clear()
-                for (entry in pendingChangedProps.entries) {
-                    changedProps.add(entry.value)
+
+                for (i in 0 until size) {
+                    changedProps.add(pendingChangedProps.valueAt(i))
                 }
+
                 pendingChangedProps.clear()
                 componentStateChangeListener!!.onChange(state, changedProps)
             }
@@ -303,11 +318,15 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     }
 
     fun updateState(reducer: Reducer<S>) {
-        logger.d("redux context", "state: ${state.javaClass.name} will change prop")
+        if (ReduxManager.instance.enableLog) {
+            logger.d("redux context", "state: ${state.javaClass.name} will change prop")
+        }
+
         if (Looper.getMainLooper() == Looper.myLooper()) {
             innerUpdateState(reducer)
             return
         }
+
         ReduxManager.instance.submitInMainThread { innerUpdateState(reducer) }
     }
 
@@ -324,7 +343,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         val newState: S = reducer.update(state)
 
         // 获取私有属性变化，记录到本地记录，并请求vsync
-        val privateProps = newState.privatePropChanged
+        val privateProps = newState.privatePropChangedList
         privateProps?.let { onStateChange(it) }
 
         // 公共属性
@@ -341,11 +360,13 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     internal fun onStateChange(props: List<ReactiveProp<Any>>) {
         changedKeys.clear()
 
-        for (prop in props) {
-            val key = prop.key
-            if (key != null) {
-                changedKeys.add(key)
-                putChangedProp(key, prop)
+        val size = props.size
+        for (i in 0 until size) {
+            val prop = props[i]
+            val key = prop.key ?: continue
+            changedKeys.add(key)
+            putChangedProp(key, prop)
+            if (ReduxManager.instance.enableLog) {
                 logger.d(ILogger.ACTION_TAG, "current changed prop is"
                         + " <" + key + "> in <" + logic?.javaClass?.simpleName + ">"
                 )
@@ -375,12 +396,14 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         }
 
         val map = state.dataMap
-        for (entry in map.entries) {
-            val prop = entry.value
-            if (prop != null && prop.isUpdateWithInitValue) {
-                putChangedProp(entry.key, prop)
+        val size = map.size
+        for (i in 0 until size) {
+            val prop = map.valueAt(i)
+            if (prop.isUpdateWithInitValue) {
+                putChangedProp(map.keyAt(i), prop)
             }
         }
+
         requestVsync()
     }
 
@@ -401,10 +424,12 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         }
 
         val map = state.dataMap
-        for (entry in map.entries) {
-            val prop = entry.value
-            prop?.let { putChangedProp(entry.key, it) }
+        val size = map.size
+        for (i in 0 until size) {
+            val prop = map.valueAt(i)
+            putChangedProp(map.keyAt(i), prop)
         }
+
         requestVsync()
     }
 

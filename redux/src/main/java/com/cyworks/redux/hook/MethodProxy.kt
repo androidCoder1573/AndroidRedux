@@ -11,7 +11,9 @@ class MethodProxy {
         val time = System.currentTimeMillis()
         val invokeResult = method.invoke(receiver, *args)
         val consume = System.currentTimeMillis() - time
-        ReduxManager.instance.logger.d(ILogger.PERF_TAG, "call component controller func consume: ${consume}ms")
+        if (ReduxManager.instance.enableLog) {
+            ReduxManager.instance.logger.d(ILogger.PERF_TAG, "call component controller func consume: ${consume}ms")
+        }
         return invokeResult
     }
 }

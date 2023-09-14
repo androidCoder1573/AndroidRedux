@@ -10,6 +10,7 @@ import androidx.annotation.CallSuper
 import androidx.annotation.LayoutRes
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.lifecycle.LifeCycleAction
 import com.cyworks.redux.lifecycle.LifeCycleProxy
@@ -55,7 +56,6 @@ abstract class Page<S : State> : LogicPage<S> {
     constructor(@LayoutRes rootId: Int, p: Bundle?, proxy: LifeCycleProxy, ) : super(p, proxy) {
         val view = proxy.context?.let { bindView(it, rootId) }
         if (view != null) {
-            logger.i("Page", "page create view success")
             environment.parentView = view
         }
         init(proxy)
@@ -146,8 +146,10 @@ abstract class Page<S : State> : LogicPage<S> {
     override fun onCreate() {
         val time = SystemClock.uptimeMillis()
         super.onCreate()
-        logger.d(ILogger.PERF_TAG, "page: <" + this.javaClass.simpleName + ">"
+        if (ReduxManager.instance.enableLog) {
+            logger.d(ILogger.PERF_TAG, "page: <" + this.javaClass.simpleName + ">"
                     + " init consume: ${(SystemClock.uptimeMillis() - time)}ms")
+        }
     }
 
     /**

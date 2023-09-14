@@ -18,34 +18,26 @@ class ReduxManager private constructor() {
      */
     val appBus = DispatchBus()
 
-    private var enableLog = false
+    internal var enableLog = false
 
     /**
      * 框架内部logger
      */
     private val defaultLogger: ILogger = object : ILogger {
         override fun v(tag: String, msg: String?) {
-            if (enableLog) {
-                Log.v(tag, msg ?: "")
-            }
+            Log.v(tag, msg ?: "")
         }
 
         override fun d(tag: String, msg: String?) {
-            if (enableLog) {
-                Log.d(tag, msg ?: "")
-            }
+            Log.d(tag, msg ?: "")
         }
 
         override fun i(tag: String, msg: String?) {
-            if (enableLog) {
-                Log.i(tag, msg ?: "")
-            }
+            Log.i(tag, msg ?: "")
         }
 
         override fun w(tag: String, msg: String?) {
-            if (enableLog) {
-                Log.w(tag, msg ?: "")
-            }
+            Log.w(tag, msg ?: "")
         }
 
         override fun e(tag: String, msg: String?) {
@@ -65,47 +57,6 @@ class ReduxManager private constructor() {
      * 需要开发者自己注入logger组件，建议开发者在开发过程中使用自己实现的log组件，release时不需要设置
      */
     var logger: ILogger = defaultLogger
-        set(l) {
-            val log = object : ILogger {
-                override fun v(tag: String, msg: String?) {
-                    if (enableLog) {
-                        l.v(tag, msg ?: "")
-                    }
-                }
-
-                override fun d(tag: String, msg: String?) {
-                    if (enableLog) {
-                        l.d(tag, msg ?: "")
-                    }
-                }
-
-                override fun i(tag: String, msg: String?) {
-                    if (enableLog) {
-                        l.i(tag, msg ?: "")
-                    }
-                }
-
-                override fun w(tag: String, msg: String?) {
-                    if (enableLog) {
-                        l.w(tag, msg ?: "")
-                    }
-                }
-
-                override fun e(tag: String, msg: String?) {
-                    l.e(tag, msg ?: "")
-                }
-
-                override fun printStackTrace(tag: String, msg: String?, e: Throwable) {
-                    l.e(tag, msg ?: ("" + e.toString()))
-                }
-
-                override fun printStackTrace(tag: String, e: Throwable) {
-                    l.e(tag, e.toString())
-                }
-            }
-
-            field = log
-        }
 
     /**
      * 用于在主线程上执行一些操作

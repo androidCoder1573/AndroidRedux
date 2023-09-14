@@ -34,16 +34,16 @@ class StateProxy {
      */
     val changedPrivateProps: List<ReactiveProp<Any>>?
         get() {
-            if (changeQueue.isEmpty()) {
+            val size = changeQueue.size
+            if (size < 1) {
                 return null
             }
+
             privateChangedQueue.clear()
-            val it = changeQueue.iterator()
-            while (it.hasNext()) {
-                val changedProp = it.next()
+            for (i in 0 until size) {
+                val changedProp = changeQueue[i]
                 if (changedProp.isPrivateProp) {
                     privateChangedQueue.add(changedProp)
-                    it.remove()
                 }
             }
             return if (privateChangedQueue.isEmpty()) null else privateChangedQueue
@@ -55,11 +55,13 @@ class StateProxy {
      */
     val changedPublicProps: List<ReactiveProp<Any>>?
         get() {
-            if (changeQueue.isEmpty()) {
+            val size = changeQueue.size
+            if (size < 1) {
                 return null
             }
             publishChangedQueue.clear()
-            for (changedProp in changeQueue) {
+            for (i in 0 until size) {
+                val changedProp = changeQueue[i]
                 if (!changedProp.isPrivateProp) {
                     publishChangedQueue.add(changedProp)
                 }

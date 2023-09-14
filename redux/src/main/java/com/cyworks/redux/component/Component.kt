@@ -29,14 +29,16 @@ abstract class Component<S : State>(lazyBindUI: Boolean, p: Bundle?) : BaseCompo
      */
     private fun onDataChangedCB(stateCompare: ChangedState<S>) {
         val props: List<ReactiveProp<Any>> = stateCompare.changedProps
+        val size = props.size
         // 检查属性是否合法
-        if (props.isEmpty()) {
+        if (size < 1) {
             return
         }
 
         // 将变化的属性的key抽离到一个列表中
         changedPropKeys.clear()
-        for (prop in props) {
+        for (i in 0 until size) {
+            val prop = props[i]
             val key = prop.key
             if (key != null && prop.isUIProp) {
                 // 必须是UI属性

@@ -3,6 +3,7 @@ package com.cyworks.redux.component
 import android.os.Bundle
 import androidx.annotation.CallSuper
 import androidx.collection.ArrayMap
+import com.cyworks.redux.IController
 import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.atom.StatePropsWatcher
@@ -66,6 +67,9 @@ abstract class Logic<S : State>(p: Bundle?) {
             state: S,
             watcher: StatePropsWatcher<S>
         ) {}
+        override fun <C : IController> createController(): C? {
+            return null
+        }
     }
 
     /**

@@ -67,14 +67,16 @@ class DepHelper {
                 try {
                     it.getter.call(state)
                 } catch (e: Throwable) {
-                    ReduxManager.instance.logger.w(ILogger.ERROR_TAG, "${e.cause}")
+                    ReduxManager.instance.logger.e(ILogger.ERROR_TAG, "${e.cause}")
                 }
             }
         }
 
         excludePropMap.clear()
-        ReduxManager.instance.logger.d(ILogger.PERF_TAG,
-            "detect state filed consume: ${System.currentTimeMillis() - time}ms, in State: ${state.javaClass.name}")
+        if (ReduxManager.instance.enableLog) {
+            ReduxManager.instance.logger.d(ILogger.PERF_TAG,
+                "detect state filed consume: ${System.currentTimeMillis() - time}ms, in State: ${state.javaClass.name}")
+        }
     }
 
     internal fun depProp(prop: ReactiveProp<Any>?) {
@@ -83,8 +85,7 @@ class DepHelper {
         }
 
         if (!isMergingState || stateHasMerged || targetState == null) {
-            ReduxManager.instance.logger.e("Dep Collect",
-                "this step can not dep the prop from parent")
+            ReduxManager.instance.logger.e("Dep Collect", "this step can not dep the prop from parent")
             return
         }
 

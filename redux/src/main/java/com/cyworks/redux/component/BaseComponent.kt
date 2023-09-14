@@ -8,6 +8,7 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
+import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.dependant.Dependant
 import com.cyworks.redux.lifecycle.LifeCycleAction
@@ -181,9 +182,11 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean, p: Bundle?) : Logic
         // 发送onCreate Effect
         context.onLifecycle(Action(LifeCycleAction.ACTION_ON_CREATE, null))
 
-        // 打印初始化的耗时
-        logger.d(ILogger.PERF_TAG, "component: <" + javaClass.simpleName + ">"
+        if (ReduxManager.instance.enableLog) {
+            // 打印初始化的耗时
+            logger.d(ILogger.PERF_TAG, "component: <" + javaClass.simpleName + ">"
                     + " init consume: ${System.currentTimeMillis() - time}ms")
+        }
     }
 
     /**

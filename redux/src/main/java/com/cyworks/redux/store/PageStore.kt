@@ -1,5 +1,6 @@
 package com.cyworks.redux.store
 
+import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.prop.ReactiveProp
 import com.cyworks.redux.state.State
 import com.cyworks.redux.types.Dispose
@@ -107,11 +108,12 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
         }
 
     private fun fireUpdateUI(): Boolean {
-        for (uiUpdater in uiUpdaterListeners) {
+        val size = uiUpdaterListeners.size
+        for (i in 0 until size) {
             if (!isUIUpdateRun) {
                 return true
             }
-            uiUpdater.onNewFrameCome()
+            uiUpdaterListeners[i].onNewFrameCome()
         }
         return false
     }
@@ -171,25 +173,31 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
 
         finalList.clear()
 
+        var finalListSize = 0
         // 更新state
-        changedPropList.forEach {
+        val size = changedPropList.size
+        for (i in 0 until size) {
+            val item = changedPropList[i]
             // 寻找根属性
-            val tempProp = it.rootProp
+            val tempProp = item.rootProp
             // 更新根属性的值
-            tempProp.innerSetter(it.value())
+            tempProp.innerSetter(item.value())
             // 将根属性添加到变化列表中
             finalList.add(tempProp)
+            finalListSize++
         }
 
         // 通知更新
-        if (finalList.isNotEmpty()) {
+        if (finalListSize > 0) {
             // 通知组件进行状态更新
             fire(finalList)
             uiFresher.requestNextDraw()
         }
 
-        logger.d(ILogger.PERF_TAG,
-            "page store update consume: ${(System.currentTimeMillis() - time)}ms")
+        if (ReduxManager.instance.enableLog) {
+            logger.d(ILogger.PERF_TAG,
+                "page store update consume: ${(System.currentTimeMillis() - time)}ms")
+        }
     }
 
     override fun clear() {

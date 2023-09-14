@@ -116,8 +116,11 @@ abstract class LogicComponent<S : State>(p: Bundle?) : Logic<S>(p) {
 
         // 标记结束merge，后续不可再继续开启
         state.endMergeState()
-        logger.d(ILogger.PERF_TAG,
-            "merge dep state consume: ${System.currentTimeMillis() - time}ms, in state: ${state.javaClass.name}")
+
+        if (ReduxManager.instance.enableLog) {
+            logger.d(ILogger.PERF_TAG,
+                "merge dep state consume: ${System.currentTimeMillis() - time}ms, in state: ${state.javaClass.name}")
+        }
     }
 
     @Suppress("UNCHECKED_CAST")

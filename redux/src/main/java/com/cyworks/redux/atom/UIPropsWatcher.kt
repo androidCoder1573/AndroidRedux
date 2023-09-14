@@ -21,8 +21,12 @@ class UIPropsWatcher<S : State> : PropsWatcher<S, UIAtom<S>>() {
      * @param state 当前最新的State
      */
     internal fun update(state: S, changedKeys: HashSet<String>?, holder: ComponentViewHolder?) {
-        for (atom in atomList) {
+        for (i in 0 until atomList.size) {
+            val atom = atomList[i]
             atom.doAtomChange(state, changedKeys, holder)
         }
+//        for (atom in atomList) {
+//            atom.doAtomChange(state, changedKeys, holder)
+//        }
     }
 }

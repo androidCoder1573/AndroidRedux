@@ -99,7 +99,7 @@ open class Store<S : State>  {
         if (state == null) {
             return
         }
-        val changedPropList = state.publicPropChanged ?: return
+        val changedPropList = state.publicPropChangedList ?: return
         update(changedPropList)
     }
 
@@ -117,17 +117,22 @@ open class Store<S : State>  {
      * @param changeList 当前store中变化的数据
      */
     protected fun fire(changeList: List<ReactiveProp<Any>>) {
-        if (isDestroy || changeList.isEmpty() || listeners == null
-            || listeners!!.isEmpty()) {
+        if (isDestroy || changeList.isEmpty() || listeners == null) {
             return
         }
 
         // 因为一次可能会更新多个属性，这里牺牲一些性能，让每个组件可以一次性收到全部的状态变化
-        listeners!!.forEach {
-            val token = it.token
+        val size = listeners!!.size
+        if (size < 1) {
+            return
+        }
+
+        for (i in 0 until size) {
+            val listener = listeners!![i]
+            val token = listener.token
             val tempList = checkChangeList(changeList, token)
             if (tempList.isNotEmpty()) {
-                it.onPropChanged(tempList)
+                listener.onPropChanged(tempList)
             }
         }
     }
@@ -141,20 +146,24 @@ open class Store<S : State>  {
      */
     private fun checkChangeList(changeList: List<ReactiveProp<Any>>, token: JvmType.Object): List<ReactiveProp<Any>> {
         tempChangedList.clear()
-        changeList.forEach {
+
+        val size = changeList.size
+        for (i in 0 until size) {
+            val item = changeList[i]
             // 如果组件的属性就在当前变化的列表里，直接加入
-            if (it.stateToken() == token) {
-                tempChangedList.add(it)
+            if (item.stateToken() == token) {
+                tempChangedList.add(item)
             } else {
                 // 如果组件属性没在变化列表里，看当前属性的孩子是否具有此属性
-                val child = it.getChild(token)
+                val child = item.getChild(token)
                 if (child != null) {
                     // 首先要同步value
-                    child.innerSetter(it.value())
+                    child.innerSetter(item.value())
                     tempChangedList.add(child)
                 }
             }
         }
+
         return tempChangedList
     }
 

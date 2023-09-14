@@ -3,7 +3,6 @@ package com.cyworks.demo.demopage
 class Middlewares {
 //    static Middleware sInfo = getter -> next -> (Dispatch) (action, payload) -> {
     //        final ILogger logger = ReduxManager.getInstance().getLogger();
-    //        logger.d("Redux", "middleware before");
     //
     //        if (action.equals(reqList)) {
     //            next.dispatch(reqList, null);
@@ -12,8 +11,6 @@ class Middlewares {
     //        } else {
     //            next.dispatch(action, payload);
     //        }
-    //
-    //        logger.d("Redux", "middleware after");
     //    };
     //
     //    static Middleware sPerf = getter -> next -> (Dispatch) (action, payload) -> {
@@ -21,7 +18,6 @@ class Middlewares {
     //        final long markPrev = System.currentTimeMillis();
     //        next.dispatch(action, payload);
     //        final long markNext = System.currentTimeMillis();
-    //        logger.d("Redux", "consume: " + (markNext - markPrev));
     //    };
     //
     //    /**
