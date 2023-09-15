@@ -75,7 +75,7 @@ class DepHelper {
         excludePropMap.clear()
         if (ReduxManager.instance.enableLog) {
             ReduxManager.instance.logger.d(ILogger.PERF_TAG,
-                "detect state filed consume: ${System.currentTimeMillis() - time}ms, in State: ${state.javaClass.name}")
+                "detect ${state.javaClass.name} filed, consume: ${System.currentTimeMillis() - time}ms")
         }
     }
 

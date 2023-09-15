@@ -339,7 +339,6 @@ abstract class State {
         const val CURRENT_ORIENTATION_NAME = "currentOrientation"
         const val IS_SHOW_UI_NAME = "isShowUI"
 
-        @JvmStatic
         fun <S : State> copyState(state: S): S {
             state.setStateProxy(null)
             return state

@@ -85,9 +85,11 @@ open class ReflectTask(private var num: Int, private val executor: ExecutorServi
 
     fun finish() {
         finish = true
-        futureList.forEach {
-            if (!it.isDone) {
-                it.cancel(true)
+        val size = futureList.size
+        for (i in 0 until size) {
+            val future = futureList[i]
+            if (!future.isDone) {
+                future.cancel(true)
             }
         }
         list.clear()
@@ -99,8 +101,9 @@ open class ReflectTask(private var num: Int, private val executor: ExecutorServi
             return
         }
         hasCallSubmit = true
-        list.forEach {
-            submitInner(it.value)
+        val size = list.size
+        for (i in 0 until size) {
+            submitInner(list.valueAt(i))
         }
     }
 
