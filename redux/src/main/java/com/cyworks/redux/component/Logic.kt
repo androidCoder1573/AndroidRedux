@@ -8,7 +8,6 @@ import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.atom.StatePropsWatcher
 import com.cyworks.redux.dependant.Dependant
-import com.cyworks.redux.interceptor.InterceptorBean
 import com.cyworks.redux.interceptor.InterceptorManager
 import com.cyworks.redux.logic.EffectCollector
 import com.cyworks.redux.logic.LogicModule
@@ -49,8 +48,6 @@ abstract class Logic<S : State>(p: Bundle?) {
      */
     protected var props: Bundle? = p
 
-    protected val logger: ILogger = ReduxManager.instance.logger
-
     /**
      * 每个组件对应的拦截器解注册
      */
@@ -60,6 +57,8 @@ abstract class Logic<S : State>(p: Bundle?) {
      * 用于监听本组件的属性变化
      */
     internal val propsWatcher: StatePropsWatcher<S> = StatePropsWatcher()
+
+    protected val logger: ILogger = ReduxManager.instance.logger
 
     protected var logicModule: LogicModule<S> = object : LogicModule<S> {
         override fun addLocalEffects(collect: EffectCollector<S>) {}
@@ -77,9 +76,6 @@ abstract class Logic<S : State>(p: Bundle?) {
      */
     internal abstract val childrenDepMap: ArrayMap<String, Dependant<out State, S>>?
 
-    /**
-     * 初始Effect以及一些依赖
-     */
     init {
         initCollect()
     }
@@ -99,15 +95,19 @@ abstract class Logic<S : State>(p: Bundle?) {
         effect = effectCollector.effect
     }
 
+    /**
+     * 合并拦截器
+     */
     open fun mergeInterceptor(manager: InterceptorManager, selfDep: Dependant<S, State>) {
         // sub class impl
     }
 
     @CallSuper
     open fun destroy() {
-        if (interceptorDispose != null && interceptorDispose!!.size > 0) {
-            interceptorDispose?.forEach {
-                it()
+        if (interceptorDispose != null) {
+            val size = interceptorDispose!!.size
+            for (i in 0 until size) {
+                interceptorDispose!![i]()
             }
         }
     }
@@ -124,7 +124,7 @@ abstract class Logic<S : State>(p: Bundle?) {
     }
 
     /**
-     * LogicModule，用户主动设置
+     * 逻辑module，用户主动设置
      */
     abstract fun createLogicModule(): LogicModule<S>?
 }

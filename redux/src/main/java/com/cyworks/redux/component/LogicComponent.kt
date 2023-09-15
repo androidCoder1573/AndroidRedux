@@ -119,7 +119,7 @@ abstract class LogicComponent<S : State>(p: Bundle?) : Logic<S>(p) {
 
         if (ReduxManager.instance.enableLog) {
             logger.d(ILogger.PERF_TAG,
-                "merge dep state consume: ${System.currentTimeMillis() - time}ms, in state: ${state.javaClass.name}")
+                "merge from ${state.javaClass.name}, consume: ${System.currentTimeMillis() - time}ms")
         }
     }
 
@@ -138,8 +138,9 @@ abstract class LogicComponent<S : State>(p: Bundle?) : Logic<S>(p) {
 
         val map = dependencies?.dependantMap
         if (map != null) {
-            for (d in map.values) {
-                d.mergeInterceptor(manager)
+            val size = map.size
+            for (i in 0 until size) {
+                map.valueAt(i).mergeInterceptor(manager)
             }
         }
     }
@@ -182,9 +183,8 @@ abstract class LogicComponent<S : State>(p: Bundle?) : Logic<S>(p) {
             val time = System.currentTimeMillis()
             val memberList = state.javaClass.kotlin.memberProperties
             if (ReduxManager.instance.enableLog) {
-                ReduxManager.instance.logger.d(
-                    ILogger.PERF_TAG,
-                    "reflect state filed consume: ${System.currentTimeMillis() - time}ms, in State: ${state.javaClass.name}")
+                ReduxManager.instance.logger.d(ILogger.PERF_TAG,
+                    "reflect ${state.javaClass.name} filed, consume: ${System.currentTimeMillis() - time}ms")
             }
             // 提交到主线程
             ReduxManager.instance.submitInMainThread {

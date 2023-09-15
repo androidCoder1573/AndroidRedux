@@ -18,6 +18,17 @@ import com.cyworks.redux.ui.ViewModule
 import com.cyworks.redux.util.Environment
 import com.cyworks.redux.util.ILogger
 
+interface ViewModuleProvider<S : State> {
+    fun provider(): ViewModule<S>
+}
+
+data class ComponentProxy<S : State>(
+    val childrenDepMap: ArrayMap<String, Dependant<out State, S>>?,
+    val token: String,
+    val lazyBindUI: Boolean,
+    val viewModuleProvider: ViewModuleProvider<S>,
+)
+
 /**
  * 对组件的UI操作抽取出来放到UI处理类中:
  * 1、初始化UI;
@@ -58,17 +69,15 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
      */
     private var uiPropsWatcher: UIPropsWatcher<S>? = null
 
-    private val logger: ILogger = ReduxManager.instance.logger
-
     /**
      * 上次的屏幕方向
      */
     internal var lastOrientation = Configuration.ORIENTATION_PORTRAIT
 
-    private var isRunFirstUpdate = false
-
     private lateinit var context: ReduxContext<S>
     private lateinit var environment: Environment
+
+    private val logger: ILogger = ReduxManager.instance.logger
 
     init {
         innerViewModule = object : ViewModule<S> {
@@ -89,9 +98,6 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
 
         // 设置状态 -- UI 监听
         makeUIWatcher(componentState)
-
-        // 运行首次UI更新
-        firstUpdate()
     }
 
     internal fun setReduxContext(context: ReduxContext<S>) {
@@ -133,7 +139,7 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
         }
 
         // 更新一次UI
-        fullUpdate()
+        context.runFullUpdate()
 
         // 通知组件当前组件UI发生变化了，给用户一个机会做一些善后处理, 首次初始化不需要这些
         sendUIChangedAction(UIChangedType.TYPE_VISIBILITY_CHANGE)
@@ -144,11 +150,10 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
         // attachAdapter()
 
         // 处理子组件
-        val map: ArrayMap<String, Dependant<out State, S>>? = proxy.childrenDepMap
-        if (map.isNullOrEmpty()) {
-            return
-        }
-        for (dependant in map.values) {
+        val map: ArrayMap<String, Dependant<out State, S>> = proxy.childrenDepMap ?: return
+        val size = map.size
+        for (i in 0 until size) {
+            val dependant = map.valueAt(i)
             if (!dependant.isInstalled) {
                 installComponent(dependant)
                 continue
@@ -184,12 +189,12 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
         // detachAdapter()
 
         // 处理子组件
-        val map: ArrayMap<String, Dependant<out State, S>>? = proxy.childrenDepMap
-        if (!map.isNullOrEmpty()) {
-            for (dependant in map.values) {
-                if (dependant.logic is BaseComponent<*>) {
-                    dependant.logic.uiController.hide()
-                }
+        val map: ArrayMap<String, Dependant<out State, S>> = proxy.childrenDepMap ?: return
+        val size = map.size
+        for (i in 0 until size) {
+            val dependant = map.valueAt(i)
+            if (dependant.logic is BaseComponent<*>) {
+                dependant.logic.uiController.hide()
             }
         }
     }
@@ -205,7 +210,7 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
         initUI()
 
         // 更新一次UI
-        fullUpdate()
+        context.runFullUpdate()
         attachChildren()
     }
 
@@ -213,12 +218,10 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
         // attachAdapter()
 
         // 处理子组件
-        val map: ArrayMap<String, Dependant<out State, S>>? = proxy.childrenDepMap
-        if (map.isNullOrEmpty()) {
-            return
-        }
-
-        for (dependant in map.values) {
+        val map: ArrayMap<String, Dependant<out State, S>> = proxy.childrenDepMap ?: return
+        val size = map.size
+        for (i in 0 until size) {
+            val dependant = map.valueAt(i)
             // 走未绑定的逻辑
             if (!dependant.isInstalled) {
                 installComponent(dependant)
@@ -229,9 +232,9 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
             if (dependant.logic is BaseComponent<*>) {
                 dependant.logic.uiController.attach()
             } else {
-//        if (logic is RootAdapter) {
-//            (logic as RootAdapter<BaseComponentState?>).attach()
-//        }
+//                if (logic is RootAdapter) {
+//                    (logic as RootAdapter<BaseComponentState?>).attach()
+//                }
             }
         }
     }
@@ -259,16 +262,16 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
         // detachAdapter()
 
         // 处理子组件
-        val map: ArrayMap<String, Dependant<out State, S>>? = proxy.childrenDepMap
-        if (!map.isNullOrEmpty()) {
-            for (dependant in map.values) {
-                if (dependant.logic is BaseComponent<*>) {
-                    dependant.logic.uiController.detach()
-                } else {
-//        if (logic is RootAdapter) {
-//            (logic as RootAdapter<BaseComponentState?>).detach()
-//        }
-                }
+        val map: ArrayMap<String, Dependant<out State, S>> = proxy.childrenDepMap ?: return
+        val size = map.size
+        for (i in 0 until size) {
+            val dependant = map.valueAt(i)
+            if (dependant.logic is BaseComponent<*>) {
+                dependant.logic.uiController.detach()
+            } else {
+//                    if (logic is RootAdapter) {
+//                        (logic as RootAdapter<BaseComponentState?>).detach()
+//                    }
             }
         }
     }
@@ -291,8 +294,10 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
         }
 
         initUI()
-        firstUpdate()
-        // 遍历依赖
+        if (currentView != null) {
+            context.runFirstUpdate()
+        }
+
         installSubComponents()
     }
 
@@ -315,25 +320,6 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
 
         // 设置显示状态
         setShow(true)
-    }
-
-    /**
-     * 首次渲染时，对UI更新一次数据
-     */
-    private fun firstUpdate() {
-        if (currentView == null || isRunFirstUpdate) {
-            return
-        }
-
-        isRunFirstUpdate = true
-        context.runFirstUpdate()
-    }
-
-    /**
-     * 触发一次全量更新
-     */
-    private fun fullUpdate() {
-        context.runFullUpdate()
     }
 
     private fun setShow(show: Boolean) {
@@ -403,12 +389,12 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
      * 获取UI组件的View实例
      */
     private fun callViewBuilder(): View? {
-        try {
-            return innerViewModule.getView(context, environment.parentView!!)
+        return try {
+            innerViewModule.getView(context, environment.parentView!!)
         } catch (e: Exception) {
             // 这里可能会产生多种异常，比如空指针，重复添加等
             logger.printStackTrace(ILogger.ERROR_TAG, "call view builder fail: ", e)
-            return null
+            null
         }
     }
 
@@ -457,17 +443,20 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
      * 每个组件下可能也会挂子组件，通过此方法初始化组件下挂载的子组件
      */
     private fun installSubComponents() {
-        val map: ArrayMap<String, Dependant<out State, S>>? = proxy.childrenDepMap
-        if (map.isNullOrEmpty()) {
+        val map: ArrayMap<String, Dependant<out State, S>> = proxy.childrenDepMap ?: return
+        val size = map.size
+        if (size < 1) {
             return
         }
 
         val env = copyEnvironment()
         env.task = ReflectTask(map.size, environment.taskManager?.executor!!)
 
-        for (dependant in map.values) {
+        for (i in 0 until size) {
+            val dependant = map.valueAt(i)
             dependant.installComponent(env)
         }
+
         environment.taskManager?.putTask(env.task!!)
     }
 

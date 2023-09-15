@@ -123,6 +123,9 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     private var originController: IController? = null
     private var controllerProxy: IController? = null
 
+    /** 是否运行了首次更新 */
+    private var isRunFirstUpdate = false
+
     private var isDestroy = false
 
     /**
@@ -190,13 +193,13 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
             dispatch(action)
             // 发给组件依赖的子组件
             if (logic != null) {
-                val maps = logic?.childrenDepMap
-                if (maps != null) {
-                    for (dependant in maps.values) {
-                        val logic = dependant.logic
-                        val subCtx = logic.context
-                        subCtx.dispatcher.dispatchToSubComponents(action)
-                    }
+                val maps = logic?.childrenDepMap ?: return
+                val size = maps.size
+                for (i in 0 until size) {
+                    val dependant = maps.valueAt(i)
+                    val logic = dependant.logic
+                    val subCtx = logic.context
+                    subCtx.dispatcher.dispatchToSubComponents(action)
                 }
             }
         }
@@ -383,9 +386,10 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      * 首次创建UI时，根据是否更新初始值来展示UI
      */
     internal fun runFirstUpdate() {
-        if (isDestroy) {
+        if (isDestroy || isRunFirstUpdate) {
             return
         }
+        isRunFirstUpdate = true
 
         if (!isStateReady) {
             if (pendingRunnable == null) {

@@ -56,14 +56,20 @@ abstract class DialogComponent<S : State>(p: Bundle?) : BaseComponent<S>(true, p
      */
     private fun onDataChangedCB(stateCompare: ChangedState<S>) {
         val props: List<ReactiveProp<Any>> = stateCompare.changedProps
+        val size = props.size
         // 检查属性是否合法
-        if (props.isEmpty()) {
+        if (size < 1) {
             return
         }
 
         changedPropKeys.clear()
-        for (prop in props) {
-            changedPropKeys.add(prop.key ?: "")
+        for (i in 0 until size) {
+            val prop = props[i]
+            val key = prop.key
+            if (key != null && prop.isUIProp) {
+                // 必须是UI属性
+                changedPropKeys.add(key)
+            }
         }
 
         // 如果组件UI不可见

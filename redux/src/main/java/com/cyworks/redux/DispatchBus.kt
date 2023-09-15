@@ -91,16 +91,14 @@ class DispatchBus internal constructor() : IBus {
      * page接收之后可以通过拦截器的方式转给组件。
      */
     private fun innerBroadcast(action: Action<Any>) {
-        if (childList.isEmpty()) {
-            return
-        }
-        for (dispatch in childList) {
-            if (dispatch !is DispatchBus) {
+        val size = childList.size
+        for (i in 0 until size) {
+            val dispatcher = childList[i]
+            if (dispatcher !is DispatchBus) {
                 continue
             }
-
             // 交给page来处理
-            dispatch.pageDispatch?.dispatch(action)
+            dispatcher.pageDispatch?.dispatch(action)
         }
     }
 
@@ -113,7 +111,9 @@ class DispatchBus internal constructor() : IBus {
         if (isDetach) {
             return
         }
-        for (dispatcher in childList) {
+        val size = childList.size
+        for (i in 0 until size) {
+            val dispatcher = childList[i]
             if (dispatcher !== exclude) {
                 dispatcher.dispatch(action)
             }

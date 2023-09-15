@@ -24,12 +24,11 @@ class InterceptorManager {
 
     fun addInterceptorEx(collector: InterceptorCollector<State>): ArrayList<Dispose>? {
         val map = collector.interceptorMap
-        if (collector.isEmpty) {
-            return null
-        }
-
+        val size = map.size
         val disposeList = ArrayList<Dispose>()
-        for (type in map.keys) {
+
+        for (i in 0 until size) {
+            val type = map.keyAt(i)
             val bean = map[type] ?: continue
 
             var list = this.funcMap[type]

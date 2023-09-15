@@ -3,14 +3,12 @@ package com.cyworks.redux.component
 import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.annotation.CallSuper
-import androidx.collection.ArrayMap
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.action.Action
-import com.cyworks.redux.dependant.Dependant
 import com.cyworks.redux.lifecycle.LifeCycleAction
 import com.cyworks.redux.lifecycle.LifeCycleProxy
 import com.cyworks.redux.prop.ChangedState
@@ -21,17 +19,6 @@ import com.cyworks.redux.util.Environment
 import com.cyworks.redux.util.ILogger
 import com.cyworks.redux.util.IPlatform
 import com.cyworks.redux.util.Platform
-
-interface ViewModuleProvider<S : State> {
-    fun provider(): ViewModule<S>
-}
-
-data class ComponentProxy<S : State>(
-    val childrenDepMap: ArrayMap<String, Dependant<out State, S>>?,
-    val token: String,
-    val lazyBindUI: Boolean,
-    val viewModuleProvider: ViewModuleProvider<S>,
-)
 
 /**
  * 组件基类，框架内部实现，外部不能直接使用, 用来承载一个Redux组件.
@@ -52,7 +39,7 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean, p: Bundle?) : Logic
     /**
      * 组件是否bind到父组件上
      */
-    protected var installed: Boolean = false
+    private var installed: Boolean = false
 
     /**
      * 使用LiveData包裹变更的状态数据，防止因为生命周期导致界面异常
@@ -141,7 +128,6 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean, p: Bundle?) : Logic
     }
 
     private fun registerLifecycle() {
-        // todo 都从统一的地方拿启动参数是否合理
         val lifeCycleProxy: LifeCycleProxy? = environment.lifeCycleProxy
 
         // 添加生命周期观察
@@ -184,7 +170,7 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean, p: Bundle?) : Logic
 
         if (ReduxManager.instance.enableLog) {
             // 打印初始化的耗时
-            logger.d(ILogger.PERF_TAG, "component: <" + javaClass.simpleName + ">"
+            logger.d(ILogger.PERF_TAG, "component: <${javaClass.simpleName}>"
                     + " init consume: ${System.currentTimeMillis() - time}ms")
         }
     }

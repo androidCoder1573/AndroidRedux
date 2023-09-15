@@ -46,11 +46,13 @@ class GlobalStoreSubscribe<CS : State> internal constructor(callback: IPropsChan
      * 生成对全局store的属性依赖
      */
     internal fun generateDependant() {
-        if (globalStoreBinderMap.isEmpty()) {
+        val size = globalStoreBinderMap.size
+        if (size < 1) {
             return
         }
 
-        for (store in globalStoreBinderMap.keys) {
+        for (i in 0 until size) {
+            val store = globalStoreBinderMap.keyAt(i)
             val iBind = globalStoreBinderMap[store] ?: continue
             val globalStoreState : State = store.copyState()
             state.setTargetState(globalStoreState)

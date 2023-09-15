@@ -25,8 +25,5 @@ class UIPropsWatcher<S : State> : PropsWatcher<S, UIAtom<S>>() {
             val atom = atomList[i]
             atom.doAtomChange(state, changedKeys, holder)
         }
-//        for (atom in atomList) {
-//            atom.doAtomChange(state, changedKeys, holder)
-//        }
     }
 }

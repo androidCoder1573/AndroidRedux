@@ -81,13 +81,11 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
     }
 
     private fun initInterceptor() {
-        val map: ArrayMap<String, Dependant<out State, S>>? = dependencies?.dependantMap
-        if (map.isNullOrEmpty()) {
-            return
-        }
+        val map: ArrayMap<String, Dependant<out State, S>> = dependencies?.dependantMap ?: return
+        val size = map.size
 
-        for (dependant in map.values) {
-            dependant.mergeInterceptor(this.interceptorManager)
+        for (i in 0 until size) {
+            map.valueAt(i).mergeInterceptor(this.interceptorManager)
         }
     }
 
@@ -144,9 +142,8 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
             val time = System.currentTimeMillis()
             val memberList = state.javaClass.kotlin.memberProperties
             if (ReduxManager.instance.enableLog) {
-                ReduxManager.instance.logger.d(
-                    ILogger.PERF_TAG,
-                    "reflect state filed consume: ${System.currentTimeMillis() - time}ms, in State: ${state.javaClass.name}")
+                ReduxManager.instance.logger.d(ILogger.PERF_TAG,
+                    "reflect ${state.javaClass.name} filed, consume: ${System.currentTimeMillis() - time}ms")
             }
             // 提交到主线程
             ReduxManager.instance.submitInMainThread {
@@ -169,8 +166,9 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
      * 安装子组件
      */
     private fun installSubComponents() {
-        val map: ArrayMap<String, Dependant<out State, S>>? = dependencies?.dependantMap
-        if (map.isNullOrEmpty()) {
+        val map: ArrayMap<String, Dependant<out State, S>> = dependencies?.dependantMap ?: return
+        val size = map.size
+        if (size < 1) {
             return
         }
 
@@ -179,8 +177,8 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
         env.task = ReflectTask(map.size, environment.taskManager?.executor!!)
 
         // 安装子组件
-        for (dependant in map.values) {
-            dependant.install(env)
+        for (i in 0 until size) {
+            map.valueAt(i).install(env)
         }
         environment.taskManager?.putTask(env.task!!)
     }
@@ -239,15 +237,18 @@ abstract class LogicPage<S : State>(p: Bundle?, proxy: LifeCycleProxy) : Logic<S
         var hasNewDep = false // 防止多次调用重复安装
 
         // 当前Feature集合，这里保存的都是已经安装过的
-        val map: ArrayMap<String, Dependant<out State, S>>? = dependencies?.dependantMap
-        if (map == null || map.size < 1) {
+        val map: ArrayMap<String, Dependant<out State, S>> = dependencies?.dependantMap ?: return
+        if (map.size < 1) {
             return
         }
 
         // 子组件需要从父组件继承一些信息
         val env = copyEnvToChild()
-        env.task = ReflectTask(extraDependants.size, environment.taskManager?.executor!!)
-        for (key in extraDependants.keys) {
+        val size = extraDependants.size
+        env.task = ReflectTask(size, environment.taskManager?.executor!!)
+
+        for (i in 0 until size) {
+            val key = extraDependants.keyAt(i)
             if (map.containsKey(key)) {
                 continue
             }

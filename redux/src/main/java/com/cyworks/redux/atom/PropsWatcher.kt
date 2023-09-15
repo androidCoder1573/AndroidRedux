@@ -6,7 +6,9 @@ abstract class PropsWatcher<S : State, A : Atom<S>> {
     protected val atomList = ArrayList<A>()
 
     internal fun generateKeyList(state: S) {
-        for (atom in atomList) {
+        val size = atomList.size
+        for (i in 0 until size) {
+            val atom = atomList[i]
             val dep = atom.dep
             state.startCollectAtomKey()
             dep?.let { it() }
