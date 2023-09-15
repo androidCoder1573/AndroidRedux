@@ -50,7 +50,6 @@ object ProxyCreator {
     /**
      * 判断某个异常是否已经在某个方法上声明了。
      */
-    @JvmStatic
     fun isMethodDeclaredThrowable(method: Method?, e: Throwable?): Boolean {
         if (e is RuntimeException) {
             return true

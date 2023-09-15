@@ -69,7 +69,6 @@ class Environment private constructor() {
          * 创建一个实例
          * @return Environment
          */
-        @JvmStatic
         fun of(): Environment {
             return Environment()
         }
@@ -77,7 +76,6 @@ class Environment private constructor() {
         /**
          * 复制一些Env的公共信息
          */
-        @JvmStatic
         fun copy(env: Environment): Environment {
             val copy = Environment()
             copy.lifeCycleProxy = env.lifeCycleProxy

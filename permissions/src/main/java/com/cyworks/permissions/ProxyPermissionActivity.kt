@@ -56,7 +56,6 @@ class ProxyPermissionActivity : Activity() {
          * 提前注入listener
          * @param permissionListener PermissionListener
          */
-        @JvmStatic
         fun setPermissionListener(permissionListener: PermissionListener?) {
             sPermissionListener = permissionListener
         }
