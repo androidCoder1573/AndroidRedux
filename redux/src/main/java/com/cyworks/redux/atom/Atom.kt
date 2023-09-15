@@ -24,7 +24,6 @@ abstract class Atom<S : State> {
 
     protected fun isChanged(changedKeys: HashSet<String>?, s: State): Boolean {
         var changed = false
-
         if (keyList == null || changedKeys == null || changedKeys.size < 1) {
             return false
         }

@@ -46,7 +46,7 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean, p: Bundle?) : Logic
      * 使用LiveData，防止因为生命周期导致界面异常
      */
     var liveData: MutableLiveData<String>? = null
-    protected val changedStateMap = ArrayMap<String, List<ReactiveProp<Any>>>()
+    protected val changedStateMap = ArrayMap<String, List<ReactiveProp<Any>>>(10)
 
     /**
      * LiveData的Observer

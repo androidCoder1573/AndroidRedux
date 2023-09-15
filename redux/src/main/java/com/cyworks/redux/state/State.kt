@@ -89,6 +89,10 @@ abstract class State {
      */
     var isShowUI: Boolean by ReactUIData(true)
 
+    internal fun grabStateProxy(): StateProxy? {
+        return stateProxy
+    }
+
     internal fun setTargetState(target: State) {
         depHelper.setTargetState(target)
     }
@@ -128,11 +132,6 @@ abstract class State {
         }
 
         stateProxy = proxy
-        val size = dataMap.size
-        for (i in 0 until size) {
-            val prop = dataMap.valueAt(i)
-            prop.setStateProxy(proxy)
-        }
     }
 
     internal fun detectField(list: Collection<KProperty1<out State, *>>) {

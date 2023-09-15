@@ -368,7 +368,8 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
             val prop = props[i]
             val key = prop.key ?: continue
             changedKeys.add(key)
-            putChangedProp(key, prop)
+
+            pendingChangedProps[key] = prop
             if (ReduxManager.instance.enableLog) {
                 logger.d(ILogger.ACTION_TAG, "current changed prop is"
                         + " <" + key + "> in <" + logic?.javaClass?.simpleName + ">"
@@ -406,9 +407,10 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         val map = state.dataMap
         val size = map.size
         for (i in 0 until size) {
+            val key = map.keyAt(i)
             val prop = map.valueAt(i)
-            if (prop.isUpdateWithInitValue) {
-                putChangedProp(map.keyAt(i), prop)
+            if (prop?.isUpdateWithInitValue == true) {
+                pendingChangedProps[key] = prop
             }
         }
 
@@ -434,17 +436,11 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         val map = state.dataMap
         val size = map.size
         for (i in 0 until size) {
-            val prop = map.valueAt(i)
-            putChangedProp(map.keyAt(i), prop)
+            val key = map.keyAt(i)
+            pendingChangedProps[key] = map.valueAt(i)
         }
 
         requestVsync()
-    }
-
-    private fun putChangedProp(key: String?, reactiveProp: ReactiveProp<Any>) {
-        if (key != null) {
-            pendingChangedProps[key] = reactiveProp
-        }
     }
 
     /**

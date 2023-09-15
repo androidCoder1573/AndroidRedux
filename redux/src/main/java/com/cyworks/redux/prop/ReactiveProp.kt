@@ -3,7 +3,6 @@ package com.cyworks.redux.prop
 import androidx.collection.ArrayMap
 import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.state.State
-import com.cyworks.redux.state.StateProxy
 import com.cyworks.redux.state.StateType
 import com.cyworks.redux.types.Dispose
 import kotlin.reflect.jvm.internal.impl.load.kotlin.JvmType
@@ -65,11 +64,6 @@ class ReactiveProp<T>(
      */
     private var state: State = s
 
-    /**
-     * 主要用于状态变化时记录状态的改变情况
-     */
-    private var stateProxy: StateProxy? = null
-
     private var dispose: Dispose? = null
 
     /**
@@ -114,6 +108,7 @@ class ReactiveProp<T>(
 
     internal fun canSet(value: T): Boolean {
         // 防止开发者在非Reducer中更新UI属性
+        val stateProxy = state.grabStateProxy()
         if (stateProxy == null) {
             ReduxManager.instance.logger.e("ReactiveProp",
                 "set prop: ${this.key} can not use = operator, when not call updateState func, state: ${state.javaClass.name}")
@@ -128,7 +123,7 @@ class ReactiveProp<T>(
 
         // 记录哪些数据变更了
         @Suppress("UNCHECKED_CAST")
-        stateProxy?.recordChangedProp(this as ReactiveProp<Any>)
+        stateProxy.recordChangedProp(this as ReactiveProp<Any>)
         this.value = value
 
         return true
@@ -174,18 +169,6 @@ class ReactiveProp<T>(
     }
 
     /**
-     * 注入state代理，主要用于监听状态变化并记录状态
-     *
-     * 为什么要注入一个代理对象，主要还是为了隔离，在reducer中state具有更新能力，
-     * 在其他场景，state应该只能读取不能再进行设置了
-     *
-     * @param stateProxy [StateProxy]
-     */
-    internal fun setStateProxy(stateProxy: StateProxy?) {
-        this.stateProxy = stateProxy
-    }
-
-    /**
      * 更新某个value，仅能在Reducer中调用，会触发更新收集。
      *
      * @param value Object
@@ -193,9 +176,8 @@ class ReactiveProp<T>(
      */
     internal fun set(value: T) {
         // 防止在非Reducer中更新UI属性
-        if (stateProxy == null) {
-            throw RuntimeException("can't set prop value when StateProxy null!!!")
-        }
+        val stateProxy = state.grabStateProxy()
+            ?: throw RuntimeException("can't set prop value when StateProxy null!!!")
 
         // 组件在修改state prop过程中, 不能改全局store的属性
         if (parentProp != null && parentProp!!.fromType == PropFromType.FROM_GLOBAL_STORE) {
@@ -205,7 +187,7 @@ class ReactiveProp<T>(
         innerSetter(value)
         // 记录哪些数据变更了
         @Suppress("UNCHECKED_CAST")
-        stateProxy!!.recordChangedProp(this as ReactiveProp<Any>)
+        stateProxy.recordChangedProp(this as ReactiveProp<Any>)
     }
 
     internal fun attach() {

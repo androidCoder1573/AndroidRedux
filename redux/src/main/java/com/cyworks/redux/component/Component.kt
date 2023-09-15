@@ -18,7 +18,9 @@ abstract class Component<S : State>(lazyBindUI: Boolean, p: Bundle?) : BaseCompo
 
     init {
         observer = Observer { value: String ->
-            onDataChangedCB(changedStateMap.remove(value))
+            val list = changedStateMap[value]
+            changedStateMap.clear()
+            onDataChangedCB(list)
         }
     }
 
