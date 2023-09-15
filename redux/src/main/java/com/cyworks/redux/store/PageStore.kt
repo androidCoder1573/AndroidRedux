@@ -145,6 +145,9 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
     }
 
     internal fun requestVsync() {
+        if (!isPageVisible) {
+            return
+        }
         uiFresher.requestNextDraw()
     }
 
@@ -163,7 +166,6 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
         if (isPageVisible) {
             return
         }
-
         isPageVisible = true
         uiFresher.start()
     }
