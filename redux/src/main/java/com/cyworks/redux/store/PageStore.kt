@@ -74,7 +74,7 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
                     synchronized(lock) {
                         try {
                             if (isThreadRun) {
-                                lock.wait(NEXT_DRAW.toLong()) // 这里设置的vsync时间段
+                                lock.wait(NEXT_DRAW) // 这里设置的vsync时间段
                                 isUIUpdateRun = false
                                 semaphore.acquire()
                             }
@@ -215,6 +215,6 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
         /**
          * 下一次更新UI的时间间隔，单位ms
          */
-        private const val NEXT_DRAW = 16
+        private const val NEXT_DRAW = 16L
     }
 }

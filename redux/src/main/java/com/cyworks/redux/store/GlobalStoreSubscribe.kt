@@ -8,7 +8,7 @@ import kotlin.reflect.jvm.internal.impl.load.kotlin.JvmType
 
 /**
  * 全局Store观察器，会在初始化时收集全局store中的数据并绑定观察者。
- * todo 当单个组件移除的时候，要主动删除listener
+ * 当单个组件移除的时候，要主动删除listener
  */
 class GlobalStoreSubscribe<CS : State> internal constructor(callback: IPropsChanged, s: CS) {
     /**
