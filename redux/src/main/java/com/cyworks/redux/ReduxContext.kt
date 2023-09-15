@@ -386,10 +386,9 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
      * 首次创建UI时，根据是否更新初始值来展示UI
      */
     internal fun runFirstUpdate() {
-        if (isDestroy || isRunFirstUpdate) {
+        if (isDestroy) {
             return
         }
-        isRunFirstUpdate = true
 
         if (!isStateReady) {
             if (pendingRunnable == null) {
@@ -398,6 +397,11 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
             pendingRunnable?.add(Runnable { runFirstUpdate() })
             return
         }
+
+        if (isRunFirstUpdate) {
+            return
+        }
+        isRunFirstUpdate = true
 
         val map = state.dataMap
         val size = map.size
@@ -423,7 +427,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
             if (pendingRunnable == null) {
                 pendingRunnable = ArrayList()
             }
-            pendingRunnable?.add(Runnable { runFirstUpdate() })
+            pendingRunnable?.add(Runnable { runFullUpdate() })
             return
         }
 

@@ -148,7 +148,7 @@ class ReactiveProp<T>(
         // 检查父属性是否是全局store
         val propParent = prop.parentProp
         if (propParent !== null && propParent.fromType == PropFromType.FROM_GLOBAL_STORE) {
-            this.depGlobalProp(rootParent)
+            depGlobalProp(rootParent)
             return
         }
 
@@ -187,7 +187,6 @@ class ReactiveProp<T>(
 
     /**
      * 更新某个value，仅能在Reducer中调用，会触发更新收集。
-     * note：原始类型一定要一致，最好使用拷贝来进行赋值。
      *
      * @param value Object
      * @throws RuntimeException 当参数为空或者参数类型不一致时抛出异常
