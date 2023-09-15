@@ -92,20 +92,20 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
         }
     }
 
-    fun onStateMerged(componentState: S) {
-        // 获取初始的屏幕方向
-        lastOrientation = componentState.currentOrientation
-
-        // 设置状态 -- UI 监听
-        makeUIWatcher(componentState)
-    }
-
     internal fun setReduxContext(context: ReduxContext<S>) {
         this.context = context
     }
 
     internal fun setReduxEnv(env: Environment) {
         this.environment = env
+    }
+
+    fun onStateMerged(componentState: S) {
+        // 获取初始的屏幕方向
+        lastOrientation = componentState.currentOrientation
+
+        // 设置状态 -- UI 监听
+        makeUIWatcher(componentState)
     }
 
     /**
@@ -294,10 +294,7 @@ class ComponentUIController<S : State>(private val proxy: ComponentProxy<S>) {
         }
 
         initUI()
-        if (currentView != null) {
-            context.runFirstUpdate()
-        }
-
+        context.runFirstUpdate()
         installSubComponents()
     }
 

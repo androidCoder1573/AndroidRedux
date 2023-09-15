@@ -106,10 +106,9 @@ fun interface IPropsChanged {
 fun interface IStateChange<S : State> {
     /**
      * 组件state变化的回调
-     * @param state 上一次的PureState
      * @param changedProps 组件变化的属性列表
      */
-    fun onChange(state: S, changedProps: List<ReactiveProp<Any>>)
+    fun onChange(changedProps: List<ReactiveProp<Any>>)
 }
 
 /**

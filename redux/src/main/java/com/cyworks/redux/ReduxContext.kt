@@ -310,7 +310,7 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
                 }
 
                 pendingChangedProps.clear()
-                componentStateChangeListener!!.onChange(state, changedProps)
+                componentStateChangeListener!!.onChange(changedProps)
             }
         }
     }

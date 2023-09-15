@@ -2,6 +2,7 @@ package com.cyworks.redux.component
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.util.ArrayMap
 import androidx.annotation.CallSuper
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -11,7 +12,7 @@ import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.lifecycle.LifeCycleAction
 import com.cyworks.redux.lifecycle.LifeCycleProxy
-import com.cyworks.redux.prop.ChangedState
+import com.cyworks.redux.prop.ReactiveProp
 import com.cyworks.redux.state.State
 import com.cyworks.redux.types.IStateChange
 import com.cyworks.redux.ui.ViewModule
@@ -42,14 +43,16 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean, p: Bundle?) : Logic
     private var installed: Boolean = false
 
     /**
-     * 使用LiveData包裹变更的状态数据，防止因为生命周期导致界面异常
+     * 使用LiveData，防止因为生命周期导致界面异常
      */
-    var liveData: MutableLiveData<ChangedState<S>>? = null
+    var liveData: MutableLiveData<String>? = null
+    protected val changedStateMap = ArrayMap<String, List<ReactiveProp<Any>>>()
 
     /**
      * LiveData的Observer
      */
-    var observer: Observer<ChangedState<S>>? = null
+    var observer: Observer<String>? = null
+    private var version = 0 // 状态变更版本
 
     /**
      * 将对UI的操作放在这里
@@ -115,9 +118,10 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean, p: Bundle?) : Logic
     }
 
     override fun makeStateChangeCB(): IStateChange<S> {
-        return IStateChange { state, changedProps ->
-            val stateCompare = ChangedState(state, changedProps)
-            liveData?.setValue(stateCompare)
+        return IStateChange { changedProps ->
+            version++
+            changedStateMap[version.toString()] = changedProps
+            liveData?.setValue(version.toString())
         }
     }
 
@@ -152,7 +156,7 @@ abstract class BaseComponent<S : State>(lazyBindUI: Boolean, p: Bundle?) : Logic
     /**
      * 用于初始化Component
      */
-    protected open fun onCreate() {
+   internal fun onCreate() {
         val time = System.currentTimeMillis()
 
         // 创建Context

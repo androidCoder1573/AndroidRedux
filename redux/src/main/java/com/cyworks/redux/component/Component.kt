@@ -3,7 +3,6 @@ package com.cyworks.redux.component
 import android.os.Bundle
 import android.view.View
 import androidx.lifecycle.Observer
-import com.cyworks.redux.prop.ChangedState
 import com.cyworks.redux.prop.ReactiveProp
 import com.cyworks.redux.state.State
 import com.cyworks.redux.ui.UIChangedType
@@ -18,17 +17,17 @@ abstract class Component<S : State>(lazyBindUI: Boolean, p: Bundle?) : BaseCompo
         get() = uiController.currentView
 
     init {
-        observer = Observer { stateCompare: ChangedState<S> ->
-            onDataChangedCB(stateCompare)
+        observer = Observer { value: String ->
+            onDataChangedCB(changedStateMap.remove(value))
         }
     }
 
     /**
      * UI数据变化时的回调，检查本次变化的数据，对可见性以及屏幕旋转做一些特殊处理
-     * @param stateCompare [ChangedState] 本次变化的state集合
+     * @param changedProps 本次变化的prop集合
      */
-    private fun onDataChangedCB(stateCompare: ChangedState<S>) {
-        val props: List<ReactiveProp<Any>> = stateCompare.changedProps
+    private fun onDataChangedCB(changedProps: List<ReactiveProp<Any>>?) {
+        val props: List<ReactiveProp<Any>> = changedProps ?: return
         val size = props.size
         // 检查属性是否合法
         if (size < 1) {
@@ -46,18 +45,19 @@ abstract class Component<S : State>(lazyBindUI: Boolean, p: Bundle?) : BaseCompo
             }
         }
 
+        val state = context.state
         // 检查是否组件可见性发生变化
-        if (visibilityChanged(changedPropKeys)) {
+        if (visibilityChanged(state, changedPropKeys)) {
             return
         }
 
         // 如果存在屏幕旋转，则优先处理屏幕旋转
-        if (needHandleOrientation(changedPropKeys)) {
+        if (needHandleOrientation(state, changedPropKeys)) {
             return
         }
 
         // 最后更新UI
-        uiController.callUIUpdate(stateCompare.lastState, changedPropKeys, uiController.viewHolder)
+        uiController.callUIUpdate(state, changedPropKeys, uiController.viewHolder)
     }
 
     /**
@@ -66,13 +66,13 @@ abstract class Component<S : State>(lazyBindUI: Boolean, p: Bundle?) : BaseCompo
      * @param propKeys 当前组件变化的属性列表
      * @return 是否需要处理可见性变化
      */
-    private fun visibilityChanged(propKeys: HashSet<String>): Boolean {
+    private fun visibilityChanged(state: S, propKeys: HashSet<String>): Boolean {
         if (!propKeys.contains(State.IS_SHOW_UI_NAME)) {
             // 当前变化的属性不包含可见性变化的属性
             return false
         }
 
-        val show: Boolean = context.state.isShowUI
+        val show: Boolean = state.isShowUI
         if (uiController.isShow == show) {
             // 可见性没发生变化
             return false
@@ -82,7 +82,7 @@ abstract class Component<S : State>(lazyBindUI: Boolean, p: Bundle?) : BaseCompo
         uiController.isShow = show
 
         // 如果可见性发生变化，更新旋转方向
-        uiController.lastOrientation = context.state.currentOrientation
+        uiController.lastOrientation = state.currentOrientation
 
         // 如果最新的状态是隐藏UI，则进行UI隐藏操作
         if (!uiController.isShow) {
@@ -98,7 +98,7 @@ abstract class Component<S : State>(lazyBindUI: Boolean, p: Bundle?) : BaseCompo
      * @param propKeys 当前状态变化的属性对应key
      * @return 是否可以处理屏幕旋转
      */
-    private fun needHandleOrientation(propKeys: HashSet<String>): Boolean {
+    private fun needHandleOrientation(state: S, propKeys: HashSet<String>): Boolean {
         val orientationKey = State.CURRENT_ORIENTATION_NAME
         if (!propKeys.contains(orientationKey)) {
             return false
@@ -108,7 +108,7 @@ abstract class Component<S : State>(lazyBindUI: Boolean, p: Bundle?) : BaseCompo
         propKeys.remove(orientationKey)
 
         // 读取最新的屏幕方向
-        val nowOrientation: Int = context.state.currentOrientation
+        val nowOrientation: Int = state.currentOrientation
 
         // 防重入
         if (uiController.lastOrientation == nowOrientation) {

@@ -7,7 +7,6 @@ import androidx.lifecycle.Observer
 import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.dialog.IDialogController
 import com.cyworks.redux.dialog.ILRDialog
-import com.cyworks.redux.prop.ChangedState
 import com.cyworks.redux.prop.ReactiveProp
 import com.cyworks.redux.state.State
 import com.cyworks.redux.util.ILogger
@@ -45,17 +44,16 @@ abstract class DialogComponent<S : State>(p: Bundle?) : BaseComponent<S>(true, p
     }
 
     init {
-        observer = Observer<ChangedState<S>> { stateCompare: ChangedState<S> ->
-            onDataChangedCB(stateCompare)
+        observer = Observer { value: String ->
+            onDataChangedCB(changedStateMap.remove(value))
         }
     }
 
     /**
      * UI 数据变化时的回调
-     * @param stateCompare ChangedState
      */
-    private fun onDataChangedCB(stateCompare: ChangedState<S>) {
-        val props: List<ReactiveProp<Any>> = stateCompare.changedProps
+    private fun onDataChangedCB(changedProps: List<ReactiveProp<Any>>?) {
+        val props: List<ReactiveProp<Any>> = changedProps ?: return
         val size = props.size
         // 检查属性是否合法
         if (size < 1) {
@@ -72,20 +70,21 @@ abstract class DialogComponent<S : State>(p: Bundle?) : BaseComponent<S>(true, p
             }
         }
 
+        val state = context.state
         // 如果组件UI不可见
         if (!uiController.isShow) {
             // 更新一次旋转方向
-            uiController.lastOrientation = context.state.currentOrientation
+            uiController.lastOrientation = state.currentOrientation
             return
         }
 
         // 屏幕旋转事件
-        if (needHandleOrientation(changedPropKeys)) {
+        if (needHandleOrientation(state, changedPropKeys)) {
             return
         }
 
         // 最后更新UI
-        uiController.callUIUpdate(stateCompare.lastState, changedPropKeys, uiController.viewHolder)
+        uiController.callUIUpdate(state, changedPropKeys, uiController.viewHolder)
     }
 
     /**
@@ -93,7 +92,7 @@ abstract class DialogComponent<S : State>(p: Bundle?) : BaseComponent<S>(true, p
      * @param propKeys 当前状态变化的属性对应key
      * @return 是否可以处理屏幕旋转
      */
-    private fun needHandleOrientation(propKeys: HashSet<String>): Boolean {
+    private fun needHandleOrientation(state: S, propKeys: HashSet<String>): Boolean {
         val orientationKey = State.CURRENT_ORIENTATION_NAME
         if (!propKeys.contains(orientationKey)) {
             return false
@@ -103,7 +102,7 @@ abstract class DialogComponent<S : State>(p: Bundle?) : BaseComponent<S>(true, p
         propKeys.remove(orientationKey)
 
         // 读取最新的屏幕方向
-        val nowOrientation: Int = context.state.currentOrientation
+        val nowOrientation: Int = state.currentOrientation
 
         // 防重入
         if (uiController.lastOrientation == nowOrientation) {

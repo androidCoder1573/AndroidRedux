@@ -45,7 +45,7 @@ abstract class Page<S : State> : LogicPage<S> {
      * Android的界面要比前端复杂很多，fragment不像Activity可以调用setContentView来添加View，
      * 必须通过onCreateView返回，为了统一体验，做了这个妥协的操作。
      */
-    protected val pageRootView: View?
+    val pageRootView: View?
         get() = environment.parentView
 
     /**
