@@ -340,7 +340,6 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
 
         isModifyState = true
 
-        stateProxy.clear()
         state.setStateProxy(stateProxy)
 
         val newState: S = reducer.update(state)

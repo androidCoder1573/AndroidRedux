@@ -57,7 +57,6 @@ open class GlobalStore<S : State> : Store<S> {
      */
     fun updateState(reducer: Reducer<S>) {
         ThreadUtil.checkMainThread("update state must be called in main thread!")
-        stateProxy.clear()
         state.setStateProxy(stateProxy)
         val newState = reducer.update(state)
         onStateChanged(newState)
