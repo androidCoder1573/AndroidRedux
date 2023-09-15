@@ -26,7 +26,7 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
     private var stateGetters: CopyOnWriteArrayList<StateGetter<State>>? = null
 
     // 定义最终变化列表
-    private val finalList: MutableList<ReactiveProp<Any>> = ArrayList()
+    private val finalList = ArrayList<ReactiveProp<Any>>()
 
     /**
      * Page 容器是否展示
