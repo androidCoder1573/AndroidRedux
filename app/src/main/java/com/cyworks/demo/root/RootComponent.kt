@@ -22,7 +22,7 @@ class RootComponent(lazyBindUI: Boolean, p: Bundle?) : Component<RootComponentSt
     }
 
     override fun createLogicModule(): LogicModule<RootComponentState> {
-        return RootLogic()
+        return RootLogicModule(props)
     }
 
     override fun addDependencies(collect: DependentCollector<RootComponentState>?) {
@@ -34,6 +34,8 @@ class RootComponent(lazyBindUI: Boolean, p: Bundle?) : Component<RootComponentSt
             collect?.addDependant(Dependant(DemoComponent(false, props), DemoComponentConnector()))
         } else if (type == LaunchType.LAUNCH_DIALOG.ordinal) {
             collect?.addDependant(Dependant(DemoDialogComponent(props), DialogConnector()))
+        } else if (type == LaunchType.INSTALL_EXTRA_COMPONENT.ordinal) {
+            // do nothing
         } else if (type == LaunchType.DELAY_UI.ordinal) {
             collect?.addDependant(Dependant(DemoComponent(true, props), DemoComponentConnector()))
         } else if (type == LaunchType.CHANGE_ORIENTATION.ordinal) {

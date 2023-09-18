@@ -1,17 +1,14 @@
 package com.cyworks.demo.demoDialogComponent
 
-import android.R
 import android.app.Activity
 import android.app.Dialog
 import android.app.DialogFragment
-import android.content.Context
 import android.content.DialogInterface
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
-import android.view.WindowManager
 import com.cyworks.redux.dialog.IDialogController
 import com.cyworks.redux.dialog.ILRDialog
 

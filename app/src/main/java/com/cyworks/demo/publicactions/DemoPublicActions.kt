@@ -3,7 +3,7 @@ package com.cyworks.demo.publicactions
 import com.cyworks.redux.action.Action
 import com.cyworks.redux.action.ActionType
 
-object DemoPageActions {
+object DemoPublicActions {
     val sOpenDemoDialog = ActionType("sOpenDemoDialog")
 
     fun createOpenDemoDialogAction(payload: Boolean): Action<Boolean> {

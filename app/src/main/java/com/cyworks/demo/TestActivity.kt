@@ -16,6 +16,7 @@ enum class LaunchType {
     DEP_PARENT,
     DEP_GLOBAL,
     LAUNCH_DIALOG,
+    INSTALL_EXTRA_COMPONENT,
     DELAY_UI,
     CHANGE_ORIENTATION
 }

@@ -15,6 +15,6 @@ class DemoComponent(lazyBindUI: Boolean, p: Bundle?) : Component<DemoFeatureStat
     }
 
     override fun createLogicModule(): LogicModule<DemoFeatureState> {
-        return DemoFeatureLogic()
+        return DemoComponentLogic()
     }
 }

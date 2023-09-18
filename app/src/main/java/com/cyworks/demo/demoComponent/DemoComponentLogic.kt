@@ -6,7 +6,7 @@ import com.cyworks.redux.lifecycle.LifeCycleAction
 import com.cyworks.redux.logic.EffectCollector
 import com.cyworks.redux.logic.LogicModule
 
-class DemoFeatureLogic : LogicModule<DemoFeatureState> {
+class DemoComponentLogic : LogicModule<DemoFeatureState> {
     override fun addLocalEffects(collect: EffectCollector<DemoFeatureState>) {
         collect.add(LifeCycleAction.ACTION_ON_CREATE) { action, ctx ->
             if (ctx?.state?.isShowUI == true) {

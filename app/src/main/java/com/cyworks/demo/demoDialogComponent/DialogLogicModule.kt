@@ -11,7 +11,7 @@ class DialogLogicModule : LogicModule<DialogState> {
 
     override fun subscribeProps(state: DialogState, watcher: StatePropsWatcher<DialogState>) {}
 
-    override fun createController(): DialogController? {
-        return null
+    override fun createController(): DialogController {
+        return DialogController()
     }
 }

@@ -1,13 +1,10 @@
 package com.cyworks.demo.root
 
-import android.content.pm.ActivityInfo
-import android.content.res.Configuration
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import com.cyworks.R
 import com.cyworks.demo.LaunchType
-import com.cyworks.demo.publicactions.DemoPageActions
 import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.atom.UIPropsWatcher
 import com.cyworks.redux.types.DepProps
@@ -52,16 +49,13 @@ class RootViewModule(private val type: Int) : ViewModule<RootComponentState> {
         if (btn != null && type == LaunchType.LAUNCH_DIALOG.ordinal) {
             btn.visibility = View.VISIBLE
             btn.setOnClickListener {
-                context.dispatcher.dispatchToInterceptor(DemoPageActions.createOpenDemoDialogAction(true))
+                (context.getController() as IRootComponentController?)?.openDialog(context)
             }
         } else if (btn != null && type == LaunchType.CHANGE_ORIENTATION.ordinal) {
             btn.text = "切换屏幕方向"
             btn.visibility = View.VISIBLE
             btn.setOnClickListener {
-                val next = if (context.state.currentOrientation == Configuration.ORIENTATION_LANDSCAPE)
-                    ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-                    else  ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-                context.platform.activity?.setRequestedOrientation(next)
+                (context.getController() as IRootComponentController?)?.changeOrientation(context)
             }
         }
 

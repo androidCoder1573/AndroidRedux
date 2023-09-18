@@ -32,6 +32,13 @@ class MainActivity : AppCompatActivity() {
             open(bundle)
         }
 
+        val installExtraComponent = findViewById<Button>(R.id.test_install_extra_component)
+        installExtraComponent.setOnClickListener { v ->
+            val bundle = Bundle()
+            bundle.putInt("LAUNCH_TYPE", LaunchType.INSTALL_EXTRA_COMPONENT.ordinal)
+            open(bundle)
+        }
+
         val delayShowUI = findViewById<Button>(R.id.test_delay_show_sub_ui)
         delayShowUI.setOnClickListener { v ->
             val bundle = Bundle()

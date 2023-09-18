@@ -9,11 +9,9 @@ class DemoFeatureState : State() {
     var num: Int by this.ReactUIData(0)
     var name: String by this.ReactUIData("")
     var age: Int by this.ReactUIData(0)
-
     val handler = Handler(Looper.getMainLooper())
 }
 
 fun demoFeatureStateInit(props: Bundle?): DemoFeatureState {
-    val state = DemoFeatureState()
-    return state
+    return DemoFeatureState()
 }

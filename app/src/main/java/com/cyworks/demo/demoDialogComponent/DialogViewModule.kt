@@ -24,16 +24,14 @@ class DialogViewModule : ViewModule<DialogState> {
     override fun getView(context: ReduxContext<DialogState>, parent: View): View? {
         val v = View.inflate(context.platform.activity, R.layout.dialog_component_layout, null)
         v.findViewById<View>(R.id.dialog_set_local_text).setOnClickListener { v1: View? ->
-            val next: Int = context.state.localNum + 1
             context.updateState { state ->
-                state.localNum = next
+                state.localNum = state.localNum + 1
                 state
             }
         }
         v.findViewById<View>(R.id.dialog_set_num).setOnClickListener { v1: View? ->
-            val next: Int = context.state.num + 1
             context.updateState { state ->
-                state.num = next
+                state.num = state.num + 1
                 state
             }
         }
