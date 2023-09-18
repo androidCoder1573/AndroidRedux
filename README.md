@@ -1,5 +1,5 @@
 # AndroidRedux
-一个专门针对Android平台的响应式开发框架，核心思想参考了Redux
+一个专门针对Android平台的响应式开发框架，核心思想参考了Redux<br>
 one reactive component for android 
 
 # 特性
