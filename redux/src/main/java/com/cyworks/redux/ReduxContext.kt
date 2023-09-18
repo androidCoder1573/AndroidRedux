@@ -120,8 +120,8 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
     /**
      * 如果开发这不想使用Action驱动，可以通过传统的方式书写逻辑代码，需继承IController
      */
-    private var originController: IController? = null
-    private var controllerProxy: IController? = null
+    private var originController: Any? = null
+    private var controllerProxy: Any? = null
 
     /** 是否运行了首次更新 */
     private var isRunFirstUpdate = false
@@ -227,8 +227,13 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         // 初始化Dispatch
         initPageDispatch()
 
+        originController = logic?.createController()
         if (originController != null) {
-            controllerProxy = ProxyCreator.createProxy(originController!!)
+            try {
+                controllerProxy = ProxyCreator.createProxy(originController!!)
+            } catch (e: Exception) {
+                logger.printStackTrace("Redux Context", "create controller proxy error: ", e)
+            }
         }
 
         // 获取组件的初始state
@@ -315,9 +320,15 @@ class ReduxContext<S : State> internal constructor(builder: ReduxContextBuilder<
         }
     }
 
-    fun <R: IController> getController(): R? {
-        @Suppress("UNCHECKED_CAST")
-        return controllerProxy as R?
+    // @Suppress("UNCHECKED_CAST")
+    fun getController(): Any? {
+        if (controllerProxy != null) {
+            logger.d("aaaaaa", "getController is not null")
+        } else {
+            logger.d("aaaaaa", "getController: null")
+        }
+
+        return controllerProxy
     }
 
     fun updateState(reducer: Reducer<S>) {

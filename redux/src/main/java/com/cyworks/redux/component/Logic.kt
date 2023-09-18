@@ -3,7 +3,6 @@ package com.cyworks.redux.component
 import android.os.Bundle
 import androidx.annotation.CallSuper
 import androidx.collection.ArrayMap
-import com.cyworks.redux.IController
 import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.ReduxManager
 import com.cyworks.redux.atom.StatePropsWatcher
@@ -66,7 +65,7 @@ abstract class Logic<S : State>(p: Bundle?) {
             state: S,
             watcher: StatePropsWatcher<S>
         ) {}
-        override fun <C : IController> createController(): C? {
+        override fun createController(): Any? {
             return null
         }
     }
@@ -110,6 +109,10 @@ abstract class Logic<S : State>(p: Bundle?) {
                 interceptorDispose!![i]()
             }
         }
+    }
+
+    internal fun createController() : Any? {
+        return logicModule.createController()
     }
 
     /**

@@ -1,21 +1,17 @@
 package com.cyworks.redux.hook
 
-import com.cyworks.redux.IController
 import java.lang.reflect.InvocationHandler
-import java.lang.reflect.Method
 import java.lang.reflect.Proxy
-import java.net.SocketException
-
 
 object ProxyCreator {
     @Suppress("UNCHECKED_CAST")
-    fun createProxy(obj: IController): IController {
+    fun createProxy(obj: Any): Any {
         val iPmClass = obj::class.java
         val interfaces: List<Class<*>>? = getAllInterfaces(iPmClass)
         val ifs: Array<Class<*>?> =
             if (!interfaces.isNullOrEmpty()) interfaces.toTypedArray()
             else arrayOfNulls(0)
-        return newProxyInstance(ifs as Array<Class<*>>, ProxyInvocationHandler(obj)) as IController
+        return newProxyInstance(ifs as Array<Class<*>>, ProxyInvocationHandler(obj))
     }
 
     private fun newProxyInstance(
@@ -45,37 +41,5 @@ object ProxyCreator {
             }
             temp = temp.superclass
         }
-    }
-
-    /**
-     * 判断某个异常是否已经在某个方法上声明了。
-     */
-    fun isMethodDeclaredThrowable(method: Method?, e: Throwable?): Boolean {
-        if (e is RuntimeException) {
-            return true
-        }
-        if (method == null || e == null) {
-            return false
-        }
-        val es = method.exceptionTypes
-        if (es.isEmpty()) {
-            return false
-        }
-
-        try {
-            val methodName = method.name
-            val va = "accept" == methodName || "sendto" == methodName
-            if (e is SocketException && va && method.declaringClass.name.indexOf("libcore") >= 0) {
-                return true
-            }
-        } catch (e1: Throwable) {
-            //DO NOTHING
-        }
-        for (aClass in es) {
-            if (aClass.isInstance(e) || aClass.isAssignableFrom(e.javaClass)) {
-                return true
-            }
-        }
-        return false
     }
 }

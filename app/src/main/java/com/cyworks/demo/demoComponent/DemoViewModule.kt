@@ -5,7 +5,6 @@ import android.widget.Button
 import android.widget.TextView
 import com.cyworks.R
 import com.cyworks.demo.LaunchType
-import com.cyworks.demo.userstore.UserStore
 import com.cyworks.redux.ReduxContext
 import com.cyworks.redux.atom.UIPropsWatcher
 import com.cyworks.redux.types.DepProps
@@ -46,15 +45,7 @@ class DemoViewModule(private val type: Int) : ViewModule<DemoFeatureState> {
         val btn = view?.findViewById<Button>(R.id.demo_component_btn)
 
         btn?.setOnClickListener { v: View? ->
-            if (type == LaunchType.DEP_PARENT.ordinal) {
-                context.updateState { state ->
-                    val before = state.num
-                    state.num = before + 1
-                    state
-                }
-            } else if (type == LaunchType.DEP_GLOBAL.ordinal) {
-                UserStore.instance.modifyUserName("bbb${Math.random()}")
-            }
+            (context.getController() as IDemoController?)?.onBtnClick(type, context)
         }
 
         if (type != LaunchType.DEP_PARENT.ordinal && type != LaunchType.DEP_GLOBAL.ordinal) {

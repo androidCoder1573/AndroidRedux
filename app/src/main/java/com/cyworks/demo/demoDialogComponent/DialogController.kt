@@ -1,6 +1,8 @@
 package com.cyworks.demo.demoDialogComponent
 
-import com.cyworks.redux.IController
+interface IDialogController {
 
-class DialogController : IController {
+}
+
+class DialogController : IDialogController {
 }

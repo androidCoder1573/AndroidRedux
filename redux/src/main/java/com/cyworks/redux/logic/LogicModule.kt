@@ -1,6 +1,5 @@
 package com.cyworks.redux.logic
 
-import com.cyworks.redux.IController
 import com.cyworks.redux.atom.StatePropsWatcher
 import com.cyworks.redux.state.State
 
@@ -15,5 +14,5 @@ interface LogicModule<S : State> {
      */
     fun subscribeProps(state: S, watcher: StatePropsWatcher<S>)
 
-    fun <C : IController> createController(): C?
+    fun createController(): Any?
 }

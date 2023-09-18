@@ -1,6 +1,5 @@
 package com.cyworks.demo.demoDialogComponent
 
-import com.cyworks.redux.IController
 import com.cyworks.redux.atom.StatePropsWatcher
 import com.cyworks.redux.logic.EffectCollector
 import com.cyworks.redux.logic.LogicModule
@@ -12,7 +11,7 @@ class DialogLogicModule : LogicModule<DialogState> {
 
     override fun subscribeProps(state: DialogState, watcher: StatePropsWatcher<DialogState>) {}
 
-    override fun <C : IController> createController(): C? {
+    override fun createController(): DialogController? {
         return null
     }
 }
