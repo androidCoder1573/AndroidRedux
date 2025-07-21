@@ -50,7 +50,7 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
 
     private val onDraw: UIFresher.VsyncCallback = object : UIFresher.VsyncCallback {
         override fun onVsync():  Boolean {
-            // 没有UI监听器，或者UI未展示，或者处于销毁状态，则不进行Ui更新
+            // 没有UI监听器，或者UI未展示，或者处于销毁状态，则不进行UI更新
             if (isDestroy || !isPageVisible || uiUpdaterListeners.isEmpty()) {
                 return false
             }
@@ -65,14 +65,11 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
         uiFresher = UIFresher(onDraw)
         val guardThread: Thread = object : Thread("ReduxVsyncGuard") {
             override fun run() {
-                try {
-                    semaphore.acquire()
-                } catch (e: InterruptedException) {
-                    logger.printStackTrace("ReduxVsyncGuard", e)
-                }
                 while (isThreadRun) {
                     synchronized(lock) {
                         try {
+                            semaphore.tryAcquire()
+                            semaphore.acquire() // 阻塞等待
                             if (isThreadRun) {
                                 lock.wait(NEXT_DRAW) // 这里设置的vsync时间段
                                 isUIUpdateRun = false
@@ -115,6 +112,7 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
             }
             uiUpdaterListeners[i].onNewFrameCome()
         }
+        lock.notify() // 子线程不做空等待
         return false
     }
 
