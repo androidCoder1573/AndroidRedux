@@ -44,7 +44,7 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
     /**
      * 用于标记监控线程是否运行
      */
-    @Volatile private var isThreadRun = true
+    @Volatile private var guardThreadIsRun = true
 
     private val uiFresher: UIFresher
 
@@ -65,15 +65,14 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
         uiFresher = UIFresher(onDraw)
         val guardThread: Thread = object : Thread("ReduxVsyncGuard") {
             override fun run() {
-                while (isThreadRun) {
+                while (guardThreadIsRun) {
                     synchronized(lock) {
                         try {
                             semaphore.tryAcquire()
                             semaphore.acquire() // 阻塞等待
-                            if (isThreadRun) {
+                            if (guardThreadIsRun && isUIUpdateRun) {
                                 lock.wait(NEXT_DRAW) // 这里设置的vsync时间段
                                 isUIUpdateRun = false
-                                semaphore.acquire()
                             }
                         } catch (e: InterruptedException) {
                             logger.printStackTrace("ReduxVsyncGuard", e)
@@ -112,7 +111,12 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
             }
             uiUpdaterListeners[i].onNewFrameCome()
         }
-        lock.notify() // 子线程不做空等待
+        isUIUpdateRun = false
+        try {
+            lock.notify()
+        } catch (e: Exception) {
+            // do noting
+        }
         return false
     }
 
@@ -202,7 +206,7 @@ class PageStore<S : State>(state: S) : Store<S>(state) {
 
     override fun clear() {
         super.clear()
-        isThreadRun = false
+        guardThreadIsRun = false
         semaphore.release()
         if (stateGetters != null) {
             stateGetters!!.clear()
