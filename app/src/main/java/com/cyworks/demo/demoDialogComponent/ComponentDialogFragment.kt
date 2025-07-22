@@ -9,6 +9,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
+import android.view.WindowManager
 import com.cyworks.redux.dialog.IDialogController
 import com.cyworks.redux.dialog.ILRDialog
 
@@ -33,24 +34,22 @@ class ComponentDialogFragment : DialogFragment(), ILRDialog {
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val dialog = super.onCreateDialog(savedInstanceState)
         dialog.setCanceledOnTouchOutside(false)
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE) // 去掉dialog的title
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
         return dialog
     }
 
     override fun onStart() {
         super.onStart()
-//        val dialog = dialog
-//        val window = dialog!!.window
-//        if (window != null) {
-//            window.setBackgroundDrawableResource(R.color.transparent) // 设置window背景透明
-//            val lp = window.attributes
-//            lp.width = WindowManager.LayoutParams.WRAP_CONTENT
-//            lp.height = WindowManager.LayoutParams.WRAP_CONTENT
-//        }
     }
 
     override fun onResume() {
         super.onResume()
+        val window = dialog!!.window
+        if (window != null) {
+            val lp = window.attributes
+            lp.width = WindowManager.LayoutParams.WRAP_CONTENT
+            lp.height = WindowManager.LayoutParams.WRAP_CONTENT
+        }
     }
 
     override fun onDismiss(dialog: DialogInterface) {
