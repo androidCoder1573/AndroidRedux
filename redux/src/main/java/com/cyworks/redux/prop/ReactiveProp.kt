@@ -44,6 +44,8 @@ class ReactiveProp<T>(
      */
     private var value: T? = propValue
 
+    private var version: Int = 0
+
     /**
      * 是否是私有属性, 默认是私有属性
      */
@@ -80,7 +82,7 @@ class ReactiveProp<T>(
         get() = parentProp?.fromType == PropFromType.FROM_GLOBAL_STORE
 
     /**
-     * 其实每个属性上的parent目前都是直接赋值到root，目前写了一些兼容逻辑
+     * 每个属性上的parent目前都是直接赋值到root，目前写了一些兼容逻辑
      * @return 当前属性依赖的根属性
      */
     internal val rootProp: ReactiveProp<T>
@@ -88,7 +90,7 @@ class ReactiveProp<T>(
             var tempParent = this
             var propParent = parentProp
             while (propParent != null) {
-                val temp = propParent.prop!!.parentProp ?: break
+                val temp = propParent.prop?.parentProp ?: break
                 propParent = temp
             }
             if (propParent != null) {
@@ -192,8 +194,8 @@ class ReactiveProp<T>(
 
     internal fun attach() {
         if (parentProp?.prop != null) {
-            dispose = parentProp!!.prop?.addChild(this)
-            parentProp!!.prop?.value?.let { innerSetter(it) }
+            dispose = parentProp?.prop?.addChild(this)
+            parentProp?.prop?.value?.let { innerSetter(it) }
         }
     }
 
